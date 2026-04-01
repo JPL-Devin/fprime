@@ -16,7 +16,7 @@ Specific Ways to Contribute:
 - [Ask a Question or Suggest Improvements](https://github.com/nasa/fprime/discussions/new)
 - [Report a Bug or Mistake](https://github.com/nasa/fprime/issues/new/choose)
 - [Review Contributions](https://github.com/nasa/fprime/pulls)
-- Submit a Pull Request see: [Code Contribution Process](#cod-ontribution-process)
+- Submit a Pull Request see: [Code Contribution Process](#code-contribution-process)
 - Contribute to Ongoing Discussions and Reviews
 
 Feel free to contribute any way that suits your skills and enjoy.
@@ -205,7 +205,7 @@ Then, `fprime-util generate` needs to be run using `-DFPRIME_SKIP_TOOLS_VERSION_
 For example, to generate and build F´:
 ```bash
 # Go into the fprime directory
-cp MY_FPRIME_DIRECTORY
+cd MY_FPRIME_DIRECTORY
 # Generate the build files without checking the FPP version
 fprime-util generate -DFPRIME_SKIP_TOOLS_VERSION_CHECK=1
 # Build the project

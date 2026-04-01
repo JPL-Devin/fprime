@@ -46,7 +46,7 @@ DpCatalog ::DpCatalog(const char* const compName)
       m_pendingDpBytes(0),
       m_remainActive(false) {}
 
-DpCatalog ::~DpCatalog() {}
+DpCatalog ::~DpCatalog() = default;
 
 void DpCatalog::configure(Fw::FileNameString directories[DP_MAX_DIRECTORIES],
                           FwSizeType numDirs,

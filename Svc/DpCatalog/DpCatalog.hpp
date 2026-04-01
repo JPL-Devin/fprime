@@ -186,7 +186,7 @@ class DpCatalog final : public DpCatalogComponentBase {
     /// @brief reset the free list
     void resetBinaryTree();
 
-    /// #brief fill  the binary tree from DP files
+    /// @brief fill the binary tree from DP files
     Fw::CmdResponse fillBinaryTree();
 
     /// @brief reset the state file data
