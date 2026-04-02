@@ -6,7 +6,7 @@ expense of extra allocations.
 
 **Note:** the static memory component operates under the following caveats.
 
-1. Each port index has dedicate memory and should be assigned to one allocator
+1. Each port index has dedicated memory and should be assigned to one allocator
 2. Memory sizes are fixed size
 3. Memory must be deallocated before being allocated again.
 

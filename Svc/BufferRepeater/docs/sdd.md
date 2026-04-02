@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-The BufferRepeater component is designed to take in an `Fw::buffer` port call and repeat it to multiple output ports.
+The BufferRepeater component is designed to take in an `Fw::Buffer` port call and repeat it to multiple output ports.
 New memory is allocated from a `Svc::BufferManager` and the data is copied to ensure that each downstream component has
 full ownership of its data. The original buffer is deallocated.  Users call `configure` to set the response of the
 component when allocation requests fail.

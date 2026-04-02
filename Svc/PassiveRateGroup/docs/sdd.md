@@ -1,8 +1,8 @@
-# RateGroupDriver Component
+# Svc::PassiveRateGroup Component
 
 ## 1. Introduction
 
-`Svc::PassiveRateGroup` is an passive component that drives a set of components connected to `Svc::Sched` output ports. It contains an synchronous input `Svc::Cycle` port that drives all the operations.  The component invokes each output port in order, passing an argument specified in the supplied context list. It tracks execution time of the cycle.
+`Svc::PassiveRateGroup` is a passive component that drives a set of components connected to `Svc::Sched` output ports. It contains a synchronous input `Svc::Cycle` port that drives all the operations.  The component invokes each output port in order, passing an argument specified in the supplied context list. It tracks execution time of the cycle.
 
 ## 2. Requirements
 
