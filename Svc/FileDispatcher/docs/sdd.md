@@ -41,7 +41,7 @@ The fields should be filled as follows:
 
 ### Class Diagram
 
-![`FileDispatcher` Diagram](img/FileDispatcher.drawio.png "FileUplink")
+![`FileDispatcher` Diagram](img/FileDispatcher.drawio.png "FileDispatcher")
 
 ## Port Descriptions
 
