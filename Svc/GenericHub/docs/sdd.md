@@ -17,7 +17,7 @@ hub to send generic byte data across (e.g. file packets) the connection. These c
 connections to the driver. On the far side of the byte driver, another generic hub deserializes these port calls and buffer 
 calls into normal F´ port calls on the new deployment as if they were made locally. 
 
-Generic hub inputs on one hub should be parallel to the outputs on the other hub and vise-versa. 
+Generic hub inputs on one hub should be parallel to the outputs on the other hub and vice versa. 
 It is also essential that users never pass a **pointer** into the generic hub, as pointer data will become invalid when it 
 leaves the current address space. A sample configuration is shown below. Finally, the generic hub is bidirectional, so it
 can operate on inputs and produce outputs as long as its remote counterpart is hooked up in parallel.
@@ -59,11 +59,13 @@ and buffer inputs/outputs may be configured.
 
 ```
 @ Hub connections. Connections on all deployments should mirror these settings.
-constant GenericHubInputPorts = 10
-constant GenericHubOutputPorts = 10
-constant GenericHubInputBuffers = 10
-constant GenericHubOutputBuffers = 10
+constant NumSerialInputPorts = 10
+constant NumBufferInputPorts = 10
+constant NumSerialOutputPorts = 10
+constant NumBufferOutputPorts = 10
 ```
+
+These constants are defined in the `Svc.GenericHubCfg` module.
 
 The above configuration may be used with both deployments hubs as the input/output pairs match.
 
