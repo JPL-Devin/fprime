@@ -10,7 +10,7 @@ input ports and commands, the base classes declare pure virtual methods
 for the derived class to implement. If a developer forgets to implement
 these functions, the compilation of the code will fail. For output
 ports, telemetry channels, events, and parameters, the base class
-provides methods for the base class to call.
+provides methods for the derived class to call.
 
 Depending on the kind of the component, the virtual calls will be made
 on the thread of the component itself or the thread of a component
@@ -134,7 +134,7 @@ called in the base class to inform the dispatcher of the command that it
 has completed. That function call is as follows:
 
 > void cmdResponse\_out(FwOpcodeType opCode, U32 cmdSeq,
-> Fw::CommandResponse response);
+> Fw::CmdResponse response);
 
 The opcode and cmdSeq values passed by the function should be passed to
 the command response function as well as a status indicating the success
@@ -225,10 +225,10 @@ values.
 
 | Value              | Meaning                                                                                                                                                                                               |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fw::PARAM\_UNINIT  | The code to attempt to retrieve the value was never called. This is most likely an error in forgetting to call the loadParameters() public function for the component during software initialization. |
-| Fw::PARAM\_VALID   | The parameter was successfully retrieved.                                                                                                                                                             |
-| Fw::PARAM\_INVALID | The parameter was not successfully retrieved, and no default was specified.                                                                                                                           |
-| Fw::PARAM\_DEFAULT | The parameter was not successfully retrieved, but a default was provided.                                                                                                                             |
+| Fw::ParamValid::UNINIT  | The code to attempt to retrieve the value was never called. This is most likely an error in forgetting to call the loadParameters() public function for the component during software initialization. |
+| Fw::ParamValid::VALID   | The parameter was successfully retrieved.                                                                                                                                                             |
+| Fw::ParamValid::INVALID | The parameter was not successfully retrieved, and no default was specified.                                                                                                                           |
+| Fw::ParamValid::DEFAULT | The parameter was not successfully retrieved, but a default was provided.                                                                                                                             |
 
 A virtual method is defined in the base class:
 
@@ -320,7 +320,7 @@ The values of the port arguments are passed to the function.
 
 The function name for commands is as follows:
 
-> void \<command mnemonic\>\_preMsgHook(FswOpcodeType opcode, U32
+> void \<command mnemonic\>\_preMsgHook(FwOpcodeType opcode, U32
 > cmdSeq);
 
 It does not provide the arguments for the command since they are not
