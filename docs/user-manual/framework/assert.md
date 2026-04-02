@@ -3,7 +3,7 @@
 The F′ framework uses asserts to perform run-time checks for software
 errors. They are a method for verifying conditions that should be true
 unless there is a software or processor error. Assert.hpp defines macros
-to declare an assertion in C++ code. CAssert.hpp defines macros to
+to declare an assertion in C++ code. CAssert.h defines macros to
 declare an assertion in C code.
 
 The definition for the framework assert is found in Fw/Types/Assert.hpp.
@@ -86,8 +86,8 @@ function. The framework also provides a function that allows the
 registration of a user-defined handler. The handler is
 registerHook and can be found in Fw/Types/Assert.hpp. The assert hook is
 called with a string representing the text of the assert. The user
-implements a derived class that implements the reportAssert() pure
-virtual method, and does whatever project-specific logic is required.
+implements a derived class that overrides the reportAssert() virtual
+method, and does whatever project-specific logic is required.
 
 ### reportAssert
 

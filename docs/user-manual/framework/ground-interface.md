@@ -106,7 +106,7 @@ To add custom protocols (e.g. CCSDS, custom telemetry formats, etc), users shoul
 ## Adding a Custom Driver 
 
 To be compatible with this ground interface, a driver must implement the
-[byte steam model interface](https://github.com/nasa/fprime/blob/devel/Drv/ByteStreamDriverModel/ByteStreamDriverModel.fpp).
+[byte stream model interface](https://github.com/nasa/fprime/blob/devel/Drv/ByteStreamDriverModel/ByteStreamDriverModel.fpp).
 The driver may add any other ports, events, telemetry, or other F´ constructs as needed but it must define the ports as
 described in the ByteStreamDriverModel.  These ports are called out in the below FPP snippet.
 
