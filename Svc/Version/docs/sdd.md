@@ -1,6 +1,6 @@
 # Svc::Version
 
-Tracks versions for framework,project, libraries and user defined project specific versions.
+Tracks versions for framework, project, libraries and user defined project specific versions.
 
 ## Requirements
 

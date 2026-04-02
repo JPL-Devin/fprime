@@ -31,13 +31,13 @@ The Svc::PolyDb component uses the following port types:
 
 Port Data Type | Name | Direction | Kind | Usage
 -------------- | ---- | --------- | ---- | -----
-[`Svc::Poly`](../../PolyIf/docs/sdd.md) | getValue | Input | Guarded | Write `Fw::PolyType` values
+[`Svc::Poly`](../../PolyIf/docs/sdd.md) | getValue | Input | Guarded | Read `Fw::PolyType` values
 [`Svc::Poly`](../../PolyIf/docs/sdd.md) | setValue | Input | Guarded | Write `Fw::PolyType` values
 
 #### 3.2 Functional Description
 
 `Fw::PolyType` is different from binary telemetry in that it is not in a serialized form, but is stored as the native type.
-The component stores a table of `Fw::PolyType' objects which are read and written by a table index enumeration. 
+The component stores a table of `Fw::PolyType` objects which are read and written by a table index enumeration. 
 The table is protected by a mutex to prevent simultaneous access.
 
 Users can customize the index name by modifying the `config/PolyDbCfg.fpp` file in their own configuration directory.
@@ -64,7 +64,7 @@ The following diagram shows how components can share a value by having one compo
 
 No dictionaries
 
-## 4. Module Checklists
+## 5. Module Checklists
 
 Checklist |
 -------- |
@@ -72,17 +72,17 @@ Checklist |
 [Code](Checklist_Code.xlsx) |
 [Unit Test](Checklist_Unit_Test.xls) |
 
-## 5. Unit Testing
+## 6. Unit Testing
 
 To see unit test coverage run fprime-util check --coverage
 
-## 6. Change Log
+## 7. Change Log
 
 Date | Description
 ---- | -----------
 6/19/2015 | Design review edits
 7/22/2015 | Design review actions 
-9/15.2015 | Unit Test actions
+9/15/2015 | Unit Test actions
 
 
 

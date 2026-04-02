@@ -29,9 +29,9 @@ The `Svc::AssertFatalAdapter` component uses only the log infrastructure ports.
 Port Data Type | Name | Direction | Kind | Usage
 -------------- | ---- | --------- | ---- | -----
 
-#### 3.2 Functional Description
+### 3.2 Functional Description
 
-The `Svc::AssertFatalAdapter` component contains a private implementation of the `Fw::AssertHook` base class (`AssertFatalAdapter`). Upon instantiation, the derived class registers itself to receive calls the FW_ASSERT. When it receives any one of them, it issues a FATAL event corresponding to the number of arguments to FW_ASSERT. Whatever mechanism in the system that deals with FATAL events will handle the asserts via that mechanism.    
+The `Svc::AssertFatalAdapter` component contains a private implementation of the `Fw::AssertHook` base class (`AssertFatalAdapter`). Upon instantiation, the derived class registers itself to receive calls to FW_ASSERT. When it receives any one of them, it issues a FATAL event corresponding to the number of arguments to FW_ASSERT. Whatever mechanism in the system that deals with FATAL events will handle the asserts via that mechanism.    
 
 ### 3.3 Scenarios
 
