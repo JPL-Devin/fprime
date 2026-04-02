@@ -19,8 +19,8 @@ The `Svc::WatchDog` port has the following port diagram:
 The `Svc::WatchDog` port has the following arguments:
 
 Argument | Type | Description
------ | -----------
-code | U32 | Code for the watchdog reset  
+----- | ---- | -----------
+code | U32 | Code for the watchdog stroke  
 
 #### 2.1.2 Serializables
 

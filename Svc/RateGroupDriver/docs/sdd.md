@@ -3,7 +3,7 @@
 ## 1. Introduction
 
 The RateGroupDriver Component is used to take a single system tick and distribute it to multiple rate groups in a system. 
-It takes the input `Svc::Sched` port, then divides down the tick rate based on arguments to the constructor. 
+It takes the input `Svc::Cycle` port, then divides down the tick rate based on arguments to the `configure()` method. 
 Typically, the output ports would be connected to the asynchronous inputs of an `ActiveRateGroup`.
 
 ## 2. Requirements
@@ -13,7 +13,7 @@ The requirements for RateGroupDriver are as follows:
 Requirement | Description | Verification Method
 ----------- | ----------- | -------------------
 RGD-001 | The 'Svc::RateGroupDriver' component shall divide a primary system tick into the needed rate groups | Unit Test
-RCD-002 | The 'Svc::RateGroupDriver' component shall be able to run in ISR context | Inspection
+RGD-002 | The 'Svc::RateGroupDriver' component shall be able to run in ISR context | Inspection
 
 ## 3. Design
 
@@ -41,7 +41,7 @@ The Svc::RateGroupDriver component has one input port that receives a system tic
 The `configure()` function is passed a divider set specifies the divisors and offsets for each output port. This should be called after the constructor but before any port calls are made. The contents of the structure are copied during the call, so the array can be a temporary variable.
 
 ```
-    RateGroupDriverImpl::configure(const DividerSet& dividerSet);
+    RateGroupDriver::configure(const DividerSet& dividerSet);
 ```    
 
 The input rate for each output port will be divided down by the value in the `divider` field corresponding to the output port number.
@@ -55,7 +55,7 @@ The implementation will be ISR compliant by avoiding the following:
 
 For instance,
 
-`SchedIn` Rate | `divider[0]` | `SchedOut[0]` | `divider[1]` | `SchedOut[1]` | `divider[2]` | `SchedOut[2]`
+`CycleIn` Rate | `divider[0]` | `CycleOut[0]` | `divider[1]` | `CycleOut[1]` | `divider[2]` | `CycleOut[2]`
 -------------- | ------------ | ------------- | ------------ | ------------- | ------------ | -------------
 1Hz | 1 | 1Hz | 2 | 0.5Hz | 4 | 0.25Hz
 
@@ -63,7 +63,7 @@ For instance,
 
 #### 3.3.1 System Tick Port Call
 
-As described in the Functional Description section, the RateGroupDriver component accepts calls to the SchedIn and divides them down to the SchedOut ports:
+As described in the Functional Description section, the RateGroupDriver component accepts calls to the CycleIn and divides them down to the CycleOut ports:
 
 ![System Tick Port Call](img/RateGroupDriverPortCallSequence.jpg) 
 

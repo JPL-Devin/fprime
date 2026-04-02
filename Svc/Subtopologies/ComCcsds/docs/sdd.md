@@ -36,8 +36,11 @@ Both variants provide the standard **router + ComQueue + CCSDS framers/deframers
 | `spacePacketFramer`   | `Svc.Ccsds.SpacePacketFramer`   | Passive | Builds **CCSDS Space Packets** from COM buffers (downlink step 1).                              |
 | `framer`              | `Svc.Ccsds.TmFramer`            | Passive | Builds **CCSDS TM Transfer Frames** from space packets and sends to the link (downlink step 2). |
 | `spacePacketDeframer` | `Svc.Ccsds.SpacePacketDeframer` | Passive | Deframes F Prime data from **CCSDS Space Packets** (uplink step 2).                             |
-| `tcDeframer`          | `Svc.Ccsds.tcFramer`            | Passive | Deframes **CCSDS Space Packets** from  **CCSDS TM Transfer Frames** (uplink step 1).            |
+| `tcDeframer`          | `Svc.Ccsds.TcDeframer`          | Passive | Deframes **CCSDS Space Packets** from **CCSDS TC Transfer Frames** (uplink step 1).             |
 | `frameAccumulator`    | `Svc.FrameAccumulator`          | Passive | Collects bytes from the link and emits complete frames/packets for deframing (uplink path).     |
+| `apidManager`         | `Svc.Ccsds.ApidManager`         | Passive | Manages per-APID sequence counts for Space Packet framing and deframing.                        |
+| `aggregator`          | `Svc.ComAggregator`             | Active  | Aggregates Space Packets before passing to the TM framer.                                       |
+| `commsBufferManager`  | `Svc.BufferManager`             | Passive | Provides memory allocation to the subtopology.                                                  |
 | `comStub`             | `Svc.ComStub`                   | Passive | (Variant A only) Implementation of `Svc.ComInterface`, adapting a `Drv::ByteStreamDriverModel`. |
 
 > **Two variants:**
@@ -141,7 +144,7 @@ topology Flight {
 
 | Requirement ID   | Satisfied by (instance/type)                                                           |
 | ---------------- | -------------------------------------------------------------------------------------- |
-| SVC-COMCCSDS-001 | `spacePacketFramer` — `Svc.Ccsds.SpacePacketFramer`, `tmFramer` — `Svc.Ccsds.TmFramer` |
+| SVC-COMCCSDS-001 | `spacePacketFramer` — `Svc.Ccsds.SpacePacketFramer`, `framer` — `Svc.Ccsds.TmFramer` |
 | SVC-COMCCSDS-002 | `frameAccumulator` — `Svc.FrameAccumulator`                                            |
 | SVC-COMCCSDS-003 | `fprimeRouter` — `Svc.FprimeRouter`                                                    |
 | SVC-COMCCSDS-004 | `Subtopology` (variant including `Svc.ComStub`)                                        |

@@ -19,7 +19,7 @@ The `Svc::Ping` port has the following port diagram:
 The `Svc::Ping` port has the following arguments:
 
 Argument | Type | Description
------ | -----------
+----- | ---- | -----------
 key | U32 | Key that the active component is required to return  
 
 #### 2.1.2 Serializables

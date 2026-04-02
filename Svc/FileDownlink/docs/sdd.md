@@ -57,15 +57,16 @@ Name | Type | Kind | Purpose
 `sendFile` | `Svc::SendFileRequest` | guarded_input | Enqueues file for downlink
 `fileComplete` | `Svc::SendFileComplete` | output | Emits notifications when a file downlink initiated by a port completes
 `Run` | `Svc::Sched` | async_input | Periodic clock input used to trigger internal state machine
-<a name="bufferGet">`bufferGet`</a> | [`Fw::BufferGet`](../../../Fw/Buffer/docs/sdd.md) | output (caller) | Requests buffers for sending file packets.
+<a name="bufferReturn">`bufferReturn`</a> | [`Fw::BufferSend`](../../../Fw/Buffer/docs/sdd.md) | async_input | Receives returned buffers after sending file packets.
 <a name="bufferSendOut">`bufferSendOut`</a> | [`Fw::BufferSend`](../../../Fw/Buffer/docs/sdd.md) | output | Sends buffers containing file packets.
+`pingIn` | [`Svc::Ping`](../../Ping/docs/sdd.md) | async_input | Receives ping calls for health checking.
+`pingOut` | [`Svc::Ping`](../../Ping/docs/sdd.md) | output | Returns ping response for health checking.
 
 ### 3.4 Constants
 
 `FileDownlink` has the following constants, initialized
 at component instantiation time:
 
-* *downlinkPacketSize*: The size of the packets to use on downlink.
 * *cooldown*: The amount of time in ms to wait in a cooldown state before starting next downlink.
 * *cycle time*: Frequency in ms of clock pulses sent to `Run` port, used for cooldown.
 * *file queue depth*: The maximum number of files that can be held in the internal file downlink
@@ -111,7 +112,7 @@ failure.
 
 #### 3.6.2 Cancel
 
-Cancel is a synchronous command.
+Cancel is an asynchronous command.
 If *mode* = DOWNLINK, it sets *mode* to CANCEL.
 Otherwise it does nothing.
 

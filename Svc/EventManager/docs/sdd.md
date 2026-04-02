@@ -34,8 +34,10 @@ The `Svc::EventManager` component uses the following port types:
 Port Data Type | Name | Direction | Kind | Usage
 -------------- | ---- | --------- | ---- | -----
 [`Fw::Log`](../../../Fw/Log/docs/sdd.md) | LogRecv | Input | Synchronous | Receive events from components
-[`Fw::Com`](../../../Fw/Log/docs/sdd.md) | PktSend | Output | n/a | Send event packets to external user
+[`Fw::Com`](../../../Fw/Com/docs/sdd.md) | PktSend | Output | n/a | Send event packets to external user
 [`Svc::FatalEvent`](../../../Svc/Fatal/docs/sdd.md) | FatalAnnounce | Output | n/a | Send FATAL event (to health)
+[`Svc::Ping`](../../Ping/docs/sdd.md) | pingIn | Input | Asynchronous | Ping input
+[`Svc::Ping`](../../Ping/docs/sdd.md) | pingOut | Output | n/a | Ping output
 
 ### 3.2 Functional Description
 
@@ -60,7 +62,7 @@ modified at runtime by the `SET_EVENT_FILTER` command.
 
 The component also allows filtering events by event ID. There is a configuration parameter that sets the number of IDs
 that can be filtered. This allows operators to mute a particular event that might be flooding the downstream components.
-These filters are modified at runtime by the `SET_ID_FILTER` command.
+These filters are modified at runtime by the `SET_ID_FILTER` command. A `DUMP_FILTER_STATE` command is also available to dump the current filter states via events.
 
 FATAL events are never filtered, so they can be caught and broadcast to the system. Outgoing events are converted into
 the F´ ground format and sent out using the `PktSend` port.

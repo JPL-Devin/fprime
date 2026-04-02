@@ -8,7 +8,7 @@ It is designed to receive packets from a [`Svc::ComQueue`](../../ComQueue/docs/s
 
 ## Usage Examples
 
-The `Svc::FprimeFramer` component is used in the uplink stack of many reference F´ application such as [the tutorials source code](https://github.com/fprime-community#tutorials).
+The `Svc::FprimeFramer` component is used in the downlink stack of many reference F´ application such as [the tutorials source code](https://github.com/fprime-community#tutorials).
 
 ## Internals
 
@@ -21,13 +21,13 @@ On receiving a data packet, the `Svc::FprimeFramer` performs the following actio
 3. Serializes the F´ packet data into _`outBuffer`_
 4. Computes and serializes a CRC32 checksum into _`outBuffer`_
 5. Emits the _`outBuffer`_ on the `dataOut` output port. Ownership of _`outBuffer`_ is handed to the receiver
-5. Transfer ownership of input _`dataPacket`_ to the `dataReturnOut` port. This usually should be connected to the same component that sent the original packet to `dataIn`.
+6. Transfer ownership of input _`dataPacket`_ to the `dataReturnOut` port. This usually should be connected to the same component that sent the original packet to `dataIn`.
 
 ## Port Descriptions
 
 | Kind            | Name            | Port Type                | Usage                                                                    |
 |-----------------|-----------------|--------------------------|--------------------------------------------------------------------------|
-| `guarded input` | `dataIn`        | `Svc.ComDataWithContext` | Port to receive data to frame, in a Fw::Buffer with optional context     |
+| `sync input`    | `dataIn`        | `Svc.ComDataWithContext` | Port to receive data to frame, in a Fw::Buffer with optional context     |
 | `output`        | `dataOut`       | `Svc.ComDataWithContext` | Port to output framed data, with optional context, for follow-up framing |
 | `sync input`    | `dataReturnIn`  | `Svc.ComDataWithContext` | Port to receive back ownership of buffer sent out of `dataOut`           |
 | `output`        | `dataReturnOut` | `Svc.ComDataWithContext` | Port to return ownership of buffer received on `dataIn`                  |
@@ -39,7 +39,7 @@ On receiving a data packet, the `Svc::FprimeFramer` performs the following actio
 | Name | Description | Validation |
 |---|---|---|
 | SVC-FPRIME_FRAMER-001 | `Svc::FprimeFramer` shall accept data buffers (packets) stored in `Fw::Buffer` through its `dataIn` input port | Unit Test |
-| SVC-FPRIME_FRAMER-002 | `Svc::FprimeFramer` shall emit one F Prime frame on its `framedOut` output port for each packet received on `dataIn` input port | Unit Test |
+| SVC-FPRIME_FRAMER-002 | `Svc::FprimeFramer` shall emit one F Prime frame on its `dataOut` output port for each packet received on `dataIn` input port | Unit Test |
 | SVC-FPRIME_FRAMER-003 | `Svc::FprimeFramer` shall emit F Prime frames that conforms to the [F´ frame specification](../../FprimeProtocol/docs/sdd.md) | Unit Test |
 | SVC-FPRIME_FRAMER-004 | `Svc::FprimeFramer` shall pass through all `Fw.SuccessCondition` received on `comStatusIn` to `comStatusOut` | Unit Test |
 

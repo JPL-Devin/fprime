@@ -35,6 +35,8 @@ Port Data Type | Name | Direction | Kind | Usage
 -------------- | ---- | --------- | ---- | -----
 [`Svc::Cycle`](../../Sched/docs/sdd.md) | CycleIn | Input | Asynchronous | Receive a call to run one cycle of the rate group
 [`Svc::Sched`](../../Sched/docs/sdd.md) | RateGroupMemberOut | Output | n/a | Rate group ports
+[`Svc::Ping`](../../Ping/docs/sdd.md) | PingIn | Input | Asynchronous | Ping input port for health
+[`Svc::Ping`](../../Ping/docs/sdd.md) | PingOut | Output | n/a | Ping output port for health
 
 #### 3.2 Functional Description
 
