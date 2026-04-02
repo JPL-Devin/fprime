@@ -29,9 +29,9 @@ The following is the list of all properties defined by the XML dashboard specifi
 help the user enter them and these types are implicit to the property:
 
 | Property Type | Description | Example |
-|---|---|---
+|---|---|---|
 | string  | text string                                        | title="My fancy title" |
-| list    | Space separated list. Items may be quoted with (') | fields="Field1 'Field 2' 'Field 3'|
+| list    | Space separated list. Items may be quoted with (') | fields="Field1 'Field 2' 'Field 3'" |
 | keyword | Just a keyword, no value required                  | compact |
 
 The following are the properties available, the type of the property from the above table, and a description of valid

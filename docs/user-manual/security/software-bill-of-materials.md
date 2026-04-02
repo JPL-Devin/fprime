@@ -1,10 +1,10 @@
 # Software Bill Of Materials Generation
 
-A software bill of materials is a record of the software that constitutes a product. F Prime will automatically generate a Bill of Materials for a your project as part of the build system. Generation requires the `syft` tool to be installed.
+A software bill of materials is a record of the software that constitutes a product. F Prime will automatically generate a Bill of Materials for your project as part of the build system. Generation requires the `syft` tool to be installed.
 
 ## Running Software Bill of Materials
 
-To generate the software bill of material you must first install [`syft`](https://github.com/anchore/syft). Follow the instruction in the README to install `syft` and ensure that it is on the PATH.
+To generate the software bill of material you must first install [`syft`](https://github.com/anchore/syft). Follow the instructions in the README to install `syft` and ensure that it is on the PATH.
 
 Once `syft` is installed the path, your software bill of materials will be installed in the `build-artifacts/` folder.
 

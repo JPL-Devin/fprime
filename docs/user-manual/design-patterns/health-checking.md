@@ -17,7 +17,7 @@ Any `active` component that must remain responsive for the system's continued fu
 
 Additionally, if a component is at-risk for losing responsiveness (e.g. potentially long-running operations, unbounded file i/o, etc.), the health checking pattern can be applied to ensure it remains alive.
 
-Some active components may be deemed non-critical. For example, a [worker](./manager-worker.md) component taking to long to respond is likely not a system critical function. Likewise are idle tasks. These types of components are typically omitted from health checking.
+Some active components may be deemed non-critical. For example, a [worker](./manager-worker.md) component taking too long to respond is likely not a system critical function. Likewise are idle tasks. These types of components are typically omitted from health checking.
 
 ## Design
 
@@ -34,10 +34,10 @@ sequenceDiagram
 `Svc.Health` tracks how long it takes for the component to respond to the ping message placed on its queue.  `Svc.Health`  produces two events corresponding to two configurable timeouts:
    1. A `WARNING_HI` is emitted when the first timeout is passed
    2. A `FATAL` is emitted when the second timeout is passed.
-Thus the system will issue a `WARNING_HI` event if a component does not respond, and escalate to a `FATAL` event should the component remains unresponsive.
+Thus the system will issue a `WARNING_HI` event if a component does not respond, and escalate to a `FATAL` event should the component remain unresponsive.
 
 > [!IMPORTANT]
-> Most `FATAL` events result in a reset/reboot of the system. This is chosen by the chose of `FatalHandler` component used on the project. The default `FATAL` handler aborts the software.
+> Most `FATAL` events result in a reset/reboot of the system. This is chosen by the choice of `FatalHandler` component used on the project. The default `FATAL` handler aborts the software.
 
 These timeouts are configured in counts of [Rate Group](./rate-group.md) ticks. The actual time of each timeout is the configured value multiplied by the period of the rate group `Svc.Health` is connected to.
 

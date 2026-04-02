@@ -34,7 +34,7 @@ information on CMake targets.
 ## Custom External Libraries With Other Build Systems
 
 There are two ways to handle external libraries and build them within CMake. One is to simply
-use the `add_directory` cmake command to add the directory. Then use a `CMakeLists.txt` to call
+use the `add_subdirectory` cmake command to add the directory. Then use a `CMakeLists.txt` to call
 `add_custom_target` or `add_custom_command` trigger the actual building. The `add_custom_target`
 is used when the system does not depend on the files produced (directly) but may need a link
 dependency, and `add_custom_command` is used when the system needs access to the output files.
