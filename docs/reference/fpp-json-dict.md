@@ -308,7 +308,7 @@ module M1 {
             "annotation": "The cat would know"
         },
     ],
-    "default": "M.Status.MAYBE",
+    "default": "M1.Status.MAYBE",
     "annotation": "Schroedinger's status"
 }
 ```
@@ -441,7 +441,7 @@ module M1 {
         "signed": false,
         "size": 32
       },
-    "annotation": "Alias of type A2"
+    "annotation": "Alias of type A1"
   }
 ]
 ```
@@ -466,7 +466,7 @@ Example JSON of type I8 with a value of -2:
 ### Floating-Point Values
 **Number** representing float value
 
-Example JSON of type F32 with a value of 10.0
+Example JSON of type F32 with a value of 10.5
 ```json
 10.5
 ```
@@ -572,7 +572,7 @@ Formal Parameters are used in Commands and Events definitions.
 | ----- | ----------- | ------- | -------- |
 | `name` | Name of parameter | **String** | true |
 | `type` | [Type Descriptor](#type-descriptors) of parameter | [Type Descriptor](#type-descriptors) | true |
-| `ref` | **Boolean** indicating whether the formal parameter is to be passed by referenced when it is used in a synchronous port invocation | **Boolean** | true |
+| `ref` | **Boolean** indicating whether the formal parameter is to be passed by reference when it is used in a synchronous port invocation | **Boolean** | true |
 | `annotation` | User-defined annotation of parameter | **String** | false |
 
 ```json
@@ -599,7 +599,7 @@ Formal Parameters are used in Commands and Events definitions.
 | `formalParams` | Parameters of the command | Array of [Formal Parameters](#formal-parameters) | true |
 | `annotation` | User-defined annotation of command | **String** | false |
 | `priority` | Priority for the command on the input queue | **Number** | required for async command kinds |
-| `queueFullBehavior` | Behavior of the command when the input full is queue | `assert`, `block`, `drop` | required for async command kinds |
+| `queueFullBehavior` | Behavior of the command when the input queue is full | `assert`, `block`, `drop` | required for async command kinds |
 
 Example Command in FPP:
 ```
@@ -649,7 +649,7 @@ JSON representation:
             "type": {
                 "name": "string",
                 "kind": "string",
-                "size": "80"
+                "size": 80
             },
             "ref": false
         }
@@ -830,7 +830,7 @@ module M {
         "signed": false,
         "size": 32
     },
-    "id": "260",
+    "id": 260,
     "annotation": "This is the annotation for Parameter 1",
     "default": 0
 }
@@ -953,7 +953,7 @@ module M {
         "name": "M.c1.Container2",
         "annotation": "Container 2",
         "id": 265,
-        "defaultPriority": 259
+        "defaultPriority": 10
     }
 ]
 ```
@@ -1199,7 +1199,7 @@ module M {
           "value" : 2
         }
       ],
-      "default" : "M1.StatusEnum.MAYBE"
+      "default" : "M.StatusEnum.MAYBE"
     },
     {
       "kind" : "struct",
