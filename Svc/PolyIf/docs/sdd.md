@@ -10,7 +10,7 @@ The arguments are as follows:
 Argument|Description|Values
 --------|-----------|------
 entry   | The index of the entry in the table
-status  | The status of the measurement  | `MEASUREMENT_OK` = normal measurement, `MEASUREMENT_FAILURE` = error reading measurement, `MEASUREMENT_STALE` = measurement out of date
+status  | The status of the measurement  | `OK` = normal measurement, `FAILURE` = error reading measurement, `STALE` = measurement out of date
 time    | The time tag of the measurement
 val     | The value of the measurement
 
