@@ -41,7 +41,7 @@ types, then developers must define the missing C equivalent types directly in th
 To print these types, users may use the standard C++ PRI macros as shown described:
 [https://cplusplus.com/reference/cinttypes/](https://cplusplus.com/reference/cinttypes/).
 
-The limits of these types can be obtained by using `std::numeric_limits<T>::min()` and `std::numeric_limits<T>::min()`
+The limits of these types can be obtained by using `std::numeric_limits<T>::min()` and `std::numeric_limits<T>::max()`
 for the defined type T.
 
 ```c++
@@ -61,7 +61,7 @@ on some systems that have 64-bit data widths, but will not compile on systems th
 (8-bit systems often lack this data size).
 
 Thus, for these logical types the actual data size needs to be configured. This configuration needs to be available
-from two sources: a given project, and a given platform. Platforms need to set the idea size for these types, and
+from two sources: a given project, and a given platform. Platforms need to set the ideal size for these types, and
 projects need to be able to control these sizes when operating across multiple platforms.
 
 It is important to check against type limits when using these types to ensure compatibility across systems.
