@@ -152,7 +152,7 @@ formal parameter of type _paramType(T)_.
 Each state machine base class has the following member variables:
 
 * A member `m_id` of type `FwEnumStoreType`.
-This variable records the current state of the state machine,
+This variable records the identifier of the state machine,
 represented as `FwEnumStoreType`.
 The initial value is zero.
 
@@ -256,15 +256,15 @@ machine ID.
 **Actions:** For each action _a_ of _M_, there is one private function that
 implements the [pure virtual function for _a_ defined in the base
 class for _M_](#sm-protected).
-The implementation calls the [pure virtual function in the bass class for _C_
-that corresponds to to _M_ and _a_](#component-pure-virtual).
+The implementation calls the [pure virtual function in the base class for _C_
+that corresponds to _M_ and _a_](#component-pure-virtual).
 It passes in the state machine ID of `*this`.
 
 **Guards:** For each guard _g_ of _M_, there is one private function that
 implements the [pure virtual function for _g_ defined in the base
 class for _M_](#sm-protected).
 The implementation calls the [pure virtual function in the base class for _C_
-that corresponds to to _M_ and _g_](#component-pure-virtual).
+that corresponds to _M_ and _g_](#component-pure-virtual).
 It passes in the state machine ID of `*this` and returns the Boolean value returned
 by that function.
 
