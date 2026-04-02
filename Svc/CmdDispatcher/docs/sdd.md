@@ -36,8 +36,10 @@ Port Data Type | Name | Direction | Kind | Usage
 [`Fw::CmdResponse`](../../../Fw/Cmd/docs/sdd.md) | compCmdStat | Input | Asynchronous | Port for components to report command status
 [`Fw::CmdResponse`](../../../Fw/Cmd/docs/sdd.md) | seqCmdStatus | Output | n/a | Send command status to command buffer source
 [`Fw::Com`](../../../Fw/Com/docs/sdd.md) | seqCmdBuff | Input | Asynchronous | Receive command buffer
-[`Fw::CmdReg`](../../../Fw/Cmd/docs/sdd.md) | cmdReg | Input | Synchronous | Command Registration
+[`Fw::CmdReg`](../../../Fw/Cmd/docs/sdd.md) | compCmdReg | Input | Guarded | Command Registration
 [`Svc::Sched`](../../Sched/docs/sdd.md) | run | Input | Asynchronous | Report telemetry
+[`Svc::Ping`](../../Ping/docs/sdd.md) | pingIn | Input | Asynchronous | Ping input
+[`Svc::Ping`](../../Ping/docs/sdd.md) | pingOut | Output | n/a | Ping output
 
 ### 3.2 Functional Description
 
@@ -76,7 +78,7 @@ sequenceDiagram
     deactivate Component
 ```
 
-#### 3.3.1 Dispatch Commands
+#### 3.3.2 Dispatch Commands
 
 The `Svc::CmdDispatcher` component dispatches commands to other components:
 
@@ -85,7 +87,7 @@ sequenceDiagram
     Command Buffer Source->>CommandDispatcher: seqCmdBuff()
     activate Command Buffer Source
     activate CommandDispatcher
-    CommandDispatcher->>Component: seqCmdBuff()
+    CommandDispatcher->>Component: compCmdSend()
     activate Component
     Component->>CommandDispatcher: compCmdStat()
     deactivate Component

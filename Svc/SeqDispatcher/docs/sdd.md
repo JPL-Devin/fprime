@@ -1,4 +1,4 @@
-# components::SeqDispatcher
+# Svc::SeqDispatcher
 
 Dispatches command sequences to available command sequencers, allowing the spacecraft controllers to run multiple sequences at once without having to manually manage which `CmdSequencer`s those sequences run on.
 
@@ -27,7 +27,8 @@ Dispatches command sequences to available command sequencers, allowing the space
 |InvalidSequencer|The given sequencer index is invalid for an unspecified reason|
 |NoAvailableSequencers|There are no available sequencers to dispatch a sequence to|
 |UnknownSequenceFinished|We received a call to seqDoneIn that didn't have a corresponding seqStartIn call|
-|UnexpectedSequenceStarted|We received a call to seqStartIn but we didn't receive a call to seqDoneIn before that|
+|ConflictingSequenceStarted|A sequencer started a new sequence while still running a previous one|
+|UnexpectedSequenceStarted|A sequencer was externally commanded to start a sequence|
 |LogSequencerStatus|Shows the current state and sequence filename for a particular sequencer. Produced by the LOG_STATUS command|
 
 
