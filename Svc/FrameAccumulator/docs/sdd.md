@@ -23,7 +23,7 @@ The `Svc::FrameAccumulator` receives `Fw::Buffer` objects on its `dataIn` input 
 - `MORE_DATA_NEEDED`: indicates that more data is needed to determine whether there is a valid frame. The `Svc::FrameAccumulator` deallocates the original `Fw::Buffer` that was received on the `dataIn` input port and halts execution, effectively waiting for the next `Fw::Buffer` to be received on the `dataIn` input port.
 
 > [!NOTE]
-> If the `Svc::FrameDetector` reports a `size_out` that is larger than the capacity of the internal accumulation buffer, the frame will cannot be processed. The `Svc::FrameAccumulator` logs a warning event, and continues searching for a new frame.
+> If the `Svc::FrameDetector` reports a `size_out` that is larger than the capacity of the internal accumulation buffer, the frame cannot be processed. The `Svc::FrameAccumulator` logs a warning event, and continues searching for a new frame.
 
 
 ```mermaid
@@ -49,7 +49,6 @@ sequenceDiagram
         end
     end
     deactivate A
-    destroy O
 ```
 
 ### Cleanup

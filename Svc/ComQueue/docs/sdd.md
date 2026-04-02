@@ -52,6 +52,7 @@ The diagram below shows the `Svc::ComQueue` component.
 | `async input` | `comPacketQueueIn`| `[ComQueueComPorts] Fw.Com`           | Port array for receiving Fw::ComBuffers                  |
 | `async input` | `bufferQueueIn`   | `[ComQueueBufferPorts] Fw.BufferSend` | Port array for receiving Fw::Buffers                     |
 | `output`      | `bufferReturnOut` | `[ComQueueBufferPorts] Fw.BufferSend` | Port array returning ownership of buffers received on bufferQueueIn |
+| `async input` | `run`             | `Svc.Sched`                           | Port for scheduling telemetry output                                |
 
 > [!NOTE]
 > ComQueue also has the port instances for autocoded functionality for events, telemetry and time.
@@ -61,10 +62,10 @@ The diagram below shows the `Svc::ComQueue` component.
 
 1. `m_queues`: An array of `Types::Queue` used to queue per-port messages.
 2. `m_prioritizedList`: An instance of `Svc::ComQueue::QueueMetadata` storing the priority-order queue metadata.
-3. `m_state`: Instance of `Svc::ComQueue::SendState` representing the state of the component. See: 4.3.1 State Machine
+3. `m_state`: Instance of `Svc::ComQueue::SendState` representing the state of the component. See: [4.2.1. State Machine](#421-state-machine)
 4. `m_throttle`: An array of flags that throttle the per-port queue overflow messages.
 
-### 4.2.1 State Machine
+### 4.2.1. State Machine
 
 The `Svc::ComQueue` component runs the following state machine. It has two states:
 
@@ -90,7 +91,7 @@ Buffers are queued when in `WAITING` state.
 To set up an instance of `ComQueue`, the following needs to be done: 
 1. Call the constructor and the init method in the usual way for an F Prime active component. 
 2. Call the `configure` method, passing in an array of `QueueConfiguration` type, the size of the array, 
-and an allocator of `Fw::MemAllocator`. The `configure` method foes the following:
+and an allocator of `Fw::MemAllocator`. The `configure` method does the following:
 
    1. Ensures that the total size and config size are the same value
    2. Ensures that priority values range from 0 to the total size value
