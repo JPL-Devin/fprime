@@ -16,7 +16,7 @@ This approach aligns extremely well with the model-driven development of F Prime
 Before starting, you should have:
 
 * Completed the [Hello World](https://fprime.jpl.nasa.gov/latest/tutorials-hello-world/docs/hello-world/) tutorial (so you’ve built at least one component and ran `fprime-util`).
-Completed the [LED Blinker](https://fprime.jpl.nasa.gov/latest/tutorials-led-blinker/docs/led-blinker/) tutorial for F´ (so you’ve seen F´ unit-testing).
+* Completed the [LED Blinker](https://fprime.jpl.nasa.gov/latest/tutorials-led-blinker/docs/led-blinker/) tutorial for F´ (so you’ve seen F´ unit-testing).
 * A **general understanding of test-driven development** (write a failing test first, make it pass, then refactor).
 * A working knowledge of [FPP component modeling](https://nasa.github.io/fpp/fpp-users-guide.html) (ports, commands, events, telemetry, parameters).
 

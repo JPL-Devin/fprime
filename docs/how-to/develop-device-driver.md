@@ -53,7 +53,7 @@ graph LR
 
 ## How-To Develop a Device Manager
 
-This section focuses on the device manager component. The bus driver component is assumed to already exist, and its implementation is covered in a [separate section](#how-to-develop-a-bus-driver) of this guide. Linux implementations are available in core F´ with for example `Drv.LinuxUartDriver`, `Drv.LinuxI2cDriver` and `LinuxSpiDriver`.
+This section focuses on the device manager component. The bus driver component is assumed to already exist, and its implementation is covered in a [separate section](#how-to-develop-a-bus-driver) of this guide. Linux implementations are available in core F´ with for example `Drv.LinuxUartDriver`, `Drv.LinuxI2cDriver` and `Drv.LinuxSpiDriver`.
 
 ### Step 1 - Understand the Hardware
 

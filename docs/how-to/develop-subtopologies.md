@@ -96,7 +96,7 @@ module MySubtopology {
 
     instance rateGroup: Svc.ActiveRateGroup base id 0xFF4FF \
         queue size Defaults.QUEUE_SIZE \
-        stack size DEFAULTS.STACK_SIZE \
+        stack size Defaults.STACK_SIZE \
         priority 150
 
     topology MySubtopology {
@@ -368,4 +368,4 @@ Users may now configure your subtopology!
 
 # Conclusion
 
-This how-to guide has walked through the development of a subtopology. Deployments can include multiple different subtopologies, and thus this feature truly paves the way for making F Prime more accessible to quick prototyping. 
+This how-to guide has walked through the development of a subtopology. Deployments can include multiple different subtopologies, and thus this feature truly paves the way for making F Prime more accessible to quick prototyping.  

@@ -178,7 +178,7 @@ Before implementing, consider these best practices:
    To use the `Svc.FrameAccumulator`, you need to configure it with a FrameDetector that detects when a frame is present:
    **MyCustomFrameDetector.hpp**
    ```cpp
-    #include <Svc/FrameDetector/FrameDetector.hpp>
+    #include <Svc/FrameAccumulator/FrameDetector.hpp>
 
     class MyCustomFrameDetector : public Svc::FrameDetector {
       public:
