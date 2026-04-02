@@ -25,7 +25,7 @@ to pass outside a given address space.
 Name | Type | Accessors | Purpose
 ---- | ---- | --------- | -------
 `m_bufferData` | `U8*` | `getData()`/`setData()`       | Pointer to the raw memory wrapped by this buffer
-`m_size`       | `U32` | `getSize()`/`setSize()`       | Size of the raw memory region wrapped by this buffer
+`m_size`       | `FwSizeType` | `getSize()`/`setSize()`       | Size of the raw memory region wrapped by this buffer
 `m_context`    | `U32` | `getContext()`/`setContext()` | Context of buffer's origin. Used to track buffers created by [`BufferManager`](../../../Svc/BufferManager/docs/sdd.md)
 
 A value _B_ of type `Fw::Buffer` is **valid** if `m_bufferData != nullptr` and
@@ -39,7 +39,7 @@ _B_ `.getSerializer()` and _B_ `.getDeserializer()` are considered invalid and s
 
 ### 2.2 The Port Fw::BufferGet
 
-As shown in the following diagram, `Fw::BufferGet` has one argument `size` of type `U32`. It returns a value of type
+As shown in the following diagram, `Fw::BufferGet` has one argument `size` of type `FwSizeType`. It returns a value of type
 `Fw::Buffer`. The returned `Fw::Buffer` must be checked for validity before using.
 
 ![`Fw::BufferGet` Diagram](img/BufferGetBDD.jpg "Fw::BufferGet Port")

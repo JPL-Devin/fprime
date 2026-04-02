@@ -2,10 +2,10 @@
 
 ## 1. Introduction
 
-The `Fw::Log` port is used to pass a serialized form of an ISF Event. It passes the ID, a time tag, the severity, and a buffer
+The `Fw::Log` port is used to pass a serialized form of an F´ Event. It passes the ID, a time tag, the severity, and a buffer
 containing the serialized arguments of the event. 
 
-The `Fw::LogText` port is used to pass a printable text representation of an ISF Event. It passes the ID, a time tag, 
+The `Fw::LogText` port is used to pass a printable text representation of an F´ Event. It passes the ID, a time tag, 
 the severity, and a string containing a description of the event.  
 
 ## 2. Design
@@ -56,15 +56,9 @@ text | Text version of event
 
 ##### 2.1.2.1 Fw::LogBuffer
 
-The `Fw::LogBuffer` class represents a buffer to store a serialized parameter value.
+The `Fw::LogBuffer` class represents a buffer to store serialized event arguments.
 
-## 3. Change Log
-
-Date | Description
----- | -----------
-9/3/2015 |  Initial Version
-
-##### 2.1.2.1 Fw::LogStringArg
+##### 2.1.2.2 Fw::LogStringArg
 
 The `Fw::LogStringArg` class is used by the logging autocoder when string arguments are declared.
 
@@ -72,7 +66,8 @@ The `Fw::LogStringArg` class is used by the logging autocoder when string argume
 
 Date | Description
 ---- | -----------
-9/16/2015 |  Initial Version
+9/3/2015 |  Initial Version
+9/16/2015 |  Added Fw::LogStringArg description
 
 
 
