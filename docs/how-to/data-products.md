@@ -125,7 +125,7 @@ This creates a simple internal flow:
 
 * Allocate → Fill → Send → Reset
 
-Containers are of the type `DpContainer` in the component's base class, which derives from `Fw::Container`. Users typically instantiate the container in their header as a member variable.
+Containers are of the type `DpContainer` in the component's base class, which derives from `Fw::DpContainer`. Users typically instantiate the container in their header as a member variable.
 
 ```cpp
 // In Component.hpp
