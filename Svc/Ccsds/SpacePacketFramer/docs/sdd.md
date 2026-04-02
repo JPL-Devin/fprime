@@ -29,6 +29,10 @@ For each Space Packet generated, the `Svc::Ccsds::SpacePacketFramer` will popula
 |---|---|---|---|
 | Input (sync) | dataIn | Svc.ComDataWithContext | Port to receive user data to be framed into a Space Packet |
 | Output | dataOut | Svc.ComDataWithContext | Port to output the constructed Space Packet |
+| Output | dataReturnOut | Svc.ComDataWithContext | Port for returning ownership of the incoming Fw::Buffer to its sender once framing is handled |
+| Input (sync) | dataReturnIn | Svc.ComDataWithContext | Port receiving back ownership of sent buffers (e.g. from a ComDriver component) |
+| Input (sync) | comStatusIn | Fw.SuccessCondition | Port receiving the general status from the downstream component indicating readiness for more input |
+| Output | comStatusOut | Fw.SuccessCondition | Port indicating the status of framer for receiving more data |
 | Output | bufferAllocate | Fw.BufferGet | Port to allocate buffers for the outgoing Space Packet |
 | Output | bufferDeallocate | Fw.BufferSend | Port to deallocate buffers after the Space Packet is sent |
 | Output | getApidSeqCount | Ccsds.ApidSequenceCount | Port to retrieve the current sequence count for a given APID |
