@@ -23,7 +23,7 @@ namespace Utils {
 //! \class HashBuffer
 //! \brief A container class for holding a hash buffer
 //!
-class HashBuffer : public Fw::SerializeBufferBase {
+class HashBuffer : public Fw::LinearBufferBase {
   public:
     // ----------------------------------------------------------------------
     // Construction and destruction
@@ -57,7 +57,6 @@ class HashBuffer : public Fw::SerializeBufferBase {
 
     //! Get the total buffer length of a hash buffer
     //!
-    DEPRECATED(FwSizeType getBuffCapacity() const, "Use getCapacity() instead");
     FwSizeType getCapacity() const override;  // !< returns capacity, not current size, of buffer
 
     //! Get a pointer to the buffer within the hash buffer

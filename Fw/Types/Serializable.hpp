@@ -6,7 +6,6 @@
 #endif
 
 #include <Fw/FPrimeBasicTypes.hpp>
-#include "Fw/Deprecate.hpp"
 
 namespace Fw {
 
@@ -27,8 +26,6 @@ typedef enum {
 class SerialBufferBase;  //!< forward declaration
 class LinearBufferBase;  //!< forward declaration
 
-// TODO: Temporary backwards-compatibility hack. Remove this when all references to SerializeBufferBase are migrated.
-using SerializeBufferBase = LinearBufferBase;
 
 struct Serialization {
     enum t {
@@ -69,20 +66,6 @@ class Serializable {
     //! \param mode Endianness mode for deserialization (default is Endianness::BIG)
     //! \return SerializeStatus indicating the result of the operation
     virtual SerializeStatus deserializeFrom(SerialBufferBase& buffer, Endianness mode = Endianness::BIG) = 0;
-
-    // ----------------------------------------------------------------------
-    // Legacy methods for backward compatibility
-    // ----------------------------------------------------------------------
-
-    DEPRECATED(SerializeStatus serialize(SerialBufferBase& buffer) const,
-               "Use serializeTo(SerialBufferBase& buffer) instead") {
-        return this->serializeTo(buffer);
-    }
-
-    DEPRECATED(SerializeStatus deserialize(SerialBufferBase& buffer),
-               "Use deserializeFrom(SerialBufferBase& buffer) instead") {
-        return this->deserializeFrom(buffer);
-    }
 
 #if FW_SERIALIZABLE_TO_STRING || FW_ENABLE_TEXT_LOGGING || BUILD_UT
     //! \brief Generate a human-readable string representation of this object
@@ -668,7 +651,7 @@ class SerialBufferBase {
 };
 
 class LinearBufferBase : public SerialBufferBase {
-    friend class SerializeBufferBaseTester;
+    friend class LinearBufferBaseTester;
 
   protected:
     //! \brief Copy assignment operator
@@ -1082,10 +1065,6 @@ class LinearBufferBase : public SerialBufferBase {
     //! \return SerializeStatus indicating the result of the operation
     SerializeStatus deserializeSize(FwSizeType& size, Endianness mode = Endianness::BIG) override;
 
-    DEPRECATED(SerializeStatus serialize(const LinearBufferBase& val),
-               "Use serializeFrom(const SerialBufferBase& val) instead");
-    DEPRECATED(SerializeStatus deserialize(LinearBufferBase& val), "Use deserializeTo(SerialBufferBase& val) instead");
-
     //! \brief Reset serialization pointer to beginning of buffer
     //!
     //! This method resets the serialization pointer to the beginning of the buffer,
@@ -1144,10 +1123,6 @@ class LinearBufferBase : public SerialBufferBase {
     //! \param numBytesToSkip Number of bytes to skip during deserialization
     //! \return SerializeStatus indicating the result of the operation
     SerializeStatus deserializeSkip(FwSizeType numBytesToSkip) override;
-
-    DEPRECATED(Serializable::SizeType getBuffCapacity() const, "Use getCapacity() instead");
-    DEPRECATED(Serializable::SizeType getBuffLength() const, "Use getSize() instead");
-    DEPRECATED(Serializable::SizeType getBuffLeft(), "Use getDeserializeSizeLeft() instead");
 
     //! \brief Get buffer capacity
     //!
@@ -1266,65 +1241,6 @@ class LinearBufferBase : public SerialBufferBase {
     //! \return SerializeStatus indicating the result of the operation
     SerializeStatus copyRawOffset(SerialBufferBase& dest, Serializable::SizeType size) override;
 
-    // ----------------------------------------------------------------------
-    // Deprecated Serialization methods
-    // ----------------------------------------------------------------------
-
-    DEPRECATED(SerializeStatus serialize(U8 val), "Use serializeFrom(U8 val) instead");
-    DEPRECATED(SerializeStatus serialize(I8 val), "Use serializeFrom(I8 val) instead");
-#if FW_HAS_16_BIT == 1
-    DEPRECATED(SerializeStatus serialize(U16 val), "Use serializeFrom(U16 val) instead");
-    DEPRECATED(SerializeStatus serialize(I16 val), "Use serializeFrom(I16 val) instead");
-#endif
-#if FW_HAS_32_BIT == 1
-    DEPRECATED(SerializeStatus serialize(U32 val), "Use serializeFrom(U32 val) instead");
-    DEPRECATED(SerializeStatus serialize(I32 val), "Use serializeFrom(I32 val) instead");
-#endif
-#if FW_HAS_64_BIT == 1
-    DEPRECATED(SerializeStatus serialize(U64 val), "Use serializeFrom(U64 val) instead");
-    DEPRECATED(SerializeStatus serialize(I64 val), "Use serializeFrom(I64 val) instead");
-#endif
-
-    DEPRECATED(SerializeStatus serialize(F32 val), "Use serializeFrom(F32 val) instead");
-    DEPRECATED(SerializeStatus serialize(F64 val), "Use serializeFrom(F64 val) instead");
-    DEPRECATED(SerializeStatus serialize(bool val), "Use serializeFrom(bool val) instead");
-    DEPRECATED(SerializeStatus serialize(const void* val), "Use serializeFrom(const void* val) instead");
-    DEPRECATED(SerializeStatus serialize(const U8* buff, FwSizeType length, bool noLength),
-               "Use serialize(const U8* buff, FwSizeType length, Serialization::t mode) instead");
-    DEPRECATED(SerializeStatus serialize(const U8* buff, FwSizeType length),
-               "Use serializeFrom(const U8* buff, FwSizeType length) instead");
-    DEPRECATED(SerializeStatus serialize(const U8* buff, FwSizeType length, Serialization::t mode),
-               "Use serializeFrom(const U8* buff, FwSizeType length, Serialization::t mode) instead");
-    DEPRECATED(SerializeStatus serialize(const Serializable& val),
-               "Use serializeFrom(const Serializable& val) instead");
-
-    DEPRECATED(SerializeStatus deserialize(U8& val), "Use deserializeTo(U8& val) instead");
-    DEPRECATED(SerializeStatus deserialize(I8& val), "Use deserializeTo(I8& val) instead");
-#if FW_HAS_16_BIT == 1
-    DEPRECATED(SerializeStatus deserialize(U16& val), "Use deserializeTo(U16& val) instead");
-    DEPRECATED(SerializeStatus deserialize(I16& val), "Use deserializeTo(I16& val) instead");
-#endif
-#if FW_HAS_32_BIT == 1
-    DEPRECATED(SerializeStatus deserialize(U32& val), "Use deserializeTo(U32& val) instead");
-    DEPRECATED(SerializeStatus deserialize(I32& val), "Use deserializeTo(I32& val) instead");
-#endif
-#if FW_HAS_64_BIT == 1
-    DEPRECATED(SerializeStatus deserialize(U64& val), "Use deserializeTo(U64& val) instead");
-    DEPRECATED(SerializeStatus deserialize(I64& val), "Use deserializeTo(I64& val) instead");
-#endif
-
-    DEPRECATED(SerializeStatus deserialize(F32& val), "Use deserializeTo(F32& val) instead");
-    DEPRECATED(SerializeStatus deserialize(F64& val), "Use deserializeTo(F64& val) instead");
-    DEPRECATED(SerializeStatus deserialize(bool& val), "Use deserializeTo(bool& val) instead");
-    DEPRECATED(SerializeStatus deserialize(void*& val), "Use deserializeTo(void*& val) instead");
-    DEPRECATED(SerializeStatus deserialize(U8* buff, FwSizeType& length, bool noLength),
-               "Use deserialize(U8* buff, FwSizeType& length, Serialization::t mode) instead");
-    DEPRECATED(SerializeStatus deserialize(U8* buff, FwSizeType& length),
-               "Use deserializeTo(U8* buff, FwSizeType& length) instead");
-    DEPRECATED(SerializeStatus deserialize(U8* buff, FwSizeType& length, Serialization::t mode),
-               "Use deserializeTo(U8* buff, FwSizeType& length, Serialization::t mode) instead");
-    DEPRECATED(SerializeStatus deserialize(Serializable& val), "Use deserializeTo(Serializable& val) instead");
-
 #ifdef BUILD_UT
     //! \brief Equality comparison operator
     //!
@@ -1436,8 +1352,6 @@ class ExternalSerializeBuffer : public LinearBufferBase {
     //! ExternalSerializeBuffer, as this could lead to issues with buffer
     //! management.
     ExternalSerializeBuffer(const ExternalSerializeBuffer& src) = delete;
-
-    DEPRECATED(Serializable::SizeType getBuffCapacity() const, "Use getCapacity() instead");
 
     //! \brief Get buffer capacity
     //!

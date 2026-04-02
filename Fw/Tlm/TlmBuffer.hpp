@@ -17,7 +17,7 @@
 
 namespace Fw {
 
-class TlmBuffer final : public SerializeBufferBase {
+class TlmBuffer final : public LinearBufferBase {
   public:
     enum { SERIALIZED_TYPE_ID = FW_TYPEID_TLM_BUFF, SERIALIZED_SIZE = FW_TLM_BUFFER_MAX_SIZE + sizeof(FwBuffSizeType) };
 
@@ -27,7 +27,6 @@ class TlmBuffer final : public SerializeBufferBase {
     virtual ~TlmBuffer();
     TlmBuffer& operator=(const TlmBuffer& other);
 
-    DEPRECATED(FwSizeType getBuffCapacity() const, "Use getCapacity() instead");
     FwSizeType getCapacity() const;  // !< returns capacity, not current size, of buffer
 
     U8* getBuffAddr();

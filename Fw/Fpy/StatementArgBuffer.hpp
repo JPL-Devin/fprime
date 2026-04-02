@@ -7,7 +7,7 @@
 
 namespace Fw {
 
-class StatementArgBuffer : public SerializeBufferBase {
+class StatementArgBuffer : public LinearBufferBase {
   public:
     enum {
         SERIALIZED_TYPE_ID = FW_TYPEID_TLM_BUFF,
@@ -20,7 +20,6 @@ class StatementArgBuffer : public SerializeBufferBase {
     virtual ~StatementArgBuffer();
     StatementArgBuffer& operator=(const StatementArgBuffer& other);
 
-    DEPRECATED(Serializable::SizeType getBuffCapacity() const, "Use getCapacity() instead");
     Serializable::SizeType getCapacity() const;  // !< returns capacity, not current size, of buffer
 
     U8* getBuffAddr();

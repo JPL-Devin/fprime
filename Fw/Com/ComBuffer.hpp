@@ -17,7 +17,7 @@
 
 namespace Fw {
 
-class ComBuffer final : public SerializeBufferBase {
+class ComBuffer final : public LinearBufferBase {
   public:
     enum {
         SERIALIZED_TYPE_ID = 1010,
@@ -30,7 +30,6 @@ class ComBuffer final : public SerializeBufferBase {
     virtual ~ComBuffer();
     ComBuffer& operator=(const ComBuffer& other);
 
-    DEPRECATED(FwSizeType getBuffCapacity() const, "Use getCapacity() instead");
     FwSizeType getCapacity() const;  // !< returns capacity, not current size, of buffer
 
     U8* getBuffAddr();

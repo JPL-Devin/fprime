@@ -15,7 +15,7 @@
 
 namespace Fw {
 
-class SmSignalBuffer final : public SerializeBufferBase {
+class SmSignalBuffer final : public LinearBufferBase {
   public:
     enum {
         SERIALIZED_TYPE_ID = 1010,
@@ -28,7 +28,6 @@ class SmSignalBuffer final : public SerializeBufferBase {
     virtual ~SmSignalBuffer();
     SmSignalBuffer& operator=(const SmSignalBuffer& other);
 
-    DEPRECATED(Serializable::SizeType getBuffCapacity() const, "Use getCapacity() instead");
     Serializable::SizeType getCapacity() const;  // !< returns capacity, not current size, of buffer
 
     U8* getBuffAddr();

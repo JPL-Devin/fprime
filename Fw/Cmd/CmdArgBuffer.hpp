@@ -18,7 +18,7 @@
 
 namespace Fw {
 
-class CmdArgBuffer final : public SerializeBufferBase {
+class CmdArgBuffer final : public LinearBufferBase {
   public:
     enum {
         SERIALIZED_TYPE_ID = FW_TYPEID_CMD_BUFF,                    //!< type id for CmdArgBuffer
@@ -31,7 +31,6 @@ class CmdArgBuffer final : public SerializeBufferBase {
     virtual ~CmdArgBuffer();                             //!< destructor
     CmdArgBuffer& operator=(const CmdArgBuffer& other);  //!< Equal operator
 
-    DEPRECATED(FwSizeType getBuffCapacity() const, "Use getCapacity() instead");
     FwSizeType getCapacity() const;  //!< return capacity of buffer (how much it can hold)
 
     U8* getBuffAddr();              //!< return address of buffer (non const version)

@@ -18,7 +18,7 @@
 
 namespace Fw {
 
-class LogBuffer final : public SerializeBufferBase {
+class LogBuffer final : public LinearBufferBase {
   public:
     enum { SERIALIZED_TYPE_ID = FW_TYPEID_LOG_BUFF, SERIALIZED_SIZE = FW_LOG_BUFFER_MAX_SIZE + sizeof(FwBuffSizeType) };
 
@@ -28,7 +28,6 @@ class LogBuffer final : public SerializeBufferBase {
     virtual ~LogBuffer();
     LogBuffer& operator=(const LogBuffer& other);
 
-    DEPRECATED(FwSizeType getBuffCapacity() const, "Use getCapacity() instead");
     FwSizeType getCapacity() const;  // !< returns capacity, not current size, of buffer
 
     U8* getBuffAddr();
