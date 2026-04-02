@@ -30,10 +30,10 @@ The `Svc::Ccsds::SpacePacketDeframer` is typically used downstream of a componen
 | SVC-CCSDS-SPD-001 | The SpacePacketDeframer shall deframe CCSDS Space Packets according to the CCSDS 133.0-B-2 standard. | Unit Test, Inspection |
 | SVC-CCSDS-SPD-002 | The SpacePacketDeframer shall extract the user data field from valid Space Packets. | Unit Test |
 | SVC-CCSDS-SPD-003 | The SpacePacketDeframer shall validate the packet length of a Space Packet Primary Header. | Unit Test |
-| SVC-CCSDS-SPD-009 | The SpacePacketDeframer shall emit an `InvalidLength` event if the packet length token in the header is cannot fit in the received data, and drop the received packet. | Unit Test |
+| SVC-CCSDS-SPD-009 | The SpacePacketDeframer shall emit an `InvalidLength` event if the packet length token in the header cannot fit in the received data, and drop the received packet. | Unit Test |
 | SVC-CCSDS-SPD-004 | The SpacePacketDeframer shall receive incoming data containing Space Packets via the `dataIn` port. | Unit Test |
 | SVC-CCSDS-SPD-005 | The SpacePacketDeframer shall output the extracted Space Packet user data via the `dataOut` port. | Unit Test |
 | SVC-CCSDS-SPD-006 | The SpacePacketDeframer shall manage buffer ownership using the `dataReturnIn` and `dataReturnOut` ports. | Unit Test, Inspection |
 | SVC-CCSDS-SPD-007 | The SpacePacketDeframer shall delegate sequence count validation to another component through the `validateApidSeqCount` port. | Unit Test |
-| SVC-CCSDS-SPD-008 | The SpacePacketDeframer shall perform sequence count validation for APIDs registered via `validateApidSeqCount`. | Unit Test |
-| SVC-CCSDS-SPD-009 | The SpacePacketDeframer shall emit notifications on its `errorNotify` port when deframing errors occur. | Unit Test |
+| SVC-CCSDS-SPD-008 | The SpacePacketDeframer shall delegate sequence count validation for received APIDs to another component through the `validateApidSeqCount` port. | Unit Test |
+| SVC-CCSDS-SPD-010 | The SpacePacketDeframer shall emit notifications on its `errorNotify` port when deframing errors occur. | Unit Test |
