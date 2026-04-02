@@ -56,7 +56,7 @@ The first step in developing a framing plugin is to determine the function that 
 must be derived to develop the plugin. For the case of a `framing` plugin, the `register_framing_plugin` function
 must be defined to return a concrete subclass of `FramerDeframer`. This information was found in the above table.
 
-> [TIP]
+> [!TIP]
 > Use the decorator `@gds_plugin(<BaseClass>)` to help define your plugins (e.g. `@gds_plugin(FramerDeframer)`).
 > This will:
 >  1. Check the supplied base class is a valid plugin base class
@@ -402,7 +402,7 @@ fprime-gds --framing-selection my-plugin
 Application plugins run automatically at start-up. To test these plugins, just supply any desired arguments:
 
 ```
-fprime-gds --message "Hello Plugin
+fprime-gds --message "Hello Plugin"
 ```
 
 ## Distributing Plugins
