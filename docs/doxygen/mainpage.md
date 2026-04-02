@@ -7,7 +7,7 @@ Software Design Documents (SDDs) for each component can be found in the Referenc
 
 The Fw package provides the core classes, components, and ports to support F´. These classes allow
 for the core framework operation. In addition, these include the base classes on which components
-are built.  Finally, of specific interest is Fw::Types providing the cored types in the system.
+are built.  Finally, of specific interest is Fw::Types providing the core types in the system.
 
 
 The Os package is an operating system abstraction layer. It provides basic Os system functions to
@@ -19,8 +19,8 @@ command and data handling components used for more complete applications.
 
 
 The Drv package provides drivers to support various hardware functions for F´. These drivers 
-include a sample block driver component as well a various drivers that support Linux hardware
-functions.
+include various drivers that support Linux hardware functions such as GPIO, I2C, SPI, and UART,
+as well as byte stream drivers for TCP and UDP communication.
 
 
 The Utils package provides classes for general applications in F´ projects. These classes are for
