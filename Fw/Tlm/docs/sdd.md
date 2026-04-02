@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-The `Fw::Tlm` port is used to pass a serialized telemetry value. It also passes the telemetry channel IS as well a time tag representing the time the channel was written. 
+The `Fw::Tlm` port is used to pass a serialized telemetry value. It also passes the telemetry channel ID as well as a time tag representing the time the channel was written. 
 
 ## 2. Design
 
@@ -12,17 +12,17 @@ The `Fw::Tlm` port is used to pass a serialized telemetry value. It also passes 
 
 The `Fw::Tlm` port has the following port diagram:
 
-![Fw::Com Diagram](img/FwTlmBDD.jpg "Fw::Com Port")
+![Fw::Tlm Diagram](img/FwTlmBDD.jpg "Fw::Tlm Port")
 
 #### 2.1.2 Serializables
 
-##### 2.1.2.1 Fw::ComBuffer
+##### 2.1.2.1 Fw::TlmBuffer
 
 The `Fw::TlmBuffer` class contains a buffer that holds the serialized value of a telemetry channel. This buffer is passed as an argument to the `Fw::Tlm` port.
 
-##### 2.1.2.2 Fw::ComPacket 
+##### 2.1.2.2 Fw::TlmPacket
 
-The `Fw::TlmPacket` class is a packet class derived from [`Fw::ComPacket`](../../Com/docs/sdd.md) that provides methods for encoding a telemetry packet. It contains an internal `Fw:ComBuffer` that holds serialized channel values.
+The `Fw::TlmPacket` class is a packet class derived from [`Fw::ComPacket`](../../Com/docs/sdd.md) that provides methods for encoding a telemetry packet. It contains an internal `Fw::ComBuffer` that holds serialized channel values.
 
 To fill a packet with telemetry values, do the following:
 
