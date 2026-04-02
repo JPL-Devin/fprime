@@ -45,6 +45,9 @@ comCmdOut|Fw::Com|output|Sends command buffers for each command in sequence
 cmdResponseIn|Fw::CmdResponse|async input|Received status of last dispatched command
 seqRunIn|Svc::CmdSeqIn|async input|Receives requests for running sequences from other components
 seqDone|Fw::CmdResponse|output|outputs status of sequence run; meant to be used with `seqRunIn`
+seqStartOut|Svc::CmdSeqIn|output|Notifies that a sequence has started running
+seqCancelIn|Svc::CmdSeqCancel|async input|Sequence cancel port
+seqDispatchIn|Svc::FileDispatch|async input|Port for file dispatches to run sequences
 
 #### 3.2.2 Command Handlers
 
@@ -62,6 +65,9 @@ The `CS_Start` command will execute the first command in the sequence in manual 
 The `CS_Step` command will execute subsequent commands after receiving the `CS_Start` command.
 ##### 3.2.2.7 CS_Auto
 The `CS_Auto` command will change the sequencing mode from manual to automatic, which means that the sequencer will automatically execute commands upon loading. This command can only be run when there are no currently executing sequences. If a sequence is executing, a `CS_Cancel` followed by a `CS_Auto` will get the sequencer back to executing sequences automatically.
+
+##### 3.2.2.8 CS_Join_Wait
+The `CS_Join_Wait` command will wait for sequences that are running to finish. This allows the user to run multiple sequence files in `SEQ_NO_BLOCK` mode then wait for them to finish before allowing more sequence run requests.
 
 #### 3.2.3 Port Handlers
 
@@ -275,7 +281,7 @@ __Absolute Command:__
 
 where:
 
-`R` - Relative time descriptor
+`A` - Absolute time descriptor
 
 `YYYY` - Year
 

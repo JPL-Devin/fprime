@@ -35,9 +35,11 @@ The `Svc::TlmChan` component uses the following port types:
 Port Data Type | Name | Direction | Kind | Usage
 -------------- | ---- | --------- | ---- | -----
 [`Svc::Sched`](../../Sched/docs/sdd.md) | Run | Input | Asynchronous | Execute a cycle to write changed telemetry channels
-[`Fw::Tlm`](../../../Fw/Tlm/docs/sdd.md) | TlmRecv | Input | Synchronous Input | Update a telemetry channel
-[`Fw::Tlm`](../../../Fw/Tlm/docs/sdd.md) | TlmGet | Input | Synchronous Input | Read a telemetry channel
+[`Fw::Tlm`](../../../Fw/Tlm/docs/sdd.md) | TlmRecv | Input | Guarded | Update a telemetry channel
+[`Fw::TlmGet`](../../../Fw/Tlm/docs/sdd.md) | TlmGet | Input | Guarded | Read a telemetry channel
 [`Fw::Com`](../../../Fw/Com/docs/sdd.md) | PktSend | Output | n/a | Write a set of packets with updated telemetry
+[`Svc::Ping`](../../Ping/docs/sdd.md) | pingIn | Input | Asynchronous | Ping input
+[`Svc::Ping`](../../Ping/docs/sdd.md) | pingOut | Output | n/a | Ping output
 
 #### 3.2 Functional Description
 
@@ -68,7 +70,7 @@ This diagram shows the scenario where telemetry packets are stored and retrieved
 ### 3.5 Algorithms
 
 In order to speed up lookups for storing and reading telemetry channels, a simple hash function is used to select a location in an array of hash table slots.
-A configuration value in `TlmChanImplCfg.h` defines a set of hash buckets to store the telemetry values. The number of buckets has to be at least as large as the number of telemetry values defined in the system. The number of channels in the system can be determined by invoking `make comp_report_gen` from the deployment directory. The number of has table slots `TLMCHAN_NUM_TLM_HASH_SLOTS` and the hash value `TLMCHAN_HASH_MOD_VALUE` in the configuration file can be varied to balance the amount of memory for slots versus the distribution of buckets to slots. See `TlmChanImplCfg.h` for a procedure on how to tune the algorithm.
+A configuration value in `TlmChanImplCfg.hpp` defines a set of hash buckets to store the telemetry values. The number of buckets has to be at least as large as the number of telemetry values defined in the system. The number of channels in the system can be determined by invoking `make comp_report_gen` from the deployment directory. The number of has table slots `TLMCHAN_NUM_TLM_HASH_SLOTS` and the hash value `TLMCHAN_HASH_MOD_VALUE` in the configuration file can be varied to balance the amount of memory for slots versus the distribution of buckets to slots. See `TlmChanImplCfg.hpp` for a procedure on how to tune the algorithm.
 
 ## 4. Dictionaries
 
