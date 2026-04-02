@@ -4,8 +4,8 @@ The TCP client component bridges the byte stream driver model interface to a rem
 connects and sends/receives bytes. It implements the callback formation (shown below) using a thread to receive data
 and producing the callback port call.
 
-For more information on the supporting TCP implementation see: Drv::TcpClientSocket.
-For more information on the ByteStreamModelDriver see: [`Drv::ByteStreamDriverModel`](../../ByteStreamDriverModel/docs/sdd.md).
+For more information on the supporting TCP implementation see: [Drv::TcpClientSocket](../../Ip/docs/sdd.md#drvtcpclientsocket-class).
+For more information on the ByteStreamDriverModel see: [`Drv::ByteStreamDriverModel`](../../ByteStreamDriverModel/docs/sdd.md).
 
 ## Design
 
