@@ -6,7 +6,7 @@ The `Svc::PrmDb` Component is used to store parameter values used by other compo
 
 ## 2. Requirements
 
-The requirements for `Svc::TlmChan` are as follows:
+The requirements for `Svc::PrmDb` are as follows:
 
 Requirement | Description | Verification Method
 ----------- | ----------- | -------------------
@@ -23,7 +23,7 @@ PRMDB-004 | The `Svc::PrmDb` component shall provide a command to save the curre
 
 The `Svc::PrmDb` component has the following component diagram:
 
-![Svc::PrmDb Diagram](img/PrmDbBDD.jpg "Svc::TlmChan")
+![Svc::PrmDb Diagram](img/PrmDbBDD.jpg "Svc::PrmDb")
 
 #### 3.1.2 Ports
 
@@ -31,8 +31,10 @@ The `Svc::PrmDb` component uses the following port types:
 
 Port | Name | Direction | Type | Usage
 ---- | ---- | --------- | ---- | -----
-[`Fw::PrmGet`](../../../Fw/Prm/docs/sdd.md) | getPrm | Input | Synchronous | Get a parameter
+[`Fw::PrmGet`](../../../Fw/Prm/docs/sdd.md) | getPrm | Input | Guarded | Get a parameter
 [`Fw::PrmSet`](../../../Fw/Prm/docs/sdd.md) | setPrm | Input | Asynchronous | Update a parameter
+[`Svc::Ping`](../../Ping/docs/sdd.md) | pingIn | Input | Asynchronous | Ping input
+[`Svc::Ping`](../../Ping/docs/sdd.md) | pingOut | Output | n/a | Ping output
 
 #### 3.2 Functional Description
 
@@ -100,7 +102,7 @@ To see unit test coverage run fprime-util check --coverage
 Date | Description
 ---- | -----------
 7/15/2015 | Design review edits
-10/6/2015 | Unit test review edits 
+10/6/2015 | Unit test review edits  
 
 
 
