@@ -25,7 +25,7 @@ This guide provides a mapping between common software engineering concepts and t
 
 
 > [!NOTE]
-> `Os::Task` is rarely used directly but rather is contained  within `active` components.
+> `Os::Task` is rarely used directly but rather is contained within `active` components.
 
 ## Memory Management
 

@@ -8,7 +8,7 @@ Commands are specified via the FPP modeling language and can include the followi
 - `command-kind` - Commands can be 'async', 'sync', or 'guarded'
     - `async` - Asynchronous commands are added to the message queue of the executing component and are executed in the component's thread 
     - `sync` - Synchronous commands invoked immediately in the thread of the caller
-    - `guarded` - A synchronous command that is protected by a #TBD
+    - `guarded` - A synchronous command that is protected by a mutex
 - `opcode` - A unique numeric value for the command (integer)
 - `param-list` - A list of arguments for the command
     - `identifier` - The unique name of the parameter/argument
@@ -40,9 +40,9 @@ Telemetry packets are specified via the FPP modeling language and can include th
 - `identifier` - The unique name of the telemetry packet
 - `id` - A unique numeric value for the telemetry packet (integer)
 - `group` - The group of the telemetry packet
-- `telemetry-packet-member-sequence` - Can include individual telemetry indentifiers and/or imports of other telemetry packet fpp definitions
+- `telemetry-packet-member-sequence` - Can include individual telemetry identifiers and/or imports of other telemetry packet fpp definitions
 
-## Events [FPP User Guide](https://nasa.github.io/fpp/fpp-users-guide.html#Defining-Components_Telemetry)
+## Events [FPP User Guide](https://nasa.github.io/fpp/fpp-users-guide.html#Defining-Components_Events)
 
 Events are specified via the FPP modeling language and can include the following options:
 
@@ -68,7 +68,7 @@ Parameters are specific variables stored in non-volatile memory. Parameters are 
 
 ## Data Products [FPP User Guide](https://nasa.github.io/fpp/fpp-users-guide.html#Defining-Components_Data-Products)
 
-Data products are structured file data for downlink. They defined via the FPP modeling language as containers and data product records.
+Data products are structured file data for downlink. They are defined via the FPP modeling language as containers and data product records.
 
 Containers define the existence of the data product and can include the following options:
 
