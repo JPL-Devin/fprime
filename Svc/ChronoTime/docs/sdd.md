@@ -29,7 +29,7 @@ To use Svc::ChronoTime in your project, make sure to set the time service with t
 
 **Add the instance to the instance list:**
 ```
-    instance chronoTime: Svc.PosixTime base id 0x4500
+    instance chronoTime: Svc.ChronoTime base id 0x4500
 ```
 
 **Use the instance to supply time:**
@@ -37,7 +37,7 @@ To use Svc::ChronoTime in your project, make sure to set the time service with t
     time connections instance chronoTime
 ```
 
-> Since an implementation of the time interface comes with he standard topology template, projects should replace it.
+> Since an implementation of the time interface comes with the standard topology template, projects should replace it.
 
 ## Change Log
 | Date       | Description   |

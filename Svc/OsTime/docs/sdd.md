@@ -12,7 +12,7 @@ The `Svc::OsTime` is a component that provides system time on any system that im
 | SVC-OS-TIME-002 | `Svc::OsTime` shall return ZERO_TIME as an `Fw::Time` object if the RawTime layer returns an error code            | Unit Test    |
 
 ## 3. Design
-`Svc::OsTime` has two ports, one `timeGetPort` for the F Prime Time interface and a `setEpoch` port which is described later. It has no data types, commands, events, or telemetry channels.
+`Svc::OsTime` has two user-facing ports, one `timeGetPort` for the F Prime Time interface and a `setEpoch` port which is described later. It also has a `SetCurrentTime` command and a `SetCurrentTimeError` event.
 
 `Svc::OsTime` uses an epoch time provided during initialization to calculate the absolute system time. An epoch consists of both an `Fw::Time` object and a `Os::RawTime` object that represent the same moment in time. `Svc::OsTime` calculates the time since the epoch using an `Os::RawTime` at the current time and the provided epoch time. The time since epoch is added to the `Fw::Time` timestamp to form a new `Fw::Time` object representing the current time. The TimeBase and TimeContext for the return `Fw::Time` object match the corresponding epoch `Fw::Time`.
 
@@ -30,7 +30,7 @@ The epoch timestamp pair may be changed after initial operation to update the ep
 
 | Port          | Kind       | Data Type         | Description                          |
 |---------------|------------|-------------------|--------------------------------------|
-| `timeGetPort` | sync input | `Fw.Time`         | Port returning current system design |
+| `timeGetPort` | sync input | `Fw.Time`         | Port returning current system time |
 | `setEpoch`    | sync input | `Svc.OsTimeEpoch` | Port to set an epoch timestamp pair  |
 
 ## 7. Change Log

@@ -18,12 +18,12 @@ The `Svc::PosixTime` is a component that provides system time on Posix systems. 
 
 | Port          | Kind       | Data Type | Description                          |
 |---------------|------------|-----------|--------------------------------------|
-| `timeGetPort` | sync input | `Fw.Time` | Port returning current system design |
+| `timeGetPort` | sync input | `Fw.Time` | Port returning current system time |
 
 ## 7. Change Log
 
 Date | Description
 ---- | -----------
 4/20/2017  | Initial Version
-10/12/2023 | Reworked into `Svc::PosixTime` 
+10/12/2023 | Reworked into `Svc::PosixTime`  
 
