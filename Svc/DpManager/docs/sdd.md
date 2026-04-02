@@ -108,7 +108,7 @@ It does the following:
 
 1. Initialize a local variable `B` with an invalid buffer.
 
-1. Set `status = getBuffer(portNum id, size, B)`.
+1. Set `status = getBuffer(portNum, id, size, B)`.
 
 1. Send `(id, B, status)` on port `portNum` of `productResponseOut`.
 
@@ -157,8 +157,8 @@ It does the following:
 |------|------|-------------|
 | `NumSuccessfulAllocations` | `U32` | The number of successful buffer allocations |
 | `NumFailedAllocations` | `U32` | The number of failed buffer allocations |
-| `NumDataProds` | `U32` | Number of data products handled |
-| `NumBytes` | `U32` | Number of bytes handled |
+| `NumDataProducts` | `U32` | Number of data products handled |
+| `NumBytes` | `U64` | Number of bytes handled |
 
 ### 4.3. Events
 
