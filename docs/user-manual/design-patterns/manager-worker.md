@@ -37,7 +37,7 @@ sequenceDiagram
 ```
 
 > [!IMPORTANT]
-> All interactions with the worker must be through the Manager. The worker should not have independent commands nor ports attach to components other than the manager.
+> All interactions with the worker must be through the Manager. The worker should not have independent commands nor ports attached to components other than the manager.
 
 The worker must be asynchronous in order to free up the manager's execution context.  Typically the worker is set to a lower priority in the system topology to ensure that its background work does not disrupt higher-priority work in a real-time operating system.
 
@@ -130,7 +130,7 @@ There is one critical aspect of the manager/worker pattern that is set up at the
 
 **Manager/Worker Instance Priorities**
 ```
-instance manager: Manager base id Manage 0x0000 \
+instance manager: Manager base id 0x0000 \
     queue size ... \
     stack size ... \
     priority 90 # High-priority (Linux) for the Manager
@@ -148,7 +148,7 @@ instance worker: ManagerWorker.Worker base id 0x1000 \
 
 Standard F Prime [Unit Testing](../overview/unit-testing.md) can be applied to test each component individually. However, this pattern typically requires integration testing to ensure that the manager/worker perform in-unison.
 
-** Manager Response Testing **
+**Manager Response Testing**
 ```
 def test_manager_response(fprime_test_api):
     """ Test that the manager remains responsive during work"""
