@@ -4,12 +4,12 @@ The UDP client component bridges the byte stream driver model interface to a rem
 sends/receives bytes. It implements the callback formation (shown below) using a thread to receive data and producing
 the callback port call.  Udp does not require bidirectional operation and can be used in a single direction.
 
-For more information on the supporting UDP implementation see: Drv::UdpSocket.
-For more information on the ByteStreamModelDriver see: Drv::ByteStreamDriverModel.
+For more information on the supporting UDP implementation see: [Drv::UdpSocket](../../Ip/docs/sdd.md#drvudpsocket-class).
+For more information on the ByteStreamDriverModel see: [`Drv::ByteStreamDriverModel`](../../ByteStreamDriverModel/docs/sdd.md).
 
 ## Design
 
-The TcpClient component implements the design specified by the [`Drv::ByteStreamDriverModel`](../../ByteStreamDriverModel/docs/sdd.md).
+The Udp component implements the design specified by the [`Drv::ByteStreamDriverModel`](../../ByteStreamDriverModel/docs/sdd.md).
 
 ## Usage
 
@@ -47,7 +47,7 @@ bool constructApp(bool dump, U32 port_number, char* hostname) {
     if (hostname != nullptr && port_number != 0) {
         Os::TaskString name("ReceiveTask");
         // Needed for receiving only, remove if not configuring to receive
-        comm.startSocketTask(name);
+        comm.start(name);
     }
 }
 
