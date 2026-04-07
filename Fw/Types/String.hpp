@@ -30,6 +30,11 @@ class String final : public StringBase {
 
     String(const char* src) : StringBase() { *this = src; }
 
+    String(const char* src, FwSizeType length) : StringBase() {
+        *this = "";
+        this->appendBuff(src, static_cast<SizeType>(length));
+    }
+
     ~String() {}
 
     String& operator=(const String& src) {
