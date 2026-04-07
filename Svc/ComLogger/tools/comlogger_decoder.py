@@ -12,7 +12,6 @@ Usage:
 import argparse
 import json
 import struct
-import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
