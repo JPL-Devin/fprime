@@ -96,11 +96,11 @@ void File ::remove() {
     ASSERT_EQ(0, status);
 }
 
-void File ::serializeFPrime(Fw::SerializeBufferBase& buffer) {
+void File ::serializeFPrime(Fw::SerialBufferBase& buffer) {
     ASSERT_TRUE(0) << "serializeFPrime is not implemented for " << this->name << "\n";
 }
 
-void File ::serializeAMPCS(Fw::SerializeBufferBase& buffer) {
+void File ::serializeAMPCS(Fw::SerialBufferBase& buffer) {
     ASSERT_TRUE(0) << "serializeAMPCS is not implemented for " << this->name << "\n";
 }
 

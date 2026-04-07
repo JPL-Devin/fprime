@@ -116,11 +116,11 @@ class File {
     // ----------------------------------------------------------------------
 
     //! Serialize the file in F Prime format
-    virtual void serializeFPrime(Fw::SerializeBufferBase& buffer  //!< The buffer
+    virtual void serializeFPrime(Fw::SerialBufferBase& buffer  //!< The buffer
     );
 
     //! Serialize the file in AMPCS format
-    virtual void serializeAMPCS(Fw::SerializeBufferBase& buffer  //!< The buffer
+    virtual void serializeAMPCS(Fw::SerialBufferBase& buffer  //!< The buffer
     );
 
   private:
