@@ -461,12 +461,14 @@ void CfdpSender::sendFileDataPdu() {
 
     const U32 actualDataSize = static_cast<U32>(readSize);
 
-    // Update checksum
-    this->m_checksum.update(fileData, this->m_byteOffset, actualDataSize);
+    // Update checksum using relative offset for consistency with metadata fileSize
+    const U32 relativeOffset = this->m_byteOffset - this->m_curEntry.offset;
+    this->m_checksum.update(fileData, relativeOffset, actualDataSize);
 
-    // Build File Data PDU
+    // Build File Data PDU with 0-based relative offset so partial sends
+    // look like a self-contained virtual file to the receiver
     Cfdp::FileDataPdu fileDataPdu;
-    fileDataPdu.offset = this->m_byteOffset;
+    fileDataPdu.offset = relativeOffset;
     fileDataPdu.data = fileData;
     fileDataPdu.dataSize = actualDataSize;
 

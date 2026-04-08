@@ -234,7 +234,7 @@ void CfdpReceiver::handleFileDataPdu(
 
     // Bounds check
     if (this->m_expectedFileSize > 0) {
-        if (fileData.offset + fileData.dataSize > this->m_expectedFileSize) {
+        if (fileData.offset > this->m_expectedFileSize || fileData.dataSize > this->m_expectedFileSize - fileData.offset) {
             this->log_WARNING_HI_DataOutOfBounds(
                 fileData.offset, fileData.dataSize, this->m_expectedFileSize
             );

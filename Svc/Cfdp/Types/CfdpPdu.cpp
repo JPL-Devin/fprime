@@ -311,7 +311,7 @@ U32 FinishedPdu::serialize(U8* buf, U32 bufSize) const {
     // conditionCode(4) | spare(1) | deliveryCode(1) | fileStatus(2)
     buf[0] = static_cast<U8>(
         ((static_cast<U8>(this->conditionCode) & 0x0F) << 4) |
-        ((static_cast<U8>(this->deliveryCode) & 0x01) << 1) |
+        ((static_cast<U8>(this->deliveryCode) & 0x01) << 2) |
         (static_cast<U8>(this->fileStatus) & 0x03)
     );
 
@@ -324,7 +324,7 @@ U32 FinishedPdu::deserialize(const U8* buf, U32 bufSize) {
     }
 
     this->conditionCode = static_cast<ConditionCode>((buf[0] >> 4) & 0x0F);
-    this->deliveryCode = static_cast<DeliveryCode>((buf[0] >> 1) & 0x01);
+    this->deliveryCode = static_cast<DeliveryCode>((buf[0] >> 2) & 0x01);
     this->fileStatus = static_cast<FileStatus>(buf[0] & 0x03);
 
     return 1;
