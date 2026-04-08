@@ -312,6 +312,15 @@ bool CfdpSender::startTransfer() {
         return false;
     }
 
+    // Reject files larger than U32 max (no large-file support yet)
+    if (this->m_fileSize > static_cast<FwSizeType>(std::numeric_limits<U32>::max())) {
+        this->log_WARNING_HI_FileOpenError(this->m_curEntry.srcFilename);
+        this->m_warningCount++;
+        this->tlmWrite_Warnings(this->m_warningCount);
+        this->m_file.close();
+        return false;
+    }
+
     // Set up byte range
     this->m_byteOffset = this->m_curEntry.offset;
     if (this->m_curEntry.length > 0) {

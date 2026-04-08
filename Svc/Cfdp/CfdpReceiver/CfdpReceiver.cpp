@@ -76,9 +76,18 @@ void CfdpReceiver::bufferSendIn_handler(const FwIndexType portNum, Fw::Buffer& b
     this->m_pdusReceived++;
     this->tlmWrite_PdusReceived(this->m_pdusReceived);
 
-    // Get pointer to data field (after header)
+    // Use the PDU header's dataFieldLength (per CCSDS 727.0-B-5 Section 5.1)
+    // rather than the buffer size, to avoid consuming trailing padding/CRC bytes
+    if (headerSize + header.dataFieldLength > size) {
+        // PDU is truncated — buffer doesn't contain the full data field
+        this->log_WARNING_HI_InvalidPduHeader();
+        this->m_warningCount++;
+        this->tlmWrite_Warnings(this->m_warningCount);
+        this->bufferSendOut_out(0, buffer);
+        return;
+    }
     const U8* dataField = data + headerSize;
-    const U32 dataFieldLen = size - headerSize;
+    const U32 dataFieldLen = header.dataFieldLength;
 
     // Dispatch based on PDU type
     if (header.pduType == Cfdp::PduType::FILE_DIRECTIVE) {
