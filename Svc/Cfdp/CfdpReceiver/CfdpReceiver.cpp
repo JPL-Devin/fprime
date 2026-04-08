@@ -266,7 +266,7 @@ void CfdpReceiver::handleFileDataPdu(
 
     FwSizeType writeSize = static_cast<FwSizeType>(fileData.dataSize);
     Os::File::Status writeStatus = this->m_file.write(fileData.data, writeSize);
-    if (writeStatus != Os::File::OP_OK) {
+    if (writeStatus != Os::File::OP_OK || writeSize != static_cast<FwSizeType>(fileData.dataSize)) {
         this->log_WARNING_HI_FileWriteError(this->m_destFileName);
         this->m_warningCount++;
         this->tlmWrite_Warnings(this->m_warningCount);
