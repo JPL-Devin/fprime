@@ -215,6 +215,29 @@ Status canonicalize(const char* path, char* outputPath, FwSizeType outputSize) {
     return writeResult(components, lengths, stackSize, prefixBuf, prefixLen, outputPath, outputSize);
 }
 
+//! \brief Count the number of leading ".." components in a canonical path
+//!
+//! A canonical path may begin with zero or more ".." components (only for relative paths).
+//! This function counts them. For absolute paths or "." this returns 0.
+static FwSizeType countLeadingDotDots(const char* canonPath, FwSizeType canonLen) {
+    FwSizeType count = 0;
+    FwSizeType i = 0;
+
+    while (i < canonLen) {
+        // Check if current position starts with ".."
+        if ((i + 1 < canonLen) && canonPath[i] == '.' && canonPath[i + 1] == '.') {
+            // Must be followed by '/' or end of string to be a complete component
+            if ((i + 2 == canonLen) || (i + 2 < canonLen && canonPath[i + 2] == '/')) {
+                count++;
+                i += 3;  // skip "../" (or past end if last component)
+                continue;
+            }
+        }
+        break;  // not a ".." component — stop counting
+    }
+    return count;
+}
+
 Status isWithinDirectory(const char* directory, const char* path) {
     FW_ASSERT(directory != nullptr);
     FW_ASSERT(path != nullptr);
@@ -237,6 +260,28 @@ Status isWithinDirectory(const char* directory, const char* path) {
         Fw::StringUtils::string_length(canonDir, sizeof(canonDir)));
     const FwSizeType pathLen = static_cast<FwSizeType>(
         Fw::StringUtils::string_length(canonPath, sizeof(canonPath)));
+
+    // Handle "." (current directory) as the sandbox.
+    // canonicalize(".") produces ".", but relative paths like "a/b" do not start with ".".
+    // A path is within "." if it has no leading ".." components (i.e., it doesn't escape up).
+    if (dirLen == 1 && canonDir[0] == '.') {
+        const FwSizeType pathDotDots = countLeadingDotDots(canonPath, pathLen);
+        if (pathDotDots > 0) {
+            return INVALID_PATH;
+        }
+        return OP_OK;
+    }
+
+    // For relative directories with leading ".." components, check that the path
+    // does not have more leading ".." components than the directory. More ".."
+    // components means the path escapes above the directory.
+    const FwSizeType dirDotDots = countLeadingDotDots(canonDir, dirLen);
+    if (dirDotDots > 0) {
+        const FwSizeType pathDotDots = countLeadingDotDots(canonPath, pathLen);
+        if (pathDotDots > dirDotDots) {
+            return INVALID_PATH;
+        }
+    }
 
     // Path must be at least as long as directory
     if (pathLen < dirLen) {
