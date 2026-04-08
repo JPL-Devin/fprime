@@ -248,10 +248,12 @@ Status isWithinDirectory(const char* directory, const char* path) {
         return INVALID_PATH;
     }
 
-    // If path is longer than directory, the next character must be a separator
-    // This prevents "/sandbox_evil" from matching "/sandbox"
+    // If path is longer than directory, the next character must be a separator.
+    // This prevents "/sandbox_evil" from matching "/sandbox".
+    // Root directories (e.g., "/" or "cf:/") already end with '/', so the first
+    // character of the path after the prefix is a valid component start.
     if (pathLen > dirLen) {
-        if (canonPath[dirLen] != '/') {
+        if (canonDir[dirLen - 1] != '/' && canonPath[dirLen] != '/') {
             return INVALID_PATH;
         }
     }
