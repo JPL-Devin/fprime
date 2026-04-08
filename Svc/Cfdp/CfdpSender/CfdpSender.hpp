@@ -130,8 +130,8 @@ class CfdpSender final : public CfdpSenderComponentBase {
     // Private helper methods
     // ----------------------------------------------------------------------
 
-    //! Start a new file transfer
-    void startTransfer();
+    //! Start a new file transfer. Returns true on success, false on failure.
+    bool startTransfer();
 
     //! Build and transmit a Metadata PDU
     void sendMetadataPdu();

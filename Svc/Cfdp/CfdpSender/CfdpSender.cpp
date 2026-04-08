@@ -122,10 +122,9 @@ Svc::SendFileResponse CfdpSender::SendFile_handler(
     this->m_curEntry.cmdSeq = 0;
     this->m_curEntry.context = this->m_cntxId++;
 
-    this->startTransfer();
+    const bool started = this->startTransfer();
 
-    if (this->m_mode == Mode::IDLE) {
-        // startTransfer failed
+    if (!started) {
         return SendFileResponse(SendFileStatus::STATUS_ERROR, std::numeric_limits<U32>::max());
     }
 
@@ -195,9 +194,9 @@ void CfdpSender::SendFile_cmdHandler(
     this->m_curEntry.cmdSeq = cmdSeq;
     this->m_curEntry.context = std::numeric_limits<U32>::max();
 
-    this->startTransfer();
+    const bool started = this->startTransfer();
 
-    if (this->m_mode == Mode::IDLE) {
+    if (!started) {
         this->cmdResponse_out(opCode, cmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
     }
 }
@@ -250,9 +249,9 @@ void CfdpSender::SendPartial_cmdHandler(
     this->m_curEntry.cmdSeq = cmdSeq;
     this->m_curEntry.context = std::numeric_limits<U32>::max();
 
-    this->startTransfer();
+    const bool started = this->startTransfer();
 
-    if (this->m_mode == Mode::IDLE) {
+    if (!started) {
         this->cmdResponse_out(opCode, cmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
     }
 }
@@ -261,7 +260,7 @@ void CfdpSender::SendPartial_cmdHandler(
 // Private helper methods
 // ----------------------------------------------------------------------
 
-void CfdpSender::startTransfer() {
+bool CfdpSender::startTransfer() {
     FW_ASSERT(this->m_configured);
 
     // Open the file
@@ -274,7 +273,7 @@ void CfdpSender::startTransfer() {
         this->log_WARNING_HI_FileOpenError(this->m_curEntry.srcFilename);
         this->m_warningCount++;
         this->tlmWrite_Warnings(this->m_warningCount);
-        return;
+        return false;
     }
 
     // Get file size
@@ -288,7 +287,7 @@ void CfdpSender::startTransfer() {
         this->m_warningCount++;
         this->tlmWrite_Warnings(this->m_warningCount);
         this->m_file.close();
-        return;
+        return false;
     }
     this->m_fileSize = fileSizeOut;
 
@@ -298,7 +297,7 @@ void CfdpSender::startTransfer() {
         this->m_warningCount++;
         this->tlmWrite_Warnings(this->m_warningCount);
         this->m_file.close();
-        return;
+        return false;
     }
 
     if (static_cast<FwSizeType>(this->m_curEntry.offset) >= this->m_fileSize) {
@@ -310,7 +309,7 @@ void CfdpSender::startTransfer() {
         this->m_warningCount++;
         this->tlmWrite_Warnings(this->m_warningCount);
         this->m_file.close();
-        return;
+        return false;
     }
 
     // Set up byte range
@@ -343,6 +342,8 @@ void CfdpSender::startTransfer() {
         this->m_curEntry.destFilename,
         this->m_transactionSeqNum
     );
+
+    return true;
 }
 
 void CfdpSender::fillPduHeader(
@@ -468,9 +469,8 @@ void CfdpSender::sendFileDataPdu() {
 
     const U32 actualDataSize = static_cast<U32>(readSize);
 
-    // Update checksum using relative offset for consistency with metadata fileSize
+    // Compute relative offset for consistency with metadata fileSize
     const U32 relativeOffset = this->m_byteOffset - this->m_curEntry.offset;
-    this->m_checksum.update(fileData, relativeOffset, actualDataSize);
 
     // Build File Data PDU with 0-based relative offset so partial sends
     // look like a self-contained virtual file to the receiver
@@ -493,8 +493,10 @@ void CfdpSender::sendFileDataPdu() {
 
     const bool sent = this->transmitPdu(this->m_serializeBuffer, totalLen);
 
-    // Only advance offset if data was actually sent
+    // Only advance offset and update checksum if data was actually sent;
+    // updating checksum before transmit would double-count on retry
     if (sent) {
+        this->m_checksum.update(fileData, relativeOffset, actualDataSize);
         this->m_byteOffset += actualDataSize;
         this->m_totalBytesSent += actualDataSize;
         this->tlmWrite_TotalBytesSent(this->m_totalBytesSent);
