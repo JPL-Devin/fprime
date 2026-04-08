@@ -123,9 +123,11 @@ register_fprime_module(
       "${CMAKE_CURRENT_LIST_DIR}/ValidatedFile.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/IntervalTimer.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Os.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/FileUtilities.cpp"
     HEADERS
       "${CMAKE_CURRENT_LIST_DIR}/ValidatedFile.hpp"
       "${CMAKE_CURRENT_LIST_DIR}/Os.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/FileUtilities.hpp"
     DEPENDS
       Fw_Time
       Fw_Types
