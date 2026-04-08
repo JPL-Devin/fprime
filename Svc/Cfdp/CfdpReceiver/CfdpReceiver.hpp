@@ -24,6 +24,8 @@
 namespace Svc {
 
 class CfdpReceiver final : public CfdpReceiverComponentBase {
+    friend class CfdpReceiverTester;
+
   public:
     // ----------------------------------------------------------------------
     // Construction, initialization, and destruction

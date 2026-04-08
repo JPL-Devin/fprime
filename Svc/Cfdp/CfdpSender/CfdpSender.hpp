@@ -26,6 +26,8 @@
 namespace Svc {
 
 class CfdpSender final : public CfdpSenderComponentBase {
+    friend class CfdpSenderTester;
+
   public:
     // ----------------------------------------------------------------------
     // Construction, initialization, and destruction
