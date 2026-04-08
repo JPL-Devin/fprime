@@ -108,5 +108,7 @@ void teardownTopology(const TopologyState& state) {
     // Resource deallocation
     cmdSeq.deallocateBuffer(mallocator);
     tearDownComponents(state);
+    // Autocoded deinitialization. Function provided by autocoder.
+    deinitComponents(state);
 }
 }  // namespace Ref
