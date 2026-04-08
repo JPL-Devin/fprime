@@ -182,10 +182,11 @@ void CfdpReceiver::handleMetadataPdu(
     this->m_sourceFileName = metadata.sourceFileName;
     this->m_destFileName = metadata.destFileName;
 
-    // Open the destination file for writing
+    // Open the destination file for writing (allow overwrite for re-receives)
     Os::File::Status fileStatus = this->m_file.open(
         metadata.destFileName,
-        Os::File::Mode::OPEN_CREATE
+        Os::File::Mode::OPEN_CREATE,
+        Os::File::OverwriteType::OVERWRITE
     );
 
     if (fileStatus != Os::File::OP_OK) {

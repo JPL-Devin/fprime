@@ -42,6 +42,9 @@ void CfdpSender::configure(
     U64 remoteEntityId,
     U32 pduBufferSize
 ) {
+    // Current implementation uses 2-byte entity IDs on the wire
+    FW_ASSERT(localEntityId <= 0xFFFF, static_cast<FwAssertArgType>(localEntityId));
+    FW_ASSERT(remoteEntityId <= 0xFFFF, static_cast<FwAssertArgType>(remoteEntityId));
     this->m_localEntityId = localEntityId;
     this->m_remoteEntityId = remoteEntityId;
     this->m_pduBufferSize = pduBufferSize;
@@ -325,8 +328,8 @@ void CfdpSender::startTransfer() {
     // Reset checksum
     this->m_checksum = CFDP::Checksum();
 
-    // Increment transaction sequence number
-    this->m_transactionSeqNum++;
+    // Increment transaction sequence number (wrap at 0xFFFF to match 2-byte wire format)
+    this->m_transactionSeqNum = (this->m_transactionSeqNum + 1) & 0xFFFF;
     this->tlmWrite_TransactionSeqNum(this->m_transactionSeqNum);
 
     // Enter METADATA mode - the Run handler will send it
