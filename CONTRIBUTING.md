@@ -205,7 +205,7 @@ Then, `fprime-util generate` needs to be run using `-DFPRIME_SKIP_TOOLS_VERSION_
 For example, to generate and build F´:
 ```bash
 # Go into the fprime directory
-cp MY_FPRIME_DIRECTORY
+cd MY_FPRIME_DIRECTORY
 # Generate the build files without checking the FPP version
 fprime-util generate -DFPRIME_SKIP_TOOLS_VERSION_CHECK=1
 # Build the project
