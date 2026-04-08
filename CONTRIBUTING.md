@@ -16,7 +16,7 @@ Specific Ways to Contribute:
 - [Ask a Question or Suggest Improvements](https://github.com/nasa/fprime/discussions/new)
 - [Report a Bug or Mistake](https://github.com/nasa/fprime/issues/new/choose)
 - [Review Contributions](https://github.com/nasa/fprime/pulls)
-- Submit a Pull Request see: [Code Contribution Process](#cod-ontribution-process)
+- Submit a Pull Request see: [Code Contribution Process](#code-contribution-process)
 - Contribute to Ongoing Discussions and Reviews
 
 Feel free to contribute any way that suits your skills and enjoy.
