@@ -314,7 +314,8 @@ void CfdpSender::startTransfer() {
     this->m_byteOffset = this->m_curEntry.offset;
     if (this->m_curEntry.length > 0) {
         this->m_endOffset = this->m_curEntry.offset + this->m_curEntry.length;
-        if (this->m_endOffset > static_cast<U32>(this->m_fileSize)) {
+        // Guard against U32 overflow: if sum wrapped or exceeds file size, clamp
+        if (this->m_endOffset < this->m_curEntry.offset || this->m_endOffset > static_cast<U32>(this->m_fileSize)) {
             this->m_endOffset = static_cast<U32>(this->m_fileSize);
         }
     } else {
@@ -401,12 +402,15 @@ void CfdpSender::sendMetadataPdu() {
     );
     FW_ASSERT(totalLen > 0);
 
-    this->transmitPdu(this->m_serializeBuffer, totalLen);
+    const bool sent = this->transmitPdu(this->m_serializeBuffer, totalLen);
 
-    // Transition to DATA mode
-    this->m_modeMutex.lock();
-    this->m_mode = Mode::DATA;
-    this->m_modeMutex.unLock();
+    // Only transition to DATA mode if metadata was actually sent
+    if (sent) {
+        this->m_modeMutex.lock();
+        this->m_mode = Mode::DATA;
+        this->m_modeMutex.unLock();
+    }
+    // On failure, stay in METADATA mode so the next Run cycle retries
 }
 
 void CfdpSender::sendFileDataPdu() {
@@ -484,18 +488,22 @@ void CfdpSender::sendFileDataPdu() {
     );
     FW_ASSERT(totalLen > 0);
 
-    this->transmitPdu(this->m_serializeBuffer, totalLen);
+    const bool sent = this->transmitPdu(this->m_serializeBuffer, totalLen);
 
-    this->m_byteOffset += actualDataSize;
-    this->m_totalBytesSent += actualDataSize;
-    this->tlmWrite_TotalBytesSent(this->m_totalBytesSent);
+    // Only advance offset if data was actually sent
+    if (sent) {
+        this->m_byteOffset += actualDataSize;
+        this->m_totalBytesSent += actualDataSize;
+        this->tlmWrite_TotalBytesSent(this->m_totalBytesSent);
 
-    // If all data sent, transition to EOF
-    if (this->m_byteOffset >= this->m_endOffset) {
-        this->m_modeMutex.lock();
-        this->m_mode = Mode::EOF_PDU;
-        this->m_modeMutex.unLock();
+        // If all data sent, transition to EOF
+        if (this->m_byteOffset >= this->m_endOffset) {
+            this->m_modeMutex.lock();
+            this->m_mode = Mode::EOF_PDU;
+            this->m_modeMutex.unLock();
+        }
     }
+    // On failure, stay in DATA mode so the next Run cycle retries this chunk
 }
 
 void CfdpSender::sendEofPdu() {
@@ -521,12 +529,16 @@ void CfdpSender::sendEofPdu() {
     );
     FW_ASSERT(totalLen > 0);
 
-    this->transmitPdu(this->m_serializeBuffer, totalLen);
+    const bool sent = this->transmitPdu(this->m_serializeBuffer, totalLen);
 
-    this->log_ACTIVITY_LO_EofSent(this->m_transactionSeqNum, this->m_checksum.getValue());
+    // Only finish transfer if EOF was actually sent
+    if (sent) {
+        this->log_ACTIVITY_LO_EofSent(this->m_transactionSeqNum, this->m_checksum.getValue());
 
-    // Per 4.6.3.2.1: Transmission of EOF (No error) causes Notice of Completion
-    this->finishTransfer(false);
+        // Per 4.6.3.2.1: Transmission of EOF (No error) causes Notice of Completion
+        this->finishTransfer(false);
+    }
+    // On failure, stay in EOF_PDU mode so the next Run cycle retries
 }
 
 void CfdpSender::sendCancelEofPdu() {
@@ -552,11 +564,13 @@ void CfdpSender::sendCancelEofPdu() {
     );
     FW_ASSERT(totalLen > 0);
 
-    this->transmitPdu(this->m_serializeBuffer, totalLen);
+    const bool sent = this->transmitPdu(this->m_serializeBuffer, totalLen);
 
-    this->log_ACTIVITY_HI_SendCanceled(this->m_curEntry.srcFilename, this->m_curEntry.destFilename);
-
-    this->finishTransfer(true);
+    if (sent) {
+        this->log_ACTIVITY_HI_SendCanceled(this->m_curEntry.srcFilename, this->m_curEntry.destFilename);
+        this->finishTransfer(true);
+    }
+    // On failure, stay in CANCEL mode so the next Run cycle retries
 }
 
 void CfdpSender::finishTransfer(bool canceled) {
@@ -605,14 +619,18 @@ void CfdpSender::sendResponse(SendFileStatus status) {
     }
 }
 
-void CfdpSender::transmitPdu(const U8* data, U32 size) {
+bool CfdpSender::transmitPdu(const U8* data, U32 size) {
     // Allocate a buffer via the buffer get port
     Fw::Buffer sendBuffer = this->bufferGetOut_out(0, size);
     if (sendBuffer.getData() == nullptr || sendBuffer.getSize() < size) {
         // Cannot get buffer, increment warning
         this->m_warningCount++;
         this->tlmWrite_Warnings(this->m_warningCount);
-        return;
+        // Return the buffer if it was allocated but undersized
+        if (sendBuffer.getData() != nullptr) {
+            this->bufferSendOut_out(0, sendBuffer);
+        }
+        return false;
     }
 
     (void)std::memcpy(sendBuffer.getData(), data, size);
@@ -622,6 +640,7 @@ void CfdpSender::transmitPdu(const U8* data, U32 size) {
 
     this->m_pdusSent++;
     this->tlmWrite_PdusSent(this->m_pdusSent);
+    return true;
 }
 
 }  // namespace Svc

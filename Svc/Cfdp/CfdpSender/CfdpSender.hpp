@@ -152,8 +152,8 @@ class CfdpSender final : public CfdpSenderComponentBase {
     //! Fill in a CFDP PDU header with common fields
     void fillPduHeader(Cfdp::PduHeader& header, Cfdp::PduType pduType, U16 dataFieldLength) const;
 
-    //! Transmit a serialized PDU buffer
-    void transmitPdu(const U8* data, U32 size);
+    //! Transmit a serialized PDU buffer. Returns true on success.
+    bool transmitPdu(const U8* data, U32 size);
 
     // ----------------------------------------------------------------------
     // Member variables
