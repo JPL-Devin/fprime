@@ -53,7 +53,7 @@ void BufferAccumulator ::allocateQueue(FwEnumStoreType identifier,
     FwSizeType memSize = static_cast<FwSizeType>(sizeof(Fw::Buffer) * maxNumBuffers);
     bool recoverable = false;
     this->m_bufferMemory = static_cast<Fw::Buffer*>(allocator.allocate(identifier, memSize, recoverable));
-    // TODO: Fail gracefully here
+    FW_ASSERT(this->m_bufferMemory != nullptr);
     m_bufferQueue.init(this->m_bufferMemory, maxNumBuffers);
 }
 
