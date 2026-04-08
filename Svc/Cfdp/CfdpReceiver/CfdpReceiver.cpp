@@ -220,8 +220,6 @@ void CfdpReceiver::handleFileDataPdu(
     const U8* dataField,
     U32 dataFieldLen
 ) {
-    (void)header;
-
     if (this->m_receiveMode != ReceiveMode::ACTIVE) {
         this->log_WARNING_HI_InvalidReceiveMode(
             static_cast<U8>(Cfdp::PduType::FILE_DATA),
@@ -234,7 +232,7 @@ void CfdpReceiver::handleFileDataPdu(
 
     // Parse file data PDU (offset + data)
     Cfdp::FileDataPdu fileData;
-    const U32 consumed = fileData.deserialize(dataField, dataFieldLen, false);
+    const U32 consumed = fileData.deserialize(dataField, dataFieldLen, header.largeFileFlag);
     if (consumed == 0) {
         this->log_WARNING_HI_InvalidPduHeader();
         this->m_warningCount++;
@@ -293,8 +291,6 @@ void CfdpReceiver::handleEofPdu(
     const U8* params,
     U32 paramsLen
 ) {
-    (void)header;
-
     if (this->m_receiveMode != ReceiveMode::ACTIVE) {
         this->log_WARNING_HI_InvalidReceiveMode(
             static_cast<U8>(Cfdp::DirectiveCode::EOF_PDU),
@@ -306,7 +302,7 @@ void CfdpReceiver::handleEofPdu(
     }
 
     Cfdp::EofPdu eofPdu;
-    const U32 consumed = eofPdu.deserialize(params, paramsLen, false);
+    const U32 consumed = eofPdu.deserialize(params, paramsLen, header.largeFileFlag);
     if (consumed == 0) {
         this->log_WARNING_HI_InvalidPduHeader();
         this->m_warningCount++;
