@@ -183,7 +183,7 @@ def deserialize_value(
             for member_name, member_desc in sorted_members:
                 member_type = member_desc["type"]
                 member_size = member_desc.get("size")
-                if member_size is not None and member_size > 1:
+                if member_size is not None:
                     # Array member: deserialize 'size' values into a list
                     arr = []
                     for _ in range(member_size):

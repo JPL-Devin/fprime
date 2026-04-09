@@ -453,6 +453,34 @@ class TestDeserializeValue(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    def test_struct_type_with_size_one_member(self):
+        """Test struct member with size=1 produces a single-element array per FPP spec."""
+        type_defs = [
+            {
+                "qualifiedName": "TestModule.Single",
+                "kind": "struct",
+                "members": {
+                    "a": {"type": {"kind": "integer", "size": 32, "signed": False}, "index": 0, "size": 1},
+                    "b": {"type": {"kind": "integer", "size": 32, "signed": False}, "index": 1},
+                },
+            }
+        ]
+        dict_data = make_minimal_dictionary(type_definitions=type_defs)
+        path = write_temp_dict(dict_data)
+        try:
+            d = Dictionary(path)
+            data = struct.pack(">II", 42, 99)
+            val, off = deserialize_value(
+                data, 0, {"kind": "qualifiedIdentifier", "name": "TestModule.Single"}, d
+            )
+            # size=1 should produce a single-element list, not a scalar
+            self.assertEqual(val["a"], [42])
+            # no size field => scalar
+            self.assertEqual(val["b"], 99)
+            self.assertEqual(off, 8)
+        finally:
+            os.unlink(path)
+
     def test_struct_type_index_ordering(self):
         """Test that struct members are deserialized in index order, not dict key order."""
         type_defs = [
