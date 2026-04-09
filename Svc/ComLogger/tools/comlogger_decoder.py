@@ -315,7 +315,10 @@ def decode_packetized_tlm_packet(payload: bytes, dictionary: Dictionary) -> dict
     # Packetized telemetry requires the telemetryPacketSets from the dictionary
     # to know which channels are in which packet and their order/sizes.
     raw_dict = dictionary.raw
+    matched = False
     for pkt_set in raw_dict.get("telemetryPacketSets", []):
+        if matched:
+            break
         for member in pkt_set.get("members", []):
             if member.get("id") == pkt_id:
                 result["packetName"] = member.get("name", "UNKNOWN")
@@ -346,6 +349,7 @@ def decode_packetized_tlm_packet(payload: bytes, dictionary: Dictionary) -> dict
                         )
                         break
                 result["channels"] = channels
+                matched = True
                 break
 
     return result
