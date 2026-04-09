@@ -173,13 +173,30 @@ def deserialize_value(
 
         elif resolved_kind == "struct":
             result = {}
-            for member in resolved.get("members", []):
-                member_name = member["name"]
-                member_type = member["type"]
-                member_val, offset = deserialize_value(
-                    data, offset, member_type, dictionary
-                )
-                result[member_name] = member_val
+            members = resolved.get("members", {})
+            # Members is a dict keyed by name; sort by index for correct
+            # deserialization order per the FPP JSON dict spec.
+            sorted_members = sorted(
+                members.items(),
+                key=lambda item: item[1].get("index", 0),
+            )
+            for member_name, member_desc in sorted_members:
+                member_type = member_desc["type"]
+                member_size = member_desc.get("size")
+                if member_size is not None and member_size > 1:
+                    # Array member: deserialize 'size' values into a list
+                    arr = []
+                    for _ in range(member_size):
+                        elem_val, offset = deserialize_value(
+                            data, offset, member_type, dictionary
+                        )
+                        arr.append(elem_val)
+                    result[member_name] = arr
+                else:
+                    member_val, offset = deserialize_value(
+                        data, offset, member_type, dictionary
+                    )
+                    result[member_name] = member_val
             return result, offset
 
         elif resolved_kind == "array":

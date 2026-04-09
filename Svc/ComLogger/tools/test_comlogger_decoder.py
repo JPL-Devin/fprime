@@ -404,10 +404,10 @@ class TestDeserializeValue(unittest.TestCase):
             {
                 "qualifiedName": "TestModule.Point",
                 "kind": "struct",
-                "members": [
-                    {"name": "x", "type": {"kind": "float", "size": 32}},
-                    {"name": "y", "type": {"kind": "float", "size": 32}},
-                ],
+                "members": {
+                    "x": {"type": {"kind": "float", "size": 32}, "index": 0},
+                    "y": {"type": {"kind": "float", "size": 32}, "index": 1},
+                },
             }
         ]
         dict_data = make_minimal_dictionary(type_definitions=type_defs)
@@ -421,6 +421,62 @@ class TestDeserializeValue(unittest.TestCase):
             self.assertAlmostEqual(val["x"], 1.5)
             self.assertAlmostEqual(val["y"], 2.5)
             self.assertEqual(off, 8)
+        finally:
+            os.unlink(path)
+
+    def test_struct_type_with_array_member(self):
+        """Test struct with a member that has size > 1 (array member per FPP spec)."""
+        type_defs = [
+            {
+                "qualifiedName": "M1.S",
+                "kind": "struct",
+                "members": {
+                    "w": {"type": {"kind": "integer", "size": 32, "signed": False}, "index": 0, "size": 3},
+                    "x": {"type": {"kind": "integer", "size": 32, "signed": False}, "index": 1},
+                    "y": {"type": {"kind": "float", "size": 32}, "index": 2},
+                },
+            }
+        ]
+        dict_data = make_minimal_dictionary(type_definitions=type_defs)
+        path = write_temp_dict(dict_data)
+        try:
+            d = Dictionary(path)
+            # w=[10,20,30], x=42, y=3.14
+            data = struct.pack(">IIIIf", 10, 20, 30, 42, 3.14)
+            val, off = deserialize_value(
+                data, 0, {"kind": "qualifiedIdentifier", "name": "M1.S"}, d
+            )
+            self.assertEqual(val["w"], [10, 20, 30])
+            self.assertEqual(val["x"], 42)
+            self.assertAlmostEqual(val["y"], 3.14, places=5)
+            self.assertEqual(off, 20)  # 3*4 + 4 + 4
+        finally:
+            os.unlink(path)
+
+    def test_struct_type_index_ordering(self):
+        """Test that struct members are deserialized in index order, not dict key order."""
+        type_defs = [
+            {
+                "qualifiedName": "TestModule.Ordered",
+                "kind": "struct",
+                "members": {
+                    "b": {"type": {"kind": "integer", "size": 16, "signed": False}, "index": 1},
+                    "a": {"type": {"kind": "integer", "size": 16, "signed": False}, "index": 0},
+                },
+            }
+        ]
+        dict_data = make_minimal_dictionary(type_definitions=type_defs)
+        path = write_temp_dict(dict_data)
+        try:
+            d = Dictionary(path)
+            # Binary order: a first (index 0), then b (index 1)
+            data = struct.pack(">HH", 111, 222)
+            val, off = deserialize_value(
+                data, 0, {"kind": "qualifiedIdentifier", "name": "TestModule.Ordered"}, d
+            )
+            self.assertEqual(val["a"], 111)
+            self.assertEqual(val["b"], 222)
+            self.assertEqual(off, 4)
         finally:
             os.unlink(path)
 
@@ -1233,12 +1289,12 @@ class TestEndToEnd(unittest.TestCase):
             {
                 "qualifiedName": "Nav.Quaternion",
                 "kind": "struct",
-                "members": [
-                    {"name": "w", "type": {"kind": "float", "size": 64}},
-                    {"name": "x", "type": {"kind": "float", "size": 64}},
-                    {"name": "y", "type": {"kind": "float", "size": 64}},
-                    {"name": "z", "type": {"kind": "float", "size": 64}},
-                ],
+                "members": {
+                    "w": {"type": {"kind": "float", "size": 64}, "index": 0},
+                    "x": {"type": {"kind": "float", "size": 64}, "index": 1},
+                    "y": {"type": {"kind": "float", "size": 64}, "index": 2},
+                    "z": {"type": {"kind": "float", "size": 64}, "index": 3},
+                },
             }
         ]
         channels = [
