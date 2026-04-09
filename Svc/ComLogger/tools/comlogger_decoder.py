@@ -136,6 +136,10 @@ def deserialize_value(
         elif size_bits == 64:
             val = struct.unpack_from(">d", data, offset)[0]
             return val, offset + 8
+        else:
+            size_bytes = size_bits // 8
+            raw = data[offset : offset + size_bytes]
+            return raw.hex(), offset + size_bytes
 
     elif kind == "bool":
         val = struct.unpack_from(">B", data, offset)[0]
