@@ -229,7 +229,7 @@ topology. Alternate implementations can therefore easily be swapped, for example
 **Figure 13. Example of a topology.**
 
 > [!TIP]
-> **New to F'?** For a quick overview of how these constructs work together at runtime, see the [Execution Model Primer](execution-model.md). To understand which thread runs your code, consult the [Thread-Context Matrix](thread-context.md). For recommended starting points when designing your topology, see [Starter Topologies](../design-patterns/starter-topologies.md).
+> **New to F'?** For a quick overview of how these constructs work together at runtime, see the [Execution Model Primer](execution-model.md). To understand which thread runs your code, consult the [Thread-Context Matrix](thread-context.md).
 
 ## Conclusion
 
