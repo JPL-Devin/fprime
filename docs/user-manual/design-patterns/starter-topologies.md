@@ -82,13 +82,21 @@ module MyProject {
   instance comStub: Svc.ComStub base id 0x10001000
 
   # Command and Data Handling (from CdhCore subtopology or individual instances)
-  instance cmdDisp: Svc.CmdDispatcher base id 0x10002000 \
+  instance cmdDisp: Svc.CommandDispatcher base id 0x10002000 \
     queue size 10 \
     stack size 64 * 1024 \
     priority 30
 
-  instance eventLogger: Svc.EventManager base id 0x10003000
-  instance tlmSend: Svc.TlmPacketizer base id 0x10004000
+  instance eventLogger: Svc.EventManager base id 0x10003000 \
+    queue size 10 \
+    stack size 64 * 1024 \
+    priority 20
+
+  instance tlmSend: Svc.TlmPacketizer base id 0x10004000 \
+    queue size 10 \
+    stack size 64 * 1024 \
+    priority 20
+
   instance posixTime: Svc.PosixTime base id 0x10005000
   instance textLogger: Svc.PassiveConsoleTextLogger base id 0x10006000
 
@@ -223,35 +231,49 @@ module MyProject {
     stack size Default.STACK_SIZE \
     priority 20
 
-  instance cmdDisp: Svc.CmdDispatcher base id 0x10005000 \
+  instance cmdDisp: Svc.CommandDispatcher base id 0x10005000 \
     queue size Default.QUEUE_SIZE \
     stack size Default.STACK_SIZE \
     priority 30
 
-  instance health: Svc.Health base id 0x10006000 \
+  instance eventLogger: Svc.EventManager base id 0x10006000 \
     queue size Default.QUEUE_SIZE \
     stack size Default.STACK_SIZE \
-    priority 25
+    priority 20
+
+  instance tlmSend: Svc.TlmPacketizer base id 0x10007000 \
+    queue size Default.QUEUE_SIZE \
+    stack size Default.STACK_SIZE \
+    priority 20
+
+  instance prmDb: Svc.PrmDb base id 0x10008000 \
+    queue size Default.QUEUE_SIZE \
+    stack size Default.STACK_SIZE \
+    priority 20
+
+  instance fileDownlink: Svc.FileDownlink base id 0x10009000 \
+    queue size Default.QUEUE_SIZE \
+    stack size Default.STACK_SIZE \
+    priority 20
+
+  instance fileUplink: Svc.FileUplink base id 0x1000A000 \
+    queue size Default.QUEUE_SIZE \
+    stack size Default.STACK_SIZE \
+    priority 20
+
+  # --- Queued Component Instances ---
+
+  instance health: Svc.Health base id 0x10010000 \
+    queue size Default.QUEUE_SIZE
 
   # --- Passive Component Instances ---
 
-  instance rateGroupDriverComp: Svc.RateGroupDriver base id 0x10010000
-  instance posixTime: Svc.PosixTime base id 0x10011000
-  instance linuxTimer: Svc.LinuxTimer base id 0x10012000
-  instance comDriver: Drv.TcpClient base id 0x10013000
-  instance eventLogger: Svc.EventManager base id 0x10014000
-  instance tlmSend: Svc.TlmPacketizer base id 0x10015000
-  instance textLogger: Svc.PassiveConsoleTextLogger base id 0x10016000
-  instance prmDb: Svc.PrmDb base id 0x10017000
-  instance fileDownlink: Svc.FileDownlink base id 0x10018000 \
-    queue size Default.QUEUE_SIZE \
-    stack size Default.STACK_SIZE \
-    priority 20
-  instance fileUplink: Svc.FileUplink base id 0x10019000 \
-    queue size Default.QUEUE_SIZE \
-    stack size Default.STACK_SIZE \
-    priority 20
-  instance systemMonitor: Svc.SystemResources base id 0x1001A000
+  instance rateGroupDriverComp: Svc.RateGroupDriver base id 0x10020000
+  instance posixTime: Svc.PosixTime base id 0x10021000
+  instance linuxTimer: Svc.LinuxTimer base id 0x10022000
+  instance comDriver: Drv.TcpClient base id 0x10023000
+  instance textLogger: Svc.PassiveConsoleTextLogger base id 0x10024000
+  instance systemMonitor: Svc.SystemResources base id 0x10025000
 
   # Your components
   instance controller: MyProject.Controller base id 0x10020000 \
