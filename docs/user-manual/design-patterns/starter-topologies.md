@@ -98,7 +98,7 @@ module MyProject {
     priority 20
 
   instance posixTime: Svc.PosixTime base id 0x10005000
-  instance textLogger: Svc.PassiveConsoleTextLogger base id 0x10006000
+  instance textLogger: Svc.PassiveTextLogger base id 0x10006000
 
   # Your components
   instance myComponent: MyProject.MyComponent base id 0x10010000
@@ -272,16 +272,16 @@ module MyProject {
   instance posixTime: Svc.PosixTime base id 0x10021000
   instance linuxTimer: Svc.LinuxTimer base id 0x10022000
   instance comDriver: Drv.TcpClient base id 0x10023000
-  instance textLogger: Svc.PassiveConsoleTextLogger base id 0x10024000
+  instance textLogger: Svc.PassiveTextLogger base id 0x10024000
   instance systemMonitor: Svc.SystemResources base id 0x10025000
 
   # Your components
-  instance controller: MyProject.Controller base id 0x10020000 \
+  instance controller: MyProject.Controller base id 0x10030000 \
     queue size Default.QUEUE_SIZE \
     stack size Default.STACK_SIZE \
     priority 35
 
-  instance sensorReader: MyProject.SensorReader base id 0x10021000
+  instance sensorReader: MyProject.SensorReader base id 0x10031000
 
   # --- Topology ---
 
