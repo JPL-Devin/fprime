@@ -223,12 +223,35 @@ module MyProject {
     stack size Default.STACK_SIZE \
     priority 20
 
+  instance cmdDisp: Svc.CmdDispatcher base id 0x10005000 \
+    queue size Default.QUEUE_SIZE \
+    stack size Default.STACK_SIZE \
+    priority 30
+
+  instance health: Svc.Health base id 0x10006000 \
+    queue size Default.QUEUE_SIZE \
+    stack size Default.STACK_SIZE \
+    priority 25
+
   # --- Passive Component Instances ---
 
   instance rateGroupDriverComp: Svc.RateGroupDriver base id 0x10010000
   instance posixTime: Svc.PosixTime base id 0x10011000
   instance linuxTimer: Svc.LinuxTimer base id 0x10012000
   instance comDriver: Drv.TcpClient base id 0x10013000
+  instance eventLogger: Svc.EventManager base id 0x10014000
+  instance tlmSend: Svc.TlmPacketizer base id 0x10015000
+  instance textLogger: Svc.PassiveConsoleTextLogger base id 0x10016000
+  instance prmDb: Svc.PrmDb base id 0x10017000
+  instance fileDownlink: Svc.FileDownlink base id 0x10018000 \
+    queue size Default.QUEUE_SIZE \
+    stack size Default.STACK_SIZE \
+    priority 20
+  instance fileUplink: Svc.FileUplink base id 0x10019000 \
+    queue size Default.QUEUE_SIZE \
+    stack size Default.STACK_SIZE \
+    priority 20
+  instance systemMonitor: Svc.SystemResources base id 0x1001A000
 
   # Your components
   instance controller: MyProject.Controller base id 0x10020000 \
@@ -253,14 +276,25 @@ module MyProject {
     instance posixTime
     instance comDriver
     instance cmdSeq
+    instance cmdDisp
+    instance eventLogger
+    instance tlmSend
+    instance textLogger
+    instance health
+    instance prmDb
+    instance fileDownlink
+    instance fileUplink
+    instance systemMonitor
     instance controller
     instance sensorReader
 
-    # Pattern connections
+    # Pattern connections (auto-wire standard service ports)
     command connections instance cmdDisp
     event connections instance eventLogger
     telemetry connections instance tlmSend
+    text event connections instance textLogger
     time connections instance posixTime
+    param connections instance prmDb
     health connections instance health
 
     # Rate group connections
