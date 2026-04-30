@@ -7,9 +7,12 @@ dist/
 .pytest_cache/
 .mypy_cache/
 
-# Cargo build artifacts
-target/
+# Cargo build artifacts.  Note: we deliberately allow ``cmake/target/``
+# because that's our CMake target-glue directory, not Cargo's output.
+runtime/target/
 **/target/
+!cmake/target/
+!cmake/target/**
 Cargo.lock
 
 # Editor / OS

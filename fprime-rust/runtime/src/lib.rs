@@ -27,17 +27,17 @@ use core::ffi::c_void;
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CmdResponse {
-    /// Command succeeded.
+    /// Command successfully executed.
     Ok = 0,
-    /// Command was malformed (e.g. arguments did not deserialize).
+    /// Invalid opcode dispatched.
     InvalidOpcode = 1,
-    /// Command parameters were out of range.
+    /// Command failed validation.
     ValidationError = 2,
-    /// Command receiver was disabled or in the wrong state.
+    /// Command failed to deserialize.
     FormatError = 3,
-    /// Command runtime had an unexpected failure.
+    /// Command had execution error.
     ExecutionError = 4,
-    /// Command was rejected by upstream filtering / authorization.
+    /// Component busy.
     BusyError = 5,
 }
 

@@ -27,7 +27,12 @@ def component():
 
 def test_cpp_header_extends_base_class(component) -> None:
     header = render_header(component)
+    # Class name is ``<Comp>ComponentBase``; file name is ``<Comp>ComponentAc.hpp``.
     assert "class RustExample final : public RustExampleComponentBase" in header
+    assert '#include "RustExampleComponentAc.hpp"' in header
+    # Avoid the legacy/incorrect ``ComponentBase.hpp`` filename which does
+    # not exist in the F Prime tree.
+    assert '#include "RustExampleComponentBase.hpp"' not in header
     assert "void Reset_cmdHandler" in header
     assert "void Bump_cmdHandler" in header
     assert "void* m_rust_impl" in header
@@ -81,6 +86,8 @@ def test_cpp_source_forwards_to_rust(component) -> None:
     # Constructor allocates the Rust-side state
     assert "rust_rust_example_new()" in source
     assert "rust_rust_example_free(this->m_rust_impl)" in source
+    # Source must NOT include the nonexistent Fw/Cmd/CmdResponse.hpp header.
+    assert '#include "Fw/Cmd/CmdResponse.hpp"' not in source
 
 
 def test_rust_base_module(component) -> None:
