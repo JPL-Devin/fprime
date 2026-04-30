@@ -18,6 +18,16 @@
 include_guard()
 include(autocoder/autocoder)
 
+# Capture this file's directory at *include* time.  ``CMAKE_CURRENT_LIST_DIR``
+# inside a function body resolves to the *caller's* listfile directory, which
+# during per-module processing is the user component's source directory --
+# definitely not where the runtime crate lives.  Stash the value in a cache
+# variable so every later function reference resolves to ``fprime-rust/cmake/
+# target/`` regardless of where the function is invoked from.
+set(_FPRIME_RUST_TARGET_DIR "${CMAKE_CURRENT_LIST_DIR}"
+    CACHE INTERNAL "Directory containing fprime-rust target/fprime_rust.cmake"
+)
+
 ####
 # Function `fprime_rust_add_global_target`:
 # No-op global registration; per-module integration is done in
@@ -48,9 +58,15 @@ function(_fprime_rust_invoke_crate MODULE)
     set(USER_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
     set(RUNTIME_DIR "${FPRIME_RUST_RUNTIME_DIR}")
     if (NOT RUNTIME_DIR)
-        # Default: assume the runtime crate sits next to this CMake file.
-        set(RUNTIME_DIR "${CMAKE_CURRENT_LIST_DIR}/../../runtime")
+        # Default: resolve the runtime crate relative to *this* file's
+        # directory (captured at include time as ``_FPRIME_RUST_TARGET_DIR``).
+        # Using ``CMAKE_CURRENT_LIST_DIR`` here would point at the calling
+        # listfile -- typically the module's own source directory.
+        set(RUNTIME_DIR "${_FPRIME_RUST_TARGET_DIR}/../../runtime")
     endif()
+    # Normalise so that paths fed to ``cargo`` / Cargo.toml don't carry
+    # ``..`` segments that depend on the working directory at build time.
+    get_filename_component(RUNTIME_DIR "${RUNTIME_DIR}" REALPATH)
 
     # Generate the Cargo workspace files.
     execute_process(
