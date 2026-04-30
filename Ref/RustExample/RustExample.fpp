@@ -6,15 +6,17 @@ module Ref {
     queued component RustExample {
 
         # ----------------------------------------------------------------------
-        # General Ports
-        # ----------------------------------------------------------------------
-
-        @ Rate-group driven step.  Used to bump the counter and re-emit telemetry.
-        sync input port run: Svc.Sched
-
-        # ----------------------------------------------------------------------
         # Special ports required for commands / events / telemetry / parameters
         # ----------------------------------------------------------------------
+        #
+        # Note: this MVP component intentionally declares no general (typed)
+        # input or output ports.  The fprime-rust autocoder MVP only
+        # generates handler overrides for commands; a typed ``sync`` /
+        # ``guarded`` input port would emit a pure-virtual handler that
+        # the generated ``final`` C++ shim cannot satisfy, so the parser
+        # rejects them with a clear error.  Once the autocoder grows port
+        # support (tracked in fprime-rust/CHANGELOG.md), this comment can
+        # be removed and a real port declaration added back.
 
         @ Time get port -- enables event time stamping.
         time get port timeCaller

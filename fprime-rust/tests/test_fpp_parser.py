@@ -143,6 +143,53 @@ def test_arguments_with_continuations(tmp_path: Path) -> None:
     ]
 
 
+@pytest.mark.parametrize("kind", ["sync", "async", "guarded"])
+def test_typed_input_port_raises_clear_error(tmp_path: Path, kind: str) -> None:
+    """Typed input ports on a Rust-backed component would generate a
+    pure-virtual handler in the base class that the MVP autocoder cannot
+    override.  The parser must reject them up front with a clear message
+    rather than letting the user hit a confusing C++ error.
+    """
+    fpp = tmp_path / f"{kind}.fpp"
+    fpp.write_text(f"""
+        module M {{
+            @ fprime-rust
+            queued component Q {{
+                {kind} input port run: Svc.Sched
+                async command Reset opcode 0
+            }}
+        }}
+        """)
+    from fprime_rust.autocode.fpp_parser import UnsupportedFppFeatureError
+    with pytest.raises(UnsupportedFppFeatureError) as excinfo:
+        parse_fpp_file(fpp)
+    msg = str(excinfo.value)
+    assert "Q" in msg
+    assert "run" in msg
+    assert "MVP" in msg
+
+
+def test_typed_input_port_on_unannotated_component_is_ignored(tmp_path: Path) -> None:
+    """Components without ``@ fprime-rust`` are not our problem -- they go
+    through the regular C++ path -- so an input port there must NOT trigger
+    the MVP guard.
+    """
+    fpp = tmp_path / "plain.fpp"
+    fpp.write_text("""
+        module M {
+            passive component PlainCpp {
+                sync input port run: Svc.Sched
+            }
+            @ fprime-rust
+            queued component RustOne {
+                async command Ping opcode 0
+            }
+        }
+        """)
+    components = parse_fpp_file(fpp)
+    assert [c.name for c in components] == ["RustOne"]
+
+
 def test_format_string_with_hash_does_not_corrupt_parse(tmp_path: Path) -> None:
     """Regression: ``#`` and ``//`` inside quoted strings must not be treated
     as comment starts -- otherwise the closing quote is eaten and brace

@@ -418,6 +418,23 @@ _PARAMETER_RE = re.compile(
     r"\bparam\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*:\s*(?P<type>[A-Za-z_][\w.]*)"
 )
 
+# Typed input ports declared on a Rust-backed component generate pure-virtual
+# handlers in the FPP-autocoded ``<Comp>ComponentBase``.  The MVP autocoder
+# only synthesises overrides for command handlers, so any of these would leave
+# the generated ``final`` shim class abstract -- a compile-time error.  Detect
+# them eagerly with a clear error, rather than letting users hit a confusing
+# C++ "cannot allocate object of abstract type" later.
+_INPUT_PORT_RE = re.compile(
+    r"\b(?P<kind>sync|async|guarded)\s+input\s+port\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)"
+)
+
+
+class UnsupportedFppFeatureError(ValueError):
+    """Raised when an annotated component uses a feature the MVP doesn't yet
+    code-generate.  Failing fast here is much friendlier than letting a
+    pure-virtual leak through to the C++ compiler.
+    """
+
 
 def _component_is_rust_annotated(annotation_block: Optional[str]) -> bool:
     if not annotation_block:
@@ -448,9 +465,23 @@ def _strip_annotation_lines(body: str) -> str:
 
 def _parse_component_body(
     body: str,
+    component_name: str = "<unknown>",
 ) -> Tuple[List[FppCommand], List[FppEvent], List[FppTelemetry], List[FppParameter]]:
     """Extract commands, events, telemetry, parameters from a component body."""
     body = _strip_annotation_lines(body)
+    # Reject typed input ports up front: they would generate a pure-virtual
+    # ``<name>_handler`` on the autocoded base which the MVP shim does not
+    # override, and the resulting ``final`` class would fail to compile.
+    unsupported = [m.group("name") for m in _INPUT_PORT_RE.finditer(body)]
+    if unsupported:
+        raise UnsupportedFppFeatureError(
+            f"Component '{component_name}' declares typed input port(s) "
+            f"{unsupported!r}.  The fprime-rust MVP autocoder does not yet "
+            f"emit handler overrides for input ports, so these would leave "
+            f"the generated C++ shim class abstract.  Either remove the "
+            f"port(s) or implement the component in C++ until port support "
+            f"lands (see fprime-rust/CHANGELOG.md)."
+        )
     # Normalize FPP's ``\`` line-continuation syntax so that a declaration
     # spread across several physical lines becomes one logical line.  Each
     # continuation is replaced with a single space to keep lexical
@@ -568,7 +599,7 @@ def parse_fpp_file(path: Path) -> List[FppComponent]:
             body = slice_[header.end() : body_end]
             if not _component_is_rust_annotated(header.group("annot")):
                 continue
-            cmds, evs, tlm, prm = _parse_component_body(body)
+            cmds, evs, tlm, prm = _parse_component_body(body, header.group("name"))
             components.append(
                 FppComponent(
                     name=header.group("name"),

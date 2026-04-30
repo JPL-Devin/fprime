@@ -21,6 +21,5 @@ register_fprime_module(
         Fw_Tlm
         Fw_Log
         Fw_Prm
-        Svc_Sched
         Fw_Time
 )
