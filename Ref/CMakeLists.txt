@@ -30,6 +30,19 @@ add_compile_options(
 set(FPRIME_INCLUDE_FRAMEWORK_CODE ON)
 find_package(FPrime REQUIRED PATHS "${CMAKE_CURRENT_LIST_DIR}/..")
 
+####
+# Optional fprime-rust integration.  Disabled by default so the standard Ref
+# deployment continues to build without a Rust toolchain.  Enable at
+# generation time with ``-DFPRIME_RUST_ENABLE=ON`` to pull in the
+# ``RustExample`` reference component (see ``Ref/RustExample/`` and
+# ``fprime-rust/README.md``).
+####
+option(FPRIME_RUST_ENABLE "Enable Rust-backed components in Ref (requires cargo)" OFF)
+if (FPRIME_RUST_ENABLE AND NOT DEFINED FPRIME_SUB_BUILD_TARGETS)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../fprime-rust/cmake")
+    register_fprime_target(target/fprime_rust)
+endif()
+
 # Add subdirectories for the Ref project specific components
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/PingReceiver/")
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/RecvBuffApp/")
@@ -38,6 +51,9 @@ add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/SignalGen/")
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/TypeDemo/")
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/DpDemo/")
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/BlockDriver/")
+if (FPRIME_RUST_ENABLE)
+    add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/RustExample/")
+endif()
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/Top/")
 
 register_fprime_deployment(

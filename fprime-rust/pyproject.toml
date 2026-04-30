@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fprime-rust"
+version = "0.1.0"
+description = "F Prime to Rust autocoder: generate Rust component implementations from FPP models."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+keywords = ["fprime", "embedded", "nasa", "flight", "software", "rust"]
+authors = [
+  {name = "Devin (Cognition AI) for JPL-Devin", email = "devin@cognition.ai"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: Unix",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+]
+dependencies = []
+
+[project.scripts]
+fprime-rust-ac = "fprime_rust.autocode.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

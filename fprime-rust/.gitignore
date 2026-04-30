@@ -1,0 +1,18 @@
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+
+# Cargo build artifacts
+target/
+**/target/
+Cargo.lock
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
