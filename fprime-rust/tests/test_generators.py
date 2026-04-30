@@ -42,6 +42,30 @@ def test_cpp_header_extends_base_class(component) -> None:
     assert "}  // namespace Ref" in header
 
 
+@pytest.mark.parametrize("kind", ["passive", "queued", "active"])
+def test_cpp_does_not_override_init(tmp_path: Path, kind: str) -> None:
+    """The shim must NOT redeclare ``init``: the FPP base class's signature
+    differs between ``passive`` (one arg) and ``queued``/``active`` (two
+    args), so a hard-coded override would break one of the kinds.
+    """
+    fpp = tmp_path / f"{kind}.fpp"
+    fpp.write_text(f"""
+        module M {{
+            @ fprime-rust
+            {kind} component K {{
+                {"async" if kind != "passive" else "sync"} command Ping
+            }}
+        }}
+        """)
+    component_local = parse_fpp_file(fpp)[0]
+    header = render_header(component_local)
+    source = render_source(component_local)
+    # No ``void init(`` declaration nor definition; it is inherited.
+    assert "void init(" not in header
+    assert "void K::init(" not in source
+    assert "::init(queueDepth" not in source
+
+
 def test_cpp_source_uses_event_severity(tmp_path: Path) -> None:
     """The C++ shim must select the severity-specific log_*_<Name> method
     so events with severities other than ``activity low`` compile.

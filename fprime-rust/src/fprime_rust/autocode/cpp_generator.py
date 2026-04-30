@@ -97,9 +97,15 @@ class {name} final : public {base_class} {{
     {name}& operator=(const {name}&) = delete;
     ~{name}() override;
 
-    //! Standard F Prime init wrapper.  Forwards through to the FPP-generated
-    //! base class after the Rust state has been allocated by the constructor.
-    void init(NATIVE_INT_TYPE queueDepth, NATIVE_INT_TYPE instance);
+    // Note: ``init`` is intentionally *not* overridden here.  The
+    // FPP-autocoded ``{base_class}`` already declares the correct
+    // ``init`` signature for the component kind (passive components take
+    // ``init(FwEnumStoreType instance)``; queued/active components take
+    // ``init(FwEnumStoreType queueDepth, FwEnumStoreType instance)``).
+    // Users should call ``component.init(...)`` and have the inherited
+    // base-class ``init`` run.  The Rust-side state is allocated/freed
+    // in this class's constructor/destructor instead, so init does not
+    // need to be customised.
 
     //! Opaque handle to the Rust ``Box<dyn Impl>`` for this component.  Marked
     //! ``public`` so the auto-coded sink functions in this translation unit
@@ -247,9 +253,6 @@ struct RustImplHandle {{
 {INDENT}}}
 }}
 
-void {name}::init(NATIVE_INT_TYPE queueDepth, NATIVE_INT_TYPE instance) {{
-{INDENT}{name}ComponentBase::init(queueDepth, instance);
-}}
 
 {chr(10).join(cmd_impls)}
 
