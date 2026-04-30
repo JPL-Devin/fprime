@@ -167,19 +167,55 @@ def _camel_to_snake(name: str) -> str:
 # Tokenization helpers
 # ----------------------------------------------------------------------
 
-# Match either a // line comment or a # line comment (FPP supports both styles
-# in practice; the spec uses # for single-line and \"\"\" for doc strings).
-_COMMENT_RE = re.compile(r"(?m)#.*$|//.*$")
+# Match a quoted string literal, a /* ... */ block comment, or a #/// line
+# comment.  We rely on alternation order (string first) so that ``#`` and
+# ``//`` *inside* a quoted string are preserved -- e.g. ``format "Error #42"``
+# or ``format "see https://..."`` would otherwise have their closing ``"``
+# eaten by a naive line-comment regex, leaving an unbalanced quote that
+# downstream brace-matching would skip past.
+_STRING_OR_COMMENT_RE = re.compile(
+    r"""
+    "(?:\\.|[^"\\])*"           # double-quoted string (with escapes)
+    | '(?:\\.|[^'\\])*'         # single-quoted string (with escapes)
+    | (?s:/\*.*?\*/)            # /* ... */ block comment (DOTALL-scoped)
+    | \#[^\n]*                  # # line comment (stops at newline)
+    | //[^\n]*                  # // line comment (stops at newline)
+    """,
+    re.VERBOSE,
+)
+
+
+def _strip_comments_and_block_comments(text: str) -> str:
+    """Strip ``//`` / ``#`` line comments and ``/* */`` block comments.
+
+    String literals are *preserved* verbatim so that ``#`` or ``//`` inside a
+    quoted FPP value (most commonly an event/format string) are not mistaken
+    for the start of a comment.  Annotation lines starting with ``@`` are not
+    matched by this regex and therefore pass through unchanged.
+    """
+
+    def _sub(m: "re.Match[str]") -> str:
+        text_match = m.group(0)
+        if text_match.startswith(('"', "'")):
+            return text_match  # keep string literals intact
+        return ""  # drop the comment
+
+    return _STRING_OR_COMMENT_RE.sub(_sub, text)
 
 
 def _strip_comments(text: str) -> str:
-    """Remove comments while preserving FPP annotations (lines starting with @)."""
-    return _COMMENT_RE.sub("", text)
+    """Remove ``//`` and ``#`` line comments while preserving string literals."""
+    return _strip_comments_and_block_comments(text)
 
 
 def _strip_block_comments(text: str) -> str:
-    """Remove /* ... */ block comments while preserving structure."""
-    return re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+    """Remove ``/* ... */`` block comments while preserving string literals.
+
+    Retained as a separately-named entry point for readability at call sites;
+    the underlying scanner already covers both line and block comments in one
+    pass, so calling :func:`_strip_comments` first makes this idempotent.
+    """
+    return _strip_comments_and_block_comments(text)
 
 
 def _find_matching_brace(text: str, start_idx: int) -> int:

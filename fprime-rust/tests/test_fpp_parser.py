@@ -143,6 +143,34 @@ def test_arguments_with_continuations(tmp_path: Path) -> None:
     ]
 
 
+def test_format_string_with_hash_does_not_corrupt_parse(tmp_path: Path) -> None:
+    """Regression: ``#`` and ``//`` inside quoted strings must not be treated
+    as comment starts -- otherwise the closing quote is eaten and brace
+    matching skips into a different declaration.
+    """
+    fpp = tmp_path / "Quoted.fpp"
+    fpp.write_text("""
+        module Z {
+            @ fprime-rust
+            passive component Q {
+                event Hashed severity warning low id 0 format "code: #42"
+                event UrlIsh severity warning high id 1 format "see https://x"
+                telemetry T: U32 id 0
+                param P: U32 default 1 id 0
+            }
+        }
+        """)
+    components = parse_fpp_file(fpp)
+    assert len(components) == 1
+    c = components[0]
+    by_name = {e.name: e for e in c.events}
+    assert set(by_name) == {"Hashed", "UrlIsh"}
+    assert by_name["Hashed"].severity == "warning_low"
+    assert by_name["UrlIsh"].severity == "warning_high"
+    assert [t.name for t in c.telemetry] == ["T"]
+    assert [p.name for p in c.parameters] == ["P"]
+
+
 @pytest.mark.parametrize(
     "annot_block,expected",
     [
