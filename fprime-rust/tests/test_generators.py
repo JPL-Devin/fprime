@@ -37,14 +37,41 @@ def test_cpp_header_extends_base_class(component) -> None:
     assert "}  // namespace Ref" in header
 
 
+def test_cpp_source_uses_event_severity(tmp_path: Path) -> None:
+    """The C++ shim must select the severity-specific log_*_<Name> method
+    so events with severities other than ``activity low`` compile.
+    """
+    fpp = tmp_path / "S.fpp"
+    fpp.write_text("""
+        module M {
+            @ fprime-rust
+            passive component C {
+                event Hot severity warning high id 0 format "x"
+                event Boom severity fatal id 1 format "y"
+                event Quiet severity diagnostic id 2 format "z"
+            }
+        }
+        """)
+    component_local = parse_fpp_file(fpp)[0]
+    src = render_source(component_local)
+    assert "self->log_WARNING_HI_Hot()" in src
+    assert "self->log_FATAL_Boom()" in src
+    assert "self->log_DIAGNOSTIC_Quiet()" in src
+
+
 def test_cpp_source_forwards_to_rust(component) -> None:
     source = render_source(component)
-    # Inbound dispatch: cmdHandler bodies call rust_<comp>_cmd_<name>
-    assert "::rust_rust_example_cmd_Reset(this->m_rust_impl, opCode, cmdSeq)" in source
+    # Inbound dispatch: cmdHandler bodies forward BOTH the Rust state pointer
+    # AND the C++ ``this`` to the Rust dispatch shim, so Rust can hand the
+    # latter back to the C++ sinks unchanged (see fprime-rust SDD §4.3).
     assert (
-        "::rust_rust_example_cmd_Bump(this->m_rust_impl, opCode, cmdSeq, amount)"
-        in source
-    )
+        "::rust_rust_example_cmd_Reset(this->m_rust_impl, "
+        "static_cast<void*>(this), opCode, cmdSeq)"
+    ) in source
+    assert (
+        "::rust_rust_example_cmd_Bump(this->m_rust_impl, "
+        "static_cast<void*>(this), opCode, cmdSeq, amount)"
+    ) in source
     # Outbound sinks for telemetry / event / param / cmdResponse
     assert "rust_rust_example_tlm_Counter" in source
     assert "rust_rust_example_event_ResetIssued" in source

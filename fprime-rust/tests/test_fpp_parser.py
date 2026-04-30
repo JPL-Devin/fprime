@@ -47,6 +47,37 @@ def test_events_are_extracted_with_args() -> None:
     assert by_name["Bumped"].args[0].name == "value"
     assert by_name["Bumped"].args[0].fpp_type == "U32"
     assert by_name["ResetIssued"].args == []
+    # Severity comes through the line-continued ``severity activity low``
+    # clause and is normalized to snake_case.
+    assert by_name["ResetIssued"].severity == "activity_low"
+    assert by_name["Bumped"].severity == "activity_low"
+
+
+@pytest.mark.parametrize(
+    "fpp_severity,expected",
+    [
+        ("severity activity low", "activity_low"),
+        ("severity activity high", "activity_high"),
+        ("severity warning low", "warning_low"),
+        ("severity warning high", "warning_high"),
+        ("severity command", "command"),
+        ("severity fatal", "fatal"),
+        ("severity diagnostic", "diagnostic"),
+        ("", "activity_low"),  # default when omitted
+    ],
+)
+def test_event_severity_parsing(tmp_path: Path, fpp_severity: str, expected: str) -> None:
+    fpp = tmp_path / "S.fpp"
+    fpp.write_text(f"""
+        module M {{
+            @ fprime-rust
+            passive component C {{
+                event Boom {fpp_severity} id 0 format \"x\"
+            }}
+        }}
+        """)
+    component = parse_fpp_file(fpp)[0]
+    assert component.events[0].severity == expected
 
 
 def test_telemetry_and_params_extracted() -> None:

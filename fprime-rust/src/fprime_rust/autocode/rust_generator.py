@@ -95,18 +95,23 @@ pub unsafe extern \"C\" fn {new_sym}() -> *mut c_void {{
 /// Destructor counterpart to ``{new_sym}``.  Called from the C++
 /// destructor; safe to invoke with a null pointer for symmetry.
 #[no_mangle]
-pub unsafe extern \"C\" fn {free_sym}(self_ptr: *mut c_void) {{
-    if self_ptr.is_null() {{
+pub unsafe extern \"C\" fn {free_sym}(rust_self: *mut c_void) {{
+    if rust_self.is_null() {{
         return;
     }}
-    let _ = Box::from_raw(self_ptr as *mut Box<dyn Component>);
+    let _ = Box::from_raw(rust_self as *mut Box<dyn Component>);
 }}"""
     )
 
     for cmd in component.commands:
         sym = _ffi_name(component, f"cmd_{cmd.name}")
+        # Two distinct opaque pointers cross the FFI: ``rust_self`` locates
+        # the user's ``Box<dyn Component>``; ``cpp_self`` is the C++
+        # ``this`` that we stash on Context and hand back unchanged when
+        # the user calls a sink (telemetry/event/param/cmdResponse).
         c_args = [
-            FppArg("self_ptr", "*mut c_void"),
+            FppArg("rust_self", "*mut c_void"),
+            FppArg("cpp_self", "*mut c_void"),
             FppArg("op_code", "u32"),
             FppArg("cmd_seq", "u32"),
         ] + [FppArg(a.name, a.rust_type) for a in cmd.args]
@@ -114,11 +119,11 @@ pub unsafe extern \"C\" fn {free_sym}(self_ptr: *mut c_void) {{
         forwarded_call = f", {forwarded}" if forwarded else ""
         dispatch_fns.append(f"""#[no_mangle]
 pub unsafe extern \"C\" fn {sym}({_rust_arg_list(c_args)}) {{
-    if self_ptr.is_null() {{
+    if rust_self.is_null() {{
         return;
     }}
-    let boxed: &mut Box<dyn Component> = &mut *(self_ptr as *mut Box<dyn Component>);
-    let mut ctx = Context::new(self_ptr, op_code, cmd_seq);
+    let boxed: &mut Box<dyn Component> = &mut *(rust_self as *mut Box<dyn Component>);
+    let mut ctx = Context::new(cpp_self, op_code, cmd_seq);
     boxed.{cmd.name}_cmd_handler(&mut ctx{forwarded_call});
 }}""")
 

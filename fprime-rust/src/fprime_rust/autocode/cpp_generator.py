@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
-from .fpp_parser import FppArg, FppComponent
+from .fpp_parser import FppArg, FppComponent, severity_to_log_infix
 
 INDENT = "    "
 
@@ -120,17 +120,24 @@ def render_source(component: FppComponent) -> str:
     close_ns = _close_namespace(component)
 
     # ---- extern "C" declarations of the Rust handlers ----
+    # The dispatch layer takes TWO opaque pointers: ``rust_self`` (the
+    # ``Box<dyn Component>`` allocated by ``rust_<comp>_new``) is used to
+    # locate the user state, while ``cpp_self`` is the C++ component
+    # ``this`` that Rust hands back unchanged when calling the sink
+    # functions below.  Splitting them avoids the lifetime confusion of
+    # multiplexing two distinct types through a single ``void*``.
     rust_decls: List[str] = []
     for cmd in component.commands:
         args = [
-            FppArg("self", "void*"),
+            FppArg("rust_self", "void*"),
+            FppArg("cpp_self", "void*"),
             FppArg("opCode", "FwOpcodeType"),
             FppArg("cmdSeq", "U32"),
         ] + cmd.args
         sym = _ffi_name(component, f"cmd_{cmd.name}")
         rust_decls.append(f"void {sym}({_arg_decl_list(args)});")
     rust_decls.append(f"void* {_ffi_name(component, 'new')}();")
-    rust_decls.append(f"void {_ffi_name(component, 'free')}(void* self);")
+    rust_decls.append(f"void {_ffi_name(component, 'free')}(void* rust_self);")
 
     # ---- C++ -> Rust "sink" implementations exported back to Rust ----
     sink_funcs: List[str] = []
@@ -148,9 +155,10 @@ def render_source(component: FppComponent) -> str:
         sym = _ffi_name(component, f"event_{ev.name}")
         args = [FppArg("fp_self", "void*")] + ev.args
         body_args = _arg_name_list(ev.args)
+        infix = severity_to_log_infix(ev.severity)
         sink_funcs.append(f"""extern \"C\" void {sym}({_arg_decl_list(args)}) {{
 {INDENT}auto* self = static_cast<{fqn}*>(fp_self);
-{INDENT}self->log_ACTIVITY_LO_{ev.name}({body_args});
+{INDENT}self->log_{infix}_{ev.name}({body_args});
 }}""")
     # paramGet_*
     for prm in component.parameters:
@@ -182,7 +190,14 @@ def render_source(component: FppComponent) -> str:
     for cmd in component.commands:
         sym = _ffi_name(component, f"cmd_{cmd.name}")
         args = [FppArg("opCode", "FwOpcodeType"), FppArg("cmdSeq", "U32")] + cmd.args
-        forwarded = ["this->m_rust_impl"] + [a.name for a in args]
+        # Always forward two opaque pointers: the Rust state (``m_rust_impl``)
+        # *and* the C++ ``this``.  Rust returns ``cpp_self`` unchanged when it
+        # calls the sink functions below, which static_cast it back to the
+        # concrete component type.
+        forwarded = [
+            "this->m_rust_impl",
+            "static_cast<void*>(this)",
+        ] + [a.name for a in args]
         cmd_impls.append(
             f"""void {name}::{cmd.name}_cmdHandler({_arg_decl_list(args)}) {{
 {INDENT}::{sym}({", ".join(forwarded)});

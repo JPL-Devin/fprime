@@ -314,9 +314,65 @@ _EVENT_RE = re.compile(
     \bevent\s+
     (?P<name>[A-Za-z_][A-Za-z0-9_]*)
     (?:\s*\((?P<args>[^)]*)\))?
+    (?P<tail>[^\n]*)
     """,
     re.VERBOSE,
 )
+
+# FPP severities: ``activity low | activity high | warning low | warning high
+# | command | fatal | diagnostic``.  We capture the *two-word* forms first so
+# that "activity low" doesn't get partially matched as just "activity".
+_SEVERITY_RE = re.compile(
+    r"""\bseverity\s+
+    (?P<sev>
+        activity\s+low
+      | activity\s+high
+      | warning\s+low
+      | warning\s+high
+      | command
+      | fatal
+      | diagnostic
+    )
+    """,
+    re.VERBOSE,
+)
+
+
+# Map FPP severity to the F Prime ``log_<SEVERITY>_<Name>`` infix used in
+# the auto-coded base class.
+_SEVERITY_TO_LOG_INFIX = {
+    "activity_low": "ACTIVITY_LO",
+    "activity_high": "ACTIVITY_HI",
+    "warning_low": "WARNING_LO",
+    "warning_high": "WARNING_HI",
+    "command": "COMMAND",
+    "fatal": "FATAL",
+    "diagnostic": "DIAGNOSTIC",
+}
+
+
+def severity_to_log_infix(severity: str) -> str:
+    """Translate a parsed severity (snake_case) to its log-method infix.
+
+    Unknown values fall back to ``ACTIVITY_LO`` to keep the autocoder
+    forward-compatible with future FPP severity additions.
+    """
+    return _SEVERITY_TO_LOG_INFIX.get(severity, "ACTIVITY_LO")
+
+
+def _parse_severity(tail: str) -> str:
+    """Extract the severity from the tail of an ``event`` declaration.
+
+    Defaults to ``activity_low`` when the declaration omits an explicit
+    severity, matching FPP's default.
+    """
+    if not tail:
+        return "activity_low"
+    m = _SEVERITY_RE.search(tail)
+    if not m:
+        return "activity_low"
+    raw = m.group("sev").lower()
+    return re.sub(r"\s+", "_", raw)
 
 _TELEMETRY_RE = re.compile(
     r"\btelemetry\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*:\s*(?P<type>[A-Za-z_][\w.]*)"
@@ -359,6 +415,11 @@ def _parse_component_body(
 ) -> Tuple[List[FppCommand], List[FppEvent], List[FppTelemetry], List[FppParameter]]:
     """Extract commands, events, telemetry, parameters from a component body."""
     body = _strip_annotation_lines(body)
+    # Normalize FPP's ``\`` line-continuation syntax so that a declaration
+    # spread across several physical lines becomes one logical line.  Each
+    # continuation is replaced with a single space to keep lexical
+    # boundaries intact for the following regex passes.
+    body = re.sub(r"\\\s*\n", " ", body)
     commands: List[FppCommand] = []
     for m in _COMMAND_RE.finditer(body):
         commands.append(
@@ -375,6 +436,7 @@ def _parse_component_body(
             FppEvent(
                 name=m.group("name"),
                 args=_parse_args(m.group("args") or ""),
+                severity=_parse_severity(m.group("tail") or ""),
             )
         )
 
