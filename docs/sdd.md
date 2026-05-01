@@ -243,10 +243,19 @@ There are no system calls, no OS-level synchronization primitives, and no
 allocations on these paths. Both calls therefore satisfy the ISR-safety
 contract for the platforms F Prime currently supports.
 
-The blocking variants spin on the same atomics. The spin is correct and
-forward-progressing on cooperating threads, but it must not be invoked from
-ISR context because ISR contexts cannot make forward progress while preempting
-the threads they are waiting on.
+The blocking variants poll the same atomics, but they call
+`std::this_thread::sleep_for(LOCKLESS_BLOCKING_BACKOFF_US)` (currently 100 µs)
+between bounded scans when no progress is possible (queue empty for a
+consumer, queue full for a producer). The sleep is a scheduling hint, not a
+synchronization primitive: it does not acquire any lock and does not change
+the memory ordering of any subsequent atomic operation. It is **only** reached
+on the BLOCKING path, so ISR callers — which must use `BlockingType::NONBLOCKING`
+— never execute it. Without this back-off, multiple active components blocked
+on receive would saturate the host CPU; with it, idle queues consume
+negligible CPU while the wake-up latency stays bounded by the back-off.
+
+The blocking spin must not be invoked from ISR context because ISR contexts
+cannot make forward progress while preempting the threads they are waiting on.
 
 ### 11. Bounded Loops
 

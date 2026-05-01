@@ -4,8 +4,10 @@
 // ======================================================================
 #include "Os/Generic/LocklessPriorityQueue.hpp"
 #include <atomic>
+#include <chrono>
 #include <cstring>
 #include <limits>
+#include <thread>
 #include "Fw/LanguageHelpers.hpp"
 #include "Fw/Types/Assert.hpp"
 #include "Fw/Types/ByteArray.hpp"
@@ -19,6 +21,11 @@ namespace {
 
 //! Number of retry passes used by producers when updating the high-water mark via CAS.
 constexpr U32 HIGH_MARK_CAS_BOUND = 16;
+
+//! Sleep duration used by the BLOCKING send/receive paths when an entire bounded scan made no
+//! progress. The value is short enough that latency-sensitive consumers see negligible delay
+//! and long enough that an idle thread relinquishes its CPU instead of busy-spinning.
+constexpr int LOCKLESS_BLOCKING_BACKOFF_US = 100;
 
 //! Extract the state portion of a packed state-tag word.
 constexpr U32 stateOf(U32 packed) {
@@ -246,10 +253,13 @@ QueueInterface::Status LocklessPriorityQueue::send(const U8* buffer,
                 return QueueInterface::Status::FULL;
             }
             pass++;
+        } else {
+            // BLOCKING fall-through: relinquish the CPU briefly so we do not starve the host
+            // while waiting for a consumer to free a slot. The sleep is a scheduling hint, not
+            // a synchronization primitive, and is intentionally absent from the NONBLOCKING
+            // path so that ISR callers (who must use NONBLOCKING) never reach it.
+            std::this_thread::sleep_for(std::chrono::microseconds(LOCKLESS_BLOCKING_BACKOFF_US));
         }
-        // BLOCKING fall-through: spin and retry. The condition that lets a slot become FREE is
-        // a consumer's atomic store, which becomes visible to this thread without any explicit
-        // wait primitive. ISR callers must not use the BLOCKING path.
     }
 }
 
@@ -303,10 +313,11 @@ QueueInterface::Status LocklessPriorityQueue::receive(U8* destination,
                     return QueueInterface::Status::EMPTY;
                 }
                 pass++;
+            } else {
+                // BLOCKING fall-through: relinquish the CPU briefly while waiting for a
+                // producer to publish. ISR callers must use NONBLOCKING and never reach here.
+                std::this_thread::sleep_for(std::chrono::microseconds(LOCKLESS_BLOCKING_BACKOFF_US));
             }
-            // BLOCKING fall-through: spin and retry. Producers' atomic stores will become
-            // visible to this thread without explicit synchronization. ISR callers must not use
-            // the BLOCKING path.
             continue;
         }
 
@@ -343,6 +354,11 @@ QueueInterface::Status LocklessPriorityQueue::receive(U8* destination,
                 return QueueInterface::Status::EMPTY;
             }
             pass++;
+        } else {
+            // BLOCKING contention: another consumer beat us to this slot. Yield so the winner
+            // can finish draining before we rescan; no full backoff sleep is needed because the
+            // contention is over a slot that exists rather than a wait for arrivals.
+            std::this_thread::yield();
         }
     }
 }
