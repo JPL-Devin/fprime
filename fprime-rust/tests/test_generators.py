@@ -83,9 +83,13 @@ def test_cpp_source_uses_event_severity(tmp_path: Path) -> None:
         """)
     component_local = parse_fpp_file(fpp)[0]
     src = render_source(component_local)
-    assert "self->log_WARNING_HI_Hot()" in src
-    assert "self->log_FATAL_Boom()" in src
-    assert "self->log_DIAGNOSTIC_Quiet()" in src
+    # The severity-specific ``log_<SEVERITY>_<Name>`` call now lives inside
+    # the ``_rust_sink_event_*`` *member* function so it can reach the
+    # protected base-class log_* method.  The free ``extern "C"`` wrapper
+    # forwards to that member.
+    assert "this->log_WARNING_HI_Hot()" in src
+    assert "this->log_FATAL_Boom()" in src
+    assert "this->log_DIAGNOSTIC_Quiet()" in src
 
 
 def test_cpp_source_forwards_to_rust(component) -> None:

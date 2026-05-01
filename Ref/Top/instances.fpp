@@ -85,6 +85,15 @@ module Ref {
   instance SG5: Ref.SignalGen base id 0x10015000 \
     queue size Default.QUEUE_SIZE
 
+  # The Rust-backed reference component (``rustExample``) declaration is
+  # appended to this file at CMake configuration time when
+  # ``-DFPRIME_RUST_ENABLE=ON``: ``Ref/Top/CMakeLists.txt`` rewrites the
+  # file into the build directory with an additional ``instance
+  # rustExample: Ref.RustExample base id 0x10016000 ...`` declaration
+  # just before the closing brace, then registers the rewritten file
+  # as the instances autocoder input.  Default builds (``OFF``) use the
+  # file verbatim.
+
   # ----------------------------------------------------------------------
   # Passive component instances
   # ----------------------------------------------------------------------

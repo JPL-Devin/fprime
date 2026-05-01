@@ -26,9 +26,9 @@ def test_bindings_dry_run_prints_paths(tmp_path: Path, capsys) -> None:
     stdout = capsys.readouterr().out.strip().split()
     names = sorted(Path(p).name for p in stdout)
     assert names == [
+        "RustExample.cpp",
+        "RustExample.hpp",
         "RustExample.template.rs",
-        "RustExampleRustImpl.cpp",
-        "RustExampleRustImpl.hpp",
         "rust_example_base.rs",
     ]
     # Dry run must not write anything
@@ -47,12 +47,12 @@ def test_bindings_writes_expected_files(tmp_path: Path) -> None:
     )
     files = sorted(p.name for p in tmp_path.iterdir())
     assert files == [
+        "RustExample.cpp",
+        "RustExample.hpp",
         "RustExample.template.rs",
-        "RustExampleRustImpl.cpp",
-        "RustExampleRustImpl.hpp",
         "rust_example_base.rs",
     ]
-    text = (tmp_path / "RustExampleRustImpl.cpp").read_text()
+    text = (tmp_path / "RustExample.cpp").read_text()
     assert "rust_rust_example_cmd_Reset" in text
 
 

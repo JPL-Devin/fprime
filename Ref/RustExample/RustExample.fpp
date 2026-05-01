@@ -3,7 +3,7 @@ module Ref {
     @ Reference component implemented in Rust via fprime-rust.
     @ Demonstrates one of each: command, event, telemetry channel, parameter.
     @ fprime-rust
-    queued component RustExample {
+    active component RustExample {
 
         # ----------------------------------------------------------------------
         # Special ports required for commands / events / telemetry / parameters
@@ -30,8 +30,12 @@ module Ref {
         @ Standard channel telemetry interface.
         import Fw.Channel
 
-        @ Standard parameter interfaces.
-        import Fw.Prm
+        @ Parameter get port (parameters do not have a single ``Fw`` interface
+        @ in F Prime; both directions must be declared explicitly).
+        param get port prmGetOut
+
+        @ Parameter set port.
+        param set port prmSetOut
 
         # ----------------------------------------------------------------------
         # Commands

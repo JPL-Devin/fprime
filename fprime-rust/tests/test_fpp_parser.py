@@ -24,7 +24,7 @@ def test_ref_fpp_yields_single_annotated_component() -> None:
     assert len(components) == 1
     component = components[0]
     assert component.name == "RustExample"
-    assert component.kind == "queued"
+    assert component.kind == "active"
     assert component.namespace == ["Ref"]
     assert component.cpp_namespace == "Ref"
     assert component.cpp_fqn == "Ref::RustExample"

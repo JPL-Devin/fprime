@@ -46,6 +46,15 @@ module Ref {
     instance comDriver
     instance cmdSeq
 
+    # The Rust-backed reference component (``rustExample``) is appended
+    # to this topology block at CMake configuration time when
+    # ``-DFPRIME_RUST_ENABLE=ON``: ``Ref/Top/CMakeLists.txt`` rewrites
+    # this file into the build directory with an extra ``instance
+    # rustExample`` line just before the closing brace, then registers
+    # the rewritten file as the topology autocoder input.  Default
+    # builds (``OFF``) use the file verbatim and the topology is
+    # identical to upstream.
+
     # ----------------------------------------------------------------------
     # Pattern graph specifiers
     # ----------------------------------------------------------------------

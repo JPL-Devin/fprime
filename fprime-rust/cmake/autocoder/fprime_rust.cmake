@@ -70,8 +70,16 @@ function(fprime_rust_setup_autocode MODULE_NAME AC_INPUT_FILES)
     set(GENERATED_CPP_FILES "${GENERATED_LIST}")
     set(GENERATED_RUST_BASE_FILES "${GENERATED_LIST}")
     set(GENERATED_RUST_TEMPLATE_FILES "${GENERATED_LIST}")
-    list(FILTER GENERATED_HPP_FILES INCLUDE REGEX "RustImpl\\.hpp$")
-    list(FILTER GENERATED_CPP_FILES INCLUDE REGEX "RustImpl\\.cpp$")
+    # The C++ shim is emitted as ``<Component>.hpp`` / ``<Component>.cpp``
+    # so the FPP-generated topology can ``#include`` it under the standard
+    # ``Path/Component.hpp`` filename without any path massaging.  Filter
+    # *out* the FPP-emitted ``<Component>ComponentAc.hpp`` (which the FPP
+    # autocoder writes -- not us) by anchoring on ``\.hpp$`` while
+    # excluding any path containing ``ComponentAc``.
+    list(FILTER GENERATED_HPP_FILES INCLUDE REGEX "\\.hpp$")
+    list(FILTER GENERATED_HPP_FILES EXCLUDE REGEX "ComponentAc\\.hpp$")
+    list(FILTER GENERATED_CPP_FILES INCLUDE REGEX "\\.cpp$")
+    list(FILTER GENERATED_CPP_FILES EXCLUDE REGEX "ComponentAc\\.cpp$")
     list(FILTER GENERATED_RUST_BASE_FILES INCLUDE REGEX "_base\\.rs$")
     list(FILTER GENERATED_RUST_TEMPLATE_FILES INCLUDE REGEX "\\.template\\.rs$")
 
