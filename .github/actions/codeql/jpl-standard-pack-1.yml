@@ -6,15 +6,10 @@ packs:
   # Source of the query pack is https://github.com/github/codeql/tree/main/cpp/ql/src/JPL_C
   - codeql/cpp-queries:JPL_C
 
-# Generated, vendored, and non-flight-software code is not in scope for the
-# JPL coding standard. Excluding it removes ~70% of historical alert volume
-# without any false-negative risk.
+# Autocoded, vendored, and non-flight-software code is ingored
 paths-ignore:
   - build-fprime-automatic-*/
   - fprime-venv/
-  - Autocoders/
-  - FppTest/
-  - gtest/
   - googletest/
   - Utils/Hash/libcrc/
   - docs/

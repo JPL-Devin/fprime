@@ -17,5 +17,3 @@ paths-ignore:
   - docs/
   - cmake/docs/
   - cmake/test/
-  - Autocoders/Python/src/fprime_ac/utils/DiffAndRename.py
-  - Autocoders/Python/src/fprime_ac/utils/pyparsing.py

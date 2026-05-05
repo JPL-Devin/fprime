@@ -6,13 +6,10 @@ packs:
   # Source of the query pack is https://github.com/github/codeql/tree/main/cpp/ql/src/JPL_C
   - codeql/cpp-queries:JPL_C
 
-# See pack-1 for rationale.
+# Autocoded, vendored, and non-flight-software code is ingored
 paths-ignore:
   - build-fprime-automatic-*/
   - fprime-venv/
-  - Autocoders/
-  - FppTest/
-  - gtest/
   - googletest/
   - Utils/Hash/libcrc/
   - docs/
