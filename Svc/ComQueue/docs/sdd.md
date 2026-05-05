@@ -93,13 +93,24 @@ Buffers are queued when in `WAITING` state.
 To set up an instance of `ComQueue`, the following needs to be done: 
 1. Call the constructor and the init method in the usual way for an F Prime active component. 
 2. Call the `configure` method, passing in an array of `QueueConfiguration` type, the size of the array, 
-and an allocator of `Fw::MemAllocator`. The `configure` method foes the following:
+and an allocator of `Fw::MemAllocator`. The `configure` method does the following:
 
    1. Ensures that the total size and config size are the same value
    2. Ensures that priority values range from 0 to the total size value
    3. Ensures that every entry in the queue containing the prioritized order of the com buffer and buffer data have been 
    initialized. 
    4. Ensures that there is enough memory for the com buffer and buffer data we want to process
+
+#### 4.4.1 Depth-0 (Disabled) Queues
+
+A queue entry may be configured with `depth = 0` to disable it. This is useful when a deployment
+does not use a particular port (e.g. file downlink is absent). Depth-0 queues behave as follows:
+
+- No storage is allocated for the queue during `configure`.
+- Every incoming message is treated as an immediate overflow: a throttled `QueueOverflow` event is
+  emitted and the message is discarded.
+- For `Fw::Buffer` ports, ownership of the buffer is returned to the sender via `bufferReturnOut`.
+- The queue is skipped during `processQueue`, `drainQueue`, and telemetry collection (`run`).
 
 ### 4.5 Port Handlers
 

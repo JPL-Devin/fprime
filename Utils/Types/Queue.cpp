@@ -116,4 +116,8 @@ FwSizeType Queue::getQueueSize() const {
     return m_internal.get_allocated_size() / m_message_size;
 }
 
+bool Queue::isSetup() const {
+    return m_message_size > 0;
+}
+
 }  // namespace Types

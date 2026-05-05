@@ -127,6 +127,16 @@ class Queue {
 
     FwSizeType getQueueSize() const;
 
+    /**
+     * \brief check whether the queue has been initialized via setup()
+     *
+     * A queue that has not been set up (e.g. depth-0 queues that are intentionally
+     * disabled) must not be used for enqueue/dequeue operations.
+     *
+     * \return true if setup() has been called, false otherwise
+     */
+    bool isSetup() const;
+
   private:
     CircularBuffer m_internal;
     FwSizeType m_message_size;

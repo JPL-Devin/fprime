@@ -44,8 +44,11 @@ class ComQueue final : public ComQueueComponentBase {
      * \brief configuration data for each queue
      *
      * Each queue must be configured to specify the depth of the queue and the priority of the queue. Depth must be a
-     * non-negative integer indicating the number of messages before overflow. A depth of 0 disables the given queue and
-     * any message sent to it will overflow.
+     * non-negative integer indicating the number of messages before overflow. A depth of 0 disables the given queue:
+     * no storage is allocated, every incoming message is treated as an immediate overflow, and the queue is skipped
+     * during processing and telemetry collection. For Fw::Buffer queues with depth 0, ownership of the buffer is
+     * returned to the sender via bufferReturnOut. This is useful when a deployment does not require a particular
+     * port (e.g. file downlink is not used).
      *
      * Priority is an integer between 0 (inclusive) and TOTAL_PORT_COUNT (exclusive). Queues with lower priority values
      * will be serviced first. Priorities may be repeated and queues sharing priorities will be serviced in a balanced
