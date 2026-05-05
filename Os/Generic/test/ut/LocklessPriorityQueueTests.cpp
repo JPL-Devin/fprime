@@ -76,9 +76,8 @@ void consumer_worker(ConcurrentTestState* state) {
     FwSizeType actualSize = 0;
     FwQueuePriorityType priority = 0;
     while (state->consumed.load(std::memory_order_acquire) < CONCURRENT_TOTAL_MESSAGES) {
-        Os::QueueInterface::Status status =
-            state->queue.receive(buffer, CONCURRENT_MESSAGE_SIZE,
-                                 Os::QueueInterface::BlockingType::NONBLOCKING, actualSize, priority);
+        Os::QueueInterface::Status status = state->queue.receive(
+            buffer, CONCURRENT_MESSAGE_SIZE, Os::QueueInterface::BlockingType::NONBLOCKING, actualSize, priority);
         if (status == Os::QueueInterface::Status::OP_OK) {
             ASSERT_EQ(actualSize, CONCURRENT_MESSAGE_SIZE);
             const U32 value = unpack_value(buffer);
@@ -163,8 +162,8 @@ TEST(LocklessConcurrent, PriorityOrderSingleProducer) {
             U8 buffer[MESSAGE_SIZE] = {0};
             FwSizeType actualSize = 0;
             FwQueuePriorityType priority = 0;
-            ASSERT_EQ(queue.receive(buffer, MESSAGE_SIZE,
-                                    Os::QueueInterface::BlockingType::NONBLOCKING, actualSize, priority),
+            ASSERT_EQ(queue.receive(buffer, MESSAGE_SIZE, Os::QueueInterface::BlockingType::NONBLOCKING, actualSize,
+                                    priority),
                       Os::QueueInterface::Status::OP_OK);
             ASSERT_LE(priority, lastPriority);
             lastPriority = priority;

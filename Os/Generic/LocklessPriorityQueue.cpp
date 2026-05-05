@@ -67,10 +67,7 @@ bool isCandidatePreferred(FwQueuePriorityType candidatePriority,
 }  // namespace
 
 LocklessSlot::LocklessSlot()
-    : m_stateTag(packStateTag(LOCKLESS_SLOT_FREE, 0)),
-      m_sequence(0),
-      m_size(0),
-      m_priority() {}
+    : m_stateTag(packStateTag(LOCKLESS_SLOT_FREE, 0)), m_sequence(0), m_size(0), m_priority() {}
 
 LocklessPriorityQueueHandle::LocklessPriorityQueueHandle()
     : m_slots(nullptr),
@@ -143,8 +140,8 @@ QueueInterface::Status LocklessPriorityQueue::create(FwEnumStoreType id,
         allocator.deallocate(id, slotsAllocation);
         status = QueueInterface::Status::ALLOCATION_FAILED;
     } else {
-        slots = Fw::arrayPlacementNew<LocklessSlot>(
-            Fw::ByteArray(static_cast<U8*>(slotsAllocation), slotsAllocated), depth);
+        slots = Fw::arrayPlacementNew<LocklessSlot>(Fw::ByteArray(static_cast<U8*>(slotsAllocation), slotsAllocated),
+                                                    depth);
     }
 
     // Allocate the message-data region.
@@ -233,30 +230,26 @@ QueueInterface::Status LocklessPriorityQueue::send(const U8* buffer,
                 continue;
             }
             const U32 desired = packStateTag(LOCKLESS_SLOT_WRITING, tagOf(packed) + 1);
-            if (slot.m_stateTag.compare_exchange_strong(packed, desired,
-                                                        std::memory_order_acq_rel,
+            if (slot.m_stateTag.compare_exchange_strong(packed, desired, std::memory_order_acq_rel,
                                                         std::memory_order_relaxed)) {
                 // Slot is exclusively owned by this producer. Populate it.
                 if (size > 0) {
                     const FwSizeType offset = i * this->m_handle.m_messageSize;
-                    static_cast<void>(::memcpy(this->m_handle.m_data + offset, buffer,
-                                               static_cast<size_t>(size)));
+                    static_cast<void>(::memcpy(this->m_handle.m_data + offset, buffer, static_cast<size_t>(size)));
                 }
                 slot.m_size = size;
                 slot.m_priority = priority;
                 slot.m_sequence = this->m_handle.m_sequence.fetch_add(1, std::memory_order_relaxed);
 
                 // Publish: any consumer that observes READY also observes the data above.
-                slot.m_stateTag.store(packStateTag(LOCKLESS_SLOT_READY, tagOf(desired) + 1),
-                                      std::memory_order_release);
+                slot.m_stateTag.store(packStateTag(LOCKLESS_SLOT_READY, tagOf(desired) + 1), std::memory_order_release);
 
                 // Update count and high-water mark. Both are bounded operations.
                 const U32 nextCount = this->m_handle.m_count.fetch_add(1, std::memory_order_acq_rel) + 1;
                 U32 prevMark = this->m_handle.m_highMark.load(std::memory_order_relaxed);
                 for (U32 markPass = 0; (markPass < HIGH_MARK_CAS_BOUND) && (nextCount > prevMark); markPass++) {
-                    if (this->m_handle.m_highMark.compare_exchange_weak(prevMark, nextCount,
-                                                                         std::memory_order_relaxed,
-                                                                         std::memory_order_relaxed)) {
+                    if (this->m_handle.m_highMark.compare_exchange_weak(prevMark, nextCount, std::memory_order_relaxed,
+                                                                        std::memory_order_relaxed)) {
                         break;
                     }
                 }
@@ -340,9 +333,7 @@ QueueInterface::Status LocklessPriorityQueue::receive(U8* destination,
         // Try to claim the chosen slot.
         const U32 desired = packStateTag(LOCKLESS_SLOT_READING, tagOf(bestPacked) + 1);
         if (this->m_handle.m_slots[bestIndex].m_stateTag.compare_exchange_strong(
-                bestPacked, desired,
-                std::memory_order_acq_rel,
-                std::memory_order_relaxed)) {
+                bestPacked, desired, std::memory_order_acq_rel, std::memory_order_relaxed)) {
             LocklessSlot& slot = this->m_handle.m_slots[bestIndex];
             const FwSizeType storedSize = slot.m_size;
             // Capacity check: a smaller-than-stored destination is a programming error per the
@@ -350,14 +341,13 @@ QueueInterface::Status LocklessPriorityQueue::receive(U8* destination,
             FW_ASSERT(storedSize <= capacity);
             if (storedSize > 0) {
                 const FwSizeType offset = bestIndex * this->m_handle.m_messageSize;
-                static_cast<void>(::memcpy(destination, this->m_handle.m_data + offset,
-                                           static_cast<size_t>(storedSize)));
+                static_cast<void>(
+                    ::memcpy(destination, this->m_handle.m_data + offset, static_cast<size_t>(storedSize)));
             }
             actualSize = storedSize;
             priority = slot.m_priority;
             // Release the slot for reuse by future producers.
-            slot.m_stateTag.store(packStateTag(LOCKLESS_SLOT_FREE, tagOf(desired) + 1),
-                                  std::memory_order_release);
+            slot.m_stateTag.store(packStateTag(LOCKLESS_SLOT_FREE, tagOf(desired) + 1), std::memory_order_release);
             static_cast<void>(this->m_handle.m_count.fetch_sub(1, std::memory_order_acq_rel));
             return QueueInterface::Status::OP_OK;
         }
