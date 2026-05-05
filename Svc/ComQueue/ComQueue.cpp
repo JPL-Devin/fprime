@@ -100,7 +100,8 @@ void ComQueue::configure(QueueConfigurationTable queueConfig,
                 if (entry.depth > 0) {
                     FW_ASSERT((std::numeric_limits<FwSizeType>::max() / entry.depth) >= entry.msgSize,
                               static_cast<FwAssertArgType>(entry.depth), static_cast<FwAssertArgType>(entry.msgSize));
-                    FW_ASSERT(std::numeric_limits<FwSizeType>::max() - (entry.depth * entry.msgSize) >= totalAllocation);
+                    FW_ASSERT(std::numeric_limits<FwSizeType>::max() - (entry.depth * entry.msgSize) >=
+                              totalAllocation);
                     totalAllocation += entry.depth * entry.msgSize;
                 }
                 currentPriorityIndex++;
