@@ -280,6 +280,39 @@ The queue uses the existing `OS_GENERIC_PRIORITY_QUEUE` enumerator from
 introduced; system designers can configure either the existing
 `Os::Generic::PriorityQueue` or this implementation against the same allocator.
 
+### 12.1 Resource-Management Contract (`teardown()` vs destructor)
+
+`create()` is the only allocating call in the queue's lifetime. Resource
+release happens in `teardown()`, which delegates to a non-virtual private
+helper `teardownInternal()`. `teardown()` is idempotent: only the first call
+returns memory; subsequent calls are no-ops.
+
+The destructor `~LocklessPriorityQueue()` is **intentionally empty**. Owners
+must call `teardown()` explicitly before the queue (or its hosting
+`Os::Queue`) is destroyed. Two reasons:
+
+1. **Static destruction order.** A `LocklessPriorityQueue` may live inside a
+   global / topology-scoped component that is destroyed at process exit.
+   `teardownInternal()` calls
+   `Fw::MemAllocatorRegistry::getInstance().getAnAllocator(...)` and then
+   invokes the virtual `MemAllocator::deallocate`. The registry is itself a
+   function-local static and its destruction order with respect to other
+   globals is unspecified. If the destructor runs after the registry has
+   already been destroyed, the virtual call dispatches through a v-table whose
+   most-derived type is gone, and the program aborts with
+   `pure virtual method called` (observed in upstream CI's
+   `FppTest_topology_special_ports_ut_exe`, see PR nasa/fprime#5076).
+2. **Consistency.** `Os::Generic::PriorityQueue::~PriorityQueue()` is also
+   empty for the same reason. The lockless queue follows the same contract so
+   it can be a drop-in replacement for the existing implementation.
+
+Owners that fail to call `teardown()` leak the slot pool and message-data
+region exactly as they would with the existing `Os::Generic::PriorityQueue`.
+The shared queue tests already comply: `Os::Test::Queue::Tester::~Tester()`
+calls `queue.teardown()`, and every failure-path test in
+`Os/test/ut/queue/CommonTests.cpp` invokes `queue.teardown()` before exit.
+Lockless-specific tests do the same.
+
 ### 13. Selection at Build Time
 
 The new module is registered through CMake as

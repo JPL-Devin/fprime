@@ -121,7 +121,14 @@ class LocklessPriorityQueue final : public Os::QueueInterface {
     //! \brief default constructor
     LocklessPriorityQueue() = default;
 
-    //! \brief destructor; tears down the queue if it has been created
+    //! \brief destructor
+    //!
+    //! The destructor does **not** free queue resources. Owners must call `teardown()`
+    //! explicitly before destroying the queue (or its hosting `Os::Queue`). This matches the
+    //! `Os::Generic::PriorityQueue` contract and avoids a static-destruction-order fault
+    //! where the underlying `Fw::MemAllocatorRegistry` may already have been destroyed by the
+    //! time the destructor runs, which would manifest as a `pure virtual method called` abort
+    //! when `MemAllocator::deallocate` is invoked through its v-table.
     ~LocklessPriorityQueue() override;
 
     //! \brief copy constructor is forbidden

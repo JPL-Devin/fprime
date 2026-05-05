@@ -83,7 +83,23 @@ LocklessPriorityQueueHandle::LocklessPriorityQueueHandle()
       m_id(0) {}
 
 LocklessPriorityQueue::~LocklessPriorityQueue() {
-    this->teardownInternal();
+    // The destructor intentionally does *not* free resources. Resource cleanup is the
+    // responsibility of `teardown()`, which the owner must call explicitly before the queue
+    // (or its hosting `Os::Queue`) is destroyed. Two reasons:
+    //
+    // 1. Static destruction order: a `LocklessPriorityQueue` may live in a global / topology
+    //    component that is destroyed at process exit. `teardownInternal()` calls
+    //    `Fw::MemAllocatorRegistry::getInstance()`, which is itself a function-local static
+    //    of unspecified destruction order with respect to other globals. A virtual
+    //    `MemAllocator::deallocate` call after the registry has been destroyed manifests as
+    //    "pure virtual method called" — a fault we have observed in upstream CI's topology
+    //    unit test (see PR nasa/fprime#5076).
+    //
+    // 2. Consistency with `Os::Generic::PriorityQueue::~PriorityQueue()`, which is also
+    //    empty for the same reason.
+    //
+    // Owners that fail to call `teardown()` will leak the slot pool and message-data region
+    // exactly as they would with the existing `Os::Generic::PriorityQueue`.
 }
 
 QueueInterface::Status LocklessPriorityQueue::create(FwEnumStoreType id,

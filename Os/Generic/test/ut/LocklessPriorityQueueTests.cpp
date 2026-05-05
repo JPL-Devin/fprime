@@ -173,6 +173,46 @@ TEST(LocklessConcurrent, PriorityOrderSingleProducer) {
     queue.teardown();
 }
 
+//! Validate that destroying a never-created queue is safe (the destructor must not free or
+//! touch any memory). This guards against the static-destruction-order fault described in
+//! the SDD §12.1.
+TEST(LocklessLifetime, DestructWithoutCreate) {
+    {
+        Os::Queue queue;
+        // No create(), no teardown(): the queue object simply leaves scope. The destructor
+        // must be a no-op and must not perform any virtual dispatch into the memory
+        // allocator registry.
+    }
+    SUCCEED();
+}
+
+//! Validate that destroying a created queue *after* an explicit teardown is safe and that
+//! the destructor performs no further work. Tests run under ASan/UBSan/LSan; if the
+//! destructor were to call `teardownInternal()` it would either double-free the slot pool
+//! or invoke a virtual function in a way UBSan would flag.
+TEST(LocklessLifetime, CreateTeardownDestruct) {
+    {
+        Os::Queue queue;
+        Fw::String name("lifetime-test");
+        ASSERT_EQ(queue.create(0, name, 4, sizeof(U32)), Os::QueueInterface::Status::OP_OK);
+        queue.teardown();
+        // queue leaves scope here; destructor must be a no-op.
+    }
+    SUCCEED();
+}
+
+//! Validate that `teardown()` is idempotent: calling it twice on the same queue must not
+//! double-free or otherwise misbehave.
+TEST(LocklessLifetime, TeardownIsIdempotent) {
+    Os::Queue queue;
+    Fw::String name("idempotent-test");
+    ASSERT_EQ(queue.create(0, name, 4, sizeof(U32)), Os::QueueInterface::Status::OP_OK);
+    queue.teardown();
+    queue.teardown();
+    queue.teardown();
+    SUCCEED();
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
