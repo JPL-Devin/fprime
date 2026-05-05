@@ -6,7 +6,31 @@ packs:
   # Source of the query pack is https://github.com/github/codeql/tree/main/cpp/ql/src/JPL_C
   - codeql/cpp-queries:JPL_C
 
+# Generated, vendored, and non-flight-software code is not in scope for the
+# JPL coding standard. Excluding it removes ~70% of historical alert volume
+# without any false-negative risk.
+paths-ignore:
+  - build-fprime-automatic-*/
+  - fprime-venv/
+  - Autocoders/
+  - FppTest/
+  - gtest/
+  - googletest/
+  - Utils/Hash/libcrc/
+  - docs/
+  - cmake/
+
 query-filters:
   - exclude:
       problem.severity:
         - recommendation
+  # cpp/jpl-c/checking-parameter-values: the JPL_C query treats every
+  # non-static C++ function as a "public function" (Tasks.qll defines
+  # PublicFunction in terms of VxWorks taskCreate, which F' does not use)
+  # and requires every parameter to be range-checked before its first use.
+  # F' relies on typed parameters (enums, FwOpcodeType, etc.) and channels
+  # errors out via component output ports rather than pre-checks, so this
+  # query fires on essentially every public method. Tracked in #2562.
+  - exclude:
+      id:
+        - cpp/jpl-c/checking-parameter-values

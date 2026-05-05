@@ -1,4 +1,4 @@
-name: "CodeQL JPL Coding Standard - Recommendations 1 of 2"
+name: "CodeQL JPL Coding Standard - Recommendations"
 
 disable-default-queries: true
 
@@ -6,15 +6,42 @@ packs:
   # Source of the query pack is https://github.com/github/codeql/tree/main/cpp/ql/src/JPL_C
   - codeql/cpp-queries:JPL_C
 
+# See pack-1 for rationale.
+paths-ignore:
+  - build-fprime-automatic-*/
+  - fprime-venv/
+  - Autocoders/
+  - FppTest/
+  - gtest/
+  - googletest/
+  - Utils/Hash/libcrc/
+  - docs/
+  - cmake/
+
 query-filters:
   - exclude:
       problem.severity:
         - error
         - warning
-  # We are excluding the following query because it overflows the limit of
-  # 5000 results that the SARIF upload can handle
-  # This sole query is ran in jpl-standard-pack-3.yml
-  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github#uploading-a-code-scanning-analysis-with-github-actions
+  # The following recommendation-severity queries are categorically a poor
+  # fit for F' and are responsible for the bulk of the dashboard noise.
+  # Tracked in #2562.
+  #
+  # cpp/jpl-c/basic-int-types: flags every use of a basic integral type,
+  #   including type-aliased fixed-width F' types (FwSizeType etc.) and
+  #   `int main()`. Previously isolated in pack-3 because it overflows the
+  #   5000-result-per-SARIF-upload cap; that pack is removed by this change.
+  #
+  # cpp/jpl-c/function-size-limits: a 60-line metric that does not account
+  #   for autocoded handlers or for F' patterns where a long switch on
+  #   command opcode is idiomatic.
+  #
+  # cpp/jpl-c/preprocessor-use-ifdef: forbids any conditional compilation
+  #   outside header guards. F' is intentionally cross-platform and uses
+  #   `#if defined(POSIX_THREADS_ENABLE_NAMES)` etc. to guard
+  #   platform-specific code paths.
   - exclude:
       id:
         - cpp/jpl-c/basic-int-types
+        - cpp/jpl-c/function-size-limits
+        - cpp/jpl-c/preprocessor-use-ifdef

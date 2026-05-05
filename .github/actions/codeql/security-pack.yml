@@ -12,6 +12,8 @@ query-filters:
       tags contain: reliability
 
 paths-ignore:
+  - build-fprime-automatic-*/
+  - fprime-venv/
   - docs/
   - cmake/docs/
   - cmake/test/
