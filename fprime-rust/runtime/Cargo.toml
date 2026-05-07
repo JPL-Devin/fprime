@@ -1,0 +1,14 @@
+[package]
+name = "fprime-rust"
+version = "0.1.0"
+edition = "2021"
+description = "Runtime crate for F Prime to Rust component bindings"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "fprime_rust"
+path = "src/lib.rs"
+crate-type = ["rlib"]
+
+[dependencies]

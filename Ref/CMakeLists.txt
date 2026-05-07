@@ -26,9 +26,34 @@ add_compile_options(
     -pedantic
 )
 
-# Find the fprime package and include the core codebase
-set(FPRIME_INCLUDE_FRAMEWORK_CODE ON)
+####
+# Optional fprime-rust integration.  Disabled by default so the standard Ref
+# deployment continues to build without a Rust toolchain.  Enable at
+# generation time with ``-DFPRIME_RUST_ENABLE=ON`` to pull in the
+# ``RustExample`` reference component (see ``Ref/RustExample/`` and
+# ``fprime-rust/README.md``).
+#
+# NOTE: ``register_fprime_target`` must run AFTER ``find_package(FPrime)``
+# (which loads the API macro) but BEFORE F Prime starts detecting modules
+# (otherwise the target list is locked -- see ``cmake/API.cmake:600``).  We
+# achieve this by deferring ``fprime_setup_included_code()`` ourselves
+# rather than letting ``FPrimeConfig.cmake`` call it eagerly.
+####
+option(FPRIME_RUST_ENABLE "Enable Rust-backed components in Ref (requires cargo)" OFF)
+
+# Load F Prime's CMake API but *don't* auto-include the framework code yet --
+# we need the API macros visible (so we can register custom autocoders/targets)
+# before module detection starts.
+set(FPRIME_INCLUDE_FRAMEWORK_CODE OFF)
 find_package(FPrime REQUIRED PATHS "${CMAKE_CURRENT_LIST_DIR}/..")
+
+if (FPRIME_RUST_ENABLE AND NOT DEFINED FPRIME_SUB_BUILD_TARGETS)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../fprime-rust/cmake")
+    register_fprime_target(target/fprime_rust)
+endif()
+
+# Now actually load the framework code, kicking off module detection.
+fprime_setup_included_code()
 
 # Add subdirectories for the Ref project specific components
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/PingReceiver/")
@@ -38,6 +63,9 @@ add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/SignalGen/")
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/TypeDemo/")
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/DpDemo/")
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/BlockDriver/")
+if (FPRIME_RUST_ENABLE)
+    add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/RustExample/")
+endif()
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/Top/")
 
 register_fprime_deployment(
