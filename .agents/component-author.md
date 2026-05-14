@@ -6,7 +6,7 @@ scaffold, and SDD stub.
 
 This skill is the canonical, tool-independent version. It is referenced by the
 repo-root [`AGENTS.md`](../AGENTS.md) and by tool-specific wrappers under
-[`../.github/agents/`](../.github/agents), [`../.cursor/rules/`](../.cursor/rules),
+[`../.github/agents/`](../.github/agents),
 [`../.windsurf/rules/`](../.windsurf/rules), and [`../CLAUDE.md`](../CLAUDE.md).
 
 ## When to use

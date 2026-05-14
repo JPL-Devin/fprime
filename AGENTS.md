@@ -2,11 +2,10 @@
 
 This file is the **canonical, tool-independent** guidance for AI coding agents working
 in this repository. It follows the [AGENTS.md spec](https://agents.md) and is honored
-by Cursor, Codex, Aider, Claude Code, Sourcegraph Amp, Devin, Continue, RooCode, and
-other AGENTS.md-aware tools. Tool-specific surfaces (`.cursor/rules/`,
-`.windsurf/rules/`, `CLAUDE.md`, `.github/copilot-instructions.md`,
-`.github/agents/`) are thin pointers to this file or to the skills under
-[`.agents/`](.agents/).
+by Codex, Aider, Claude Code, Sourcegraph Amp, Devin, Continue, RooCode, and
+other AGENTS.md-aware tools. Tool-specific surfaces (`.windsurf/rules/`,
+`CLAUDE.md`, `.github/copilot-instructions.md`, `.github/agents/`) are thin
+pointers to this file.
 
 Human contributors should read [`AI_POLICY.md`](AI_POLICY.md) and
 [`CONTRIBUTING.md`](CONTRIBUTING.md) before submitting AI-assisted changes.

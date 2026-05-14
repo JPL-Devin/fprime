@@ -8,8 +8,7 @@ tool-agnostic, and referenced by every AI surface in this repo:
 - VS Code Copilot custom agents in [`../.github/agents/`](../.github/agents) wrap
   these files with the YAML frontmatter VS Code needs and instruct the agent to
   load the canonical content from `.agents/`.
-- Cursor ([`../.cursor/rules/`](../.cursor/rules)), Windsurf
-  ([`../.windsurf/rules/`](../.windsurf/rules)), and Claude Code
+- Windsurf ([`../.windsurf/rules/`](../.windsurf/rules)) and Claude Code
   ([`../CLAUDE.md`](../CLAUDE.md)) read `AGENTS.md`, which in turn links here.
 
 ## Skill index
@@ -24,8 +23,9 @@ tool-agnostic, and referenced by every AI surface in this repo:
 
 1. **One concern per file.** Each skill targets a single well-scoped task. Long
    omnibus prompts dilute model behavior.
-2. **No tool-specific syntax.** Don't reference Cursor `@-mentions`, Copilot chat
-   variables, Claude slash commands, etc. Tool wrappers handle that.
+2. **No tool-specific syntax.** Don't reference Copilot chat variables, Claude
+   slash commands, or any other tool-specific invocation. Tool wrappers handle
+   that.
 3. **Reference, don't duplicate.** Link to `CONTRIBUTING.md`, `AI_POLICY.md`,
    `.github/untrusted-pr-review-policy.md`, `AGENTS.md`, and the F´ user manual
    instead of restating their content.
