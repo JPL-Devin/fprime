@@ -767,7 +767,7 @@ tparam
 TPP
 trinomials
 tts
-Tumbar
+tumbar
 typedef
 typedef'ed
 uart
