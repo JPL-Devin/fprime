@@ -111,6 +111,9 @@ Fw::CmdResponse DpCatalog::loadStateFile() {
     Os::File stateFile;
     Os::File::Status stat = stateFile.open(this->m_stateFile.toChar(), Os::File::OPEN_READ);
     if (stat != Os::File::OP_OK) {
+        if (stat == Os::File::DOESNT_EXIST) {
+            return Fw::CmdResponse::OK;
+        }
         this->log_WARNING_HI_StateFileOpenError(this->m_stateFile, stat);
         return Fw::CmdResponse::EXECUTION_ERROR;
     }
