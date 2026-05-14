@@ -1,8 +1,9 @@
 # `.agents/` — tool-independent F´ skills for AI agents
 
 This directory holds the **canonical** prompts/skills/playbooks that guide AI
-coding agents working in `nasa/fprime`. They are plain Markdown, intentionally
-tool-agnostic, and referenced by every AI surface in this repo:
+coding agents working in this repository (and, eventually, `nasa/fprime`). They
+are plain Markdown, intentionally tool-agnostic, and referenced by every AI
+surface in this repo:
 
 - The repo-root [`AGENTS.md`](../AGENTS.md) links here as the skill catalog.
 - VS Code Copilot custom agents in [`../.github/agents/`](../.github/agents) wrap

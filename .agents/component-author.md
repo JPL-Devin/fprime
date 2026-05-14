@@ -33,16 +33,14 @@ Do **not** use this skill when:
    types** and **configurable `Fw*` types** wherever applicable.
 2. A `CMakeLists.txt` (or appropriate `Subdirectory.cmake`) entry registering
    the component module.
-3. The autocoder output produced by running:
-   ```bash
-   fprime-util generate
-   fprime-util impl
-   ```
-   You do not hand-edit anything under `build-artifacts/` or
-   `*ComponentAc.{hpp,cpp}`. You operate on the generated `<Component>Impl.hpp`
-   and `<Component>Impl.cpp` stubs.
-4. A C++ implementation in `<Component>.hpp` / `<Component>.cpp` (or the
-   `*Impl` files for the F´ versioning in use) that:
+3. The autocoder output produced by `fprime-util generate` (and the hand-coded
+   `-template` files produced by `fprime-util impl` if you did not use
+   `fprime-util new --component`). You do not hand-edit anything under
+   `build-artifacts/` or `*ComponentAc.{hpp,cpp}`.
+4. A C++ implementation in `<Component>.hpp` / `<Component>.cpp` (matching the
+   naming convention of neighboring components in the same directory; the
+   modern convention drops the `Impl` suffix, but some older components still
+   use `<Component>Impl.{hpp,cpp}` — keep the surrounding pattern) that:
    - Implements every handler declared in FPP.
    - Initializes all members in the constructor or in `init()`.
    - Transfers ownership of any `Fw::Buffer` it accepts (return it to sender
@@ -71,9 +69,17 @@ Do **not** use this skill when:
    examples (for example `Svc/CmdSequencer` for an active component with rich
    state, `Svc/Health` for a periodic passive checker).
 4. Add the component to its parent CMakeLists.
-5. Run `fprime-util generate` then `fprime-util impl` from the deployment that
-   uses the component. Move the produced `*Impl.hpp.template` and
-   `*Impl.cpp.template` files into place (strip the `.template`).
+5. Prefer `fprime-util new --component` (the cookiecutter-driven entry point
+   documented in
+   [`docs/user-manual/overview/development-practice.md`](../docs/user-manual/overview/development-practice.md))
+   — it registers the CMake module, generates the FPP stub, and optionally
+   creates the hand-coded `.cpp`/`.hpp` and unit-test skeleton in one step. If
+   the component already exists or you are doing it by hand, run
+   `fprime-util generate` then `fprime-util impl` from the deployment that
+   uses the component; the latter produces `-template` files of the
+   hand-coded `.cpp`/`.hpp` — strip the `-template` and adjust the names to
+   match the neighboring components' convention (with or without the `Impl`
+   suffix).
 6. Implement the handler bodies. Stay within the 32 review rules in
    [`code-review.md`](code-review.md). In particular:
    - No dynamic allocation after init.

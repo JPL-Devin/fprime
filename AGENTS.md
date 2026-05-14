@@ -4,8 +4,8 @@ This file is the **canonical, tool-independent** guidance for AI coding agents w
 in this repository. It follows the [AGENTS.md spec](https://agents.md) and is honored
 by Codex, Aider, Claude Code, Sourcegraph Amp, Devin, Continue, RooCode, and
 other AGENTS.md-aware tools. Tool-specific surfaces (`.windsurf/rules/`,
-`CLAUDE.md`, `.github/copilot-instructions.md`, `.github/agents/`) are thin
-pointers to this file.
+`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `.github/agents/`)
+are thin pointers to this file.
 
 Human contributors should read [`AI_POLICY.md`](AI_POLICY.md) and
 [`CONTRIBUTING.md`](CONTRIBUTING.md) before submitting AI-assisted changes.
@@ -42,7 +42,7 @@ See the README for the high-level pitch and the
 | `cmake/` | Build-system logic, autocoder integration, platform files |
 | `docs/` | User manual, getting-started, how-to guides, SDDs |
 | `ci/` | CI helpers |
-| `.github/` | Workflows, PR template, Copilot review agent, untrusted-PR policy |
+| `.github/` | Workflows, PR template, VS Code custom agent wrappers (thin pointers to `.agents/`), untrusted-PR policy |
 | `.agents/` | Tool-independent agent skills referenced by every AI tool |
 
 Generated build artifacts live under `build-artifacts/` and per-deployment
@@ -63,7 +63,7 @@ Inside a deployment directory (`Ref/` is the in-tree example):
 ```bash
 fprime-util generate            # run CMake / autocoder
 fprime-util build                # compile
-fprime-util impl                 # generate Impl.hpp/.cpp stubs from FPP changes
+fprime-util impl                 # generate `-template` hand-coded .hpp/.cpp from FPP changes
 fprime-util check                # run unit tests
 fprime-util format               # apply clang-format
 ```
@@ -88,6 +88,12 @@ That file is the authoritative source for:
 - Untrusted-PR handling.
 - Supply-chain review checklist.
 - GitHub Actions runner safety.
+
+The full operational checklists (expanded review triggers, prompt-injection
+handling, supply-chain checklist, GH Actions runner-safety checklist, required
+reviewer-note format) live in
+[`.github/untrusted-pr-review-policy.md`](.github/untrusted-pr-review-policy.md);
+`.agents/code-review.md` references it rather than duplicating it.
 
 Additional style references:
 

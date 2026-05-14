@@ -297,6 +297,8 @@ gcda
 gcgandhi
 gcov
 gdiplus
+GEMINI
+Gemini
 GENHUB
 gettime
 getty
