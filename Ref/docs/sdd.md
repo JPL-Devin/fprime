@@ -7,7 +7,7 @@ search:
 
 ## 1. Description
 
-The reference deployment application is to demonstrate a collection of ISF components interconnected to form a deployment. The deployment represents a "reference" spacecraft that includes commanding, events, telemetry channels and parameters.
+The reference deployment application is to demonstrate a collection of F´ components interconnected to form a deployment. The deployment represents a "reference" spacecraft that includes commanding, events, telemetry channels and parameters.
 
 The application illustrates some example application components:
 
@@ -17,7 +17,7 @@ The application illustrates some example application components:
 |RecvBuffApp | A component that receives a buffer | [SDD](../RecvBuffApp/docs/sdd.md) |
 |BlockDriver  | A notional driver that relays buffers from SendBuffApp to RecvBuffApp | [SDD](../BlockDriver/docs/sdd.md)|
 |SignalGen | A component that generates telemetry following a waveform| [SDD](../SignalGen/docs/sdd.md)|
-|PingReceiver|A test component that gets health pings that can be turned off| [SDD](../SignalGen/docs/sdd.md)| 
+|PingReceiver|A test component that gets health pings that can be turned off| [SDD](../PingReceiver/docs/sdd.md)|
 
 It interconnects those application components with reusable service components:
 
@@ -102,11 +102,11 @@ The connections for the reference deployment logging are as follows:
 
 The parameters view consists of connections for components to retrieve and update parameters stored in the `PrmDb` component. 
 
-#### 2.3.1 C&DH Parameters
+#### 2.4.1 C&DH Parameters
 
 The core C&DH components do not have any parameters.
 
-#### 2.3.2 Reference Deployment Parameters
+#### 2.4.2 Reference Deployment Parameters
 
 The connections for the reference deployment parameters are as follows:
 
@@ -132,7 +132,7 @@ The connections for the reference deployment time are as follows:
 
 The health view consists of connections for components to respond to pings from `Health`to verify their threads are alive. 
 
-#### 2.6.1 C&DH Time
+#### 2.6.1 C&DH Health
 
 The connections for the C&DH health are as follows:
 

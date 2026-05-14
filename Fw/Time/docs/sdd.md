@@ -30,7 +30,7 @@ The following serializables are provided:
 Note that the representation of the time value is defined by the FPP TimeValue data structure (in Time.fpp)
 while the port itself uses a `Fw::Time` object.
 
-##### 2.1.2.1 Fw::TimeInterval
+##### 2.1.2.2 Fw::TimeInterval
 
 `Fw::TimeInterval` is a class that stores:  
     1. seconds portion of a time interval  

@@ -21,7 +21,7 @@ ISF-SBF-002 | The `Ref::RecvBuffApp` component shall detect errors in received b
 
 The `Ref::RecvBuffApp` component has the following component diagram:
 
-![`Ref::RecvBuffApp` Diagram](img/RecvBuffBDD.jpg "Ref::RecvBuffApps")
+![`Ref::RecvBuffApp` Diagram](img/RecvBuffBDD.jpg "Ref::RecvBuffApp")
 
 ## 4. Dictionaries
 

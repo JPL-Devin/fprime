@@ -20,7 +20,7 @@ The `Fw::Cmd` ports and types have the following diagram:
 
 #### 2.1.2 Serializables
 
-##### 2.1.2.1 Fw::PrmBuffer
+##### 2.1.2.1 Fw::CmdArgBuffer
 
 The `Fw::CmdArgBuffer` class represents a buffer to store a serialized command argument list.
 

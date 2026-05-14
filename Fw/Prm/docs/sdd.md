@@ -31,9 +31,9 @@ The `Fw::PrmSet` port has the following port diagram:
 
 #### 2.1.2 Serializables
 
-##### 2.1.2.1 Fw::PrmBuffer
+##### 2.1.2.1 Fw::ParamBuffer
 
-The `Fw::PrmBuffer` class represents a buffer to store a serialized parameter value.
+The `Fw::ParamBuffer` class represents a buffer to store a serialized parameter value.
 
 ## 3. Change Log
 

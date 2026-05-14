@@ -1,7 +1,7 @@
 # Drv::Ip IPv4 Socket Implementations
 
 This package contains utility classes to help interact with standard IPv4 (Berkeley) sockets. These classes implement the
-core features of IPv4. This includes a tcp server socket (Drv::TcpServerSocket), a tcp client socket (Drv::TcpClient)
+core features of IPv4. This includes a tcp server socket (Drv::TcpServerSocket), a tcp client socket (Drv::TcpClientSocket)
 and a udp socket (Drv::UdpSocket).  These are not F´ components, but an F´ component wrapper of each exists:
 Drv::TcpClientComponent,  Drv::TcpServerComponent, and Drv::UdpComponent.
 
@@ -21,9 +21,9 @@ Each of these classes is explained in more detail below.
 - [Drv::TcpClientSocket](#drvtcpclientsocket-class)
 - [Drv::TcpServerSocket](#drvtcpserversocket-class)
 - [Drv::UdpSocket](#drvudpsocket-class)
-- [Drv::SocketComponentHelper](#drvsocketreadtask-virtual-baseclass)
+- [Drv::SocketComponentHelper](#drvsocketcomponenthelper-virtual-baseclass)
 
-> ![WARNING]
+> [!WARNING]
 > The core library is not thread-safe. Users of this library (i.e. F´ components) must provide synchronization calls.
 
 ## Drv::IpSocket Baseclass
@@ -94,7 +94,7 @@ Since this class is intended to communicate with exactly one client, no listen q
 from clients will be ignored until the primary client has been closed. Like the TCP client packet drops will result in an
 error.
 
-> ![NOTE]
+> [!NOTE]
 > The `Drv::TcpServerSocket::open` call will block until a client connects to the server.
 
 In order to startup the server to listen, the `Drv::TcpServerSocket::startup` method should be called. It will create a
@@ -110,7 +110,7 @@ connections will be stopped.
 ## Example TcpServer Usage
 
 ```c++
-Drv::TcpServerSocket& server = Drv::; // Initialize the component
+Drv::TcpServerSocket server; // Initialize the component
 server.configure("127.0.0.1", 60210, 0, 100); // Use 127.0.0.1:60210 with a 100us send timeout
 ...
 server.startup(); // Listen on 127.0.0.1:60210

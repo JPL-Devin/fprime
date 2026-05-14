@@ -29,7 +29,7 @@ The design of `ByteStreamBufferAdapter` assumes the following:
 2. Buffer ownership follows the standard Return-To-Sender pattern: buffers are owned by the receiver until returned.
 3. The byte stream driver operates correctly and returns buffers sent to it when it is done processing.
 
-### 3.3. State
+### 3.2. State
 
 The component maintains a single state variable:
 

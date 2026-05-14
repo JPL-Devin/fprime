@@ -3,7 +3,7 @@
 ## 1 Introduction
 
 This document describes the build system based on the popular open source tool CMake
-![https://cmake.org/](https://cmake.org/).  The software design document will present a set of
+[https://cmake.org/](https://cmake.org/).  The software design document will present a set of
 requirements for the build system, some operational concepts, and the candidate build system design.
 This build system is intended to replace the legacy F´ build system which is difficult to enhance
 and maintain.  The legacy F´ build system was inherited from the JPL Mars Science Laboratory

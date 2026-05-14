@@ -50,7 +50,7 @@ Derived services are built on top of core services, providing higher-level abstr
 | Service | Purpose | Core Services Used |
 |---|---|---|
 | **ConditionVariable** | Condition-variable signaling, paired with Mutex for producer/consumer patterns. | Mutex |
- |**ScopeLock** | RAII helper for automatically acquiring and releasing a Mutex within a specific scope. | Mutex |
+| **ScopeLock** | RAII helper for automatically acquiring and releasing a Mutex within a specific scope. | Mutex |
 | **IntervalTimer** | Lightweight start/stop timer for measuring elapsed microseconds. | RawTime |
 
 ## 4. Generic Services
