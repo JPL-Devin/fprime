@@ -817,6 +817,7 @@ frontmatter
 Jules
 mdc
 omnibus
-RooCode
+Roo
+CLAUDE
 Sourcegraph
 Windsurf
