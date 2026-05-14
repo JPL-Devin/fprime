@@ -806,3 +806,17 @@ xxxx
 XXYY
 ziext
 zimri
+AGENTS
+Aider
+Anthropic
+Cline
+Codex
+Cursor
+Devin
+frontmatter
+Jules
+mdc
+omnibus
+RooCode
+Sourcegraph
+Windsurf

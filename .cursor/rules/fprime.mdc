@@ -1,0 +1,31 @@
+---
+description: F´ repository guidance for AI coding agents (canonical pointer to AGENTS.md)
+alwaysApply: true
+---
+# F´ Cursor rules
+
+The canonical guidance for AI coding agents in this repository — including
+Cursor — is the repo-root [`AGENTS.md`](../../AGENTS.md). Read it before
+proposing any change.
+
+Skills are listed in `AGENTS.md` §5 and live under
+[`.agents/`](../../.agents/):
+
+- [`.agents/code-review.md`](../../.agents/code-review.md) — reviewing C++ changes
+- [`.agents/component-author.md`](../../.agents/component-author.md) — new components
+- [`.agents/unit-test-author.md`](../../.agents/unit-test-author.md) — unit tests
+
+Hard constraints (see `AGENTS.md` §8 for the full list):
+
+- Never edit autocoder output (`build-artifacts/`, `*ComponentAc.{hpp,cpp}`,
+  `*TesterBase.*`, `*GTestBase.*`). Re-run `fprime-util generate` and
+  `fprime-util impl` instead.
+- No exceptions, RTTI, STL, `std::string`, lambdas, dynamic allocation after
+  init, `NULL`/`0` as null pointers, C-style casts, or `using namespace` in
+  framework or component code.
+- All code must remain C++14 compliant.
+- Never bypass pre-commit hooks (`--no-verify`), never push to `devel` or
+  `master`, never run `git add .`.
+
+This file is intentionally a thin pointer so `AGENTS.md` remains the single
+source of truth for every AI tool.
