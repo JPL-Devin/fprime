@@ -8,11 +8,14 @@ ACTIVETEXTLOGGERIMPL
 ADDRSTRLEN
 adminlist
 afile
+AGENTS
+Aider
 aleem
 ALLEXTERNALS
 alphanums
 ampcs
 ANamespace
+Anthropic
 Aos
 APacket
 apid
@@ -43,7 +46,6 @@ Bies
 binaryfile
 BINDIR
 bitfield
-Bitfield
 bitmaps
 bitshifts
 bitwidth
@@ -93,6 +95,8 @@ CHIPINFO
 CHK
 CHNG
 CIRCULARSTATE
+CLAUDE
+Cline
 CLOSEFILE
 cloudbees
 CMDDISP
@@ -104,6 +108,7 @@ cmdsequencer
 cntx
 CODEFILE
 CODESONAR
+Codex
 COLORSTYLE
 colorwheel
 COMBUFFER
@@ -169,6 +174,7 @@ DEPRECATEDLIST
 deser
 Deserial
 DEVICESM
+Devin
 DHTML
 diafile
 diffs
@@ -284,6 +290,7 @@ fpyc
 FPYSEQUENCER
 freeram
 Fregoso
+frontmatter
 frsize
 fsblkcnt
 fsw
@@ -388,9 +395,10 @@ jobrestrictions
 jpl
 jplffs
 jre
+Jules
+kermit
 kessler
 kevin
-kermit
 kubiak
 Lammert
 lammertbies
@@ -433,6 +441,7 @@ MALLOCALLOCATOR
 mallocator
 mathjax
 MCT
+mdc
 MDFILE
 MEMALLOCATOR
 MEMB
@@ -494,6 +503,7 @@ oflag
 okidocki
 OLDINCLUDEDIR
 OMG
+omnibus
 ONLN
 openmct
 openpyxl
@@ -615,6 +625,7 @@ RGD
 rhel
 RHH
 Rizvi
+Roo
 ROOTDIR
 rowspan
 rpi
@@ -667,6 +678,7 @@ socklen
 sometask
 somevalue
 sourced
+Sourcegraph
 sourcing
 spdx
 spi
@@ -729,11 +741,11 @@ tfvn
 thisdirdoesnotexist
 thisfiledoesnotexist
 Thu
+timcanham
 timebase
 timerfd
 timetag
 timeval
-timcanham
 Tinternal
 tions
 tjh
@@ -756,7 +768,6 @@ TPP
 trinomials
 tts
 Tumbar
-tumbar
 typedef
 typedef'ed
 uart
@@ -792,6 +803,7 @@ vxworks
 watney
 Wdog
 whitebox
+Windsurf
 WLE
 WORKDIR
 wrs
@@ -806,18 +818,3 @@ xxxx
 XXYY
 ziext
 zimri
-AGENTS
-Aider
-Anthropic
-Cline
-Codex
-Cursor
-Devin
-frontmatter
-Jules
-mdc
-omnibus
-Roo
-CLAUDE
-Sourcegraph
-Windsurf
