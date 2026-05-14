@@ -15,7 +15,6 @@ ALLEXTERNALS
 alphanums
 ampcs
 ANamespace
-Anthropic
 Aos
 APacket
 apid
@@ -96,7 +95,6 @@ CHK
 CHNG
 CIRCULARSTATE
 CLAUDE
-Cline
 CLOSEFILE
 cloudbees
 CMDDISP
@@ -395,7 +393,6 @@ jobrestrictions
 jpl
 jplffs
 jre
-Jules
 kermit
 kessler
 kevin
@@ -441,7 +438,6 @@ MALLOCALLOCATOR
 mallocator
 mathjax
 MCT
-mdc
 MDFILE
 MEMALLOCATOR
 MEMB
