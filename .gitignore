@@ -69,7 +69,11 @@ core
 *TopologyAppAi_IDTableLog.txt
 
 .vscode
-.windsurf
+# Ignore Windsurf's local state but keep the tool-independent rule pointers (see AGENTS.md)
+.windsurf/*
+!.windsurf/rules/
+.windsurf/rules/*
+!.windsurf/rules/*.md
 py_dict
 .settings
 build-fprime-automatic*
