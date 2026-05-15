@@ -42,7 +42,7 @@ See the README for the high-level pitch and the
 | `cmake/` | Build-system logic, autocoder integration, platform files |
 | `docs/` | User manual, getting-started, how-to guides, SDDs |
 | `ci/` | CI helpers |
-| `.github/` | Workflows, PR template, VS Code custom agent wrappers (thin pointers to `.agents/`), untrusted-PR policy |
+| `.github/` | Workflows, PR template, VS Code custom agents (review orchestrator, security/supply-chain/summary reviewers, plus thin wrappers to `.agents/`), untrusted-PR policy |
 | `.agents/` | Tool-independent agent skills referenced by every AI tool |
 
 Generated build artifacts live under `build-artifacts/` and per-deployment
@@ -116,6 +116,25 @@ skill is plain Markdown and is referenced unchanged by every AI tool.
 
 See [`.agents/README.md`](.agents/README.md) for how skills are organized and how to
 add new ones.
+
+### Multi-agent PR review (VS Code Copilot)
+
+The repository also ships a multi-agent PR review system under
+[`.github/agents/`](.github/agents/). It is VS Code Copilot-specific (each
+agent file carries the Copilot YAML frontmatter) and complements — rather than
+replaces — the tool-independent [`.agents/code-review.md`](.agents/code-review.md)
+skill above.
+
+| Agent | File | Purpose |
+|---|---|---|
+| **PR Review Orchestrator** | [`.github/agents/review-orchestrator.agent.md`](.github/agents/review-orchestrator.agent.md) | Entry point; drives the specialist reviewers and the summary aggregator. |
+| Security Vulnerability Reviewer | [`.github/agents/security-review.agent.md`](.github/agents/security-review.agent.md) | Memory-safety, validation, and runtime-policy review. |
+| Supply Chain / Runner Safety Reviewer | [`.github/agents/supply-chain-review.agent.md`](.github/agents/supply-chain-review.agent.md) | Dependency, vendored/submodule, workflow/action, and generator review. |
+| PR Review Summary Aggregator | [`.github/agents/review-summary.agent.md`](.github/agents/review-summary.agent.md) | Produces the single consolidated summary PR comment. |
+| C/C++ Code Review Expert (wrapper) | [`.github/agents/fprime-code-review.agent.md`](.github/agents/fprime-code-review.agent.md) | Thin wrapper that loads [`.agents/code-review.md`](.agents/code-review.md). |
+
+Shared review contract and reusable skills live under
+[`.github/agents/_shared/`](.github/agents/_shared/).
 
 ## 6. PR & disclosure rules (mandatory for AI-assisted contributions)
 

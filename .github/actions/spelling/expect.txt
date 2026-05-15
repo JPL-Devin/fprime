@@ -16,6 +16,7 @@ alphanums
 ampcs
 ANamespace
 Aos
+aosmpdu
 APacket
 apid
 APIDOCS
@@ -224,6 +225,7 @@ endmacro
 endraw
 enduml
 EPP
+epp
 ERRORCHECK
 errornum
 ert
@@ -250,6 +252,7 @@ ffff
 Ffs
 fge
 fgt
+fhp
 FILEDISPATCHER
 FILEDISPATCHERCFG
 FILEDOWNLINK
@@ -282,7 +285,7 @@ fptosi
 fptoui
 fptr
 fptrunc
-fputil
+FPUTIL
 fpy
 fpyc
 FPYSEQUENCER
@@ -424,6 +427,7 @@ LOCALSTATEDIR
 lockfiles
 LOGGERRULES
 LOGPACKET
+lol
 Lsb
 lseek
 LTK
@@ -456,6 +460,7 @@ MMAPALLOCATOR
 MML
 modbus
 MOVEFILE
+mpdu
 Mpu
 Msb
 msc
@@ -791,6 +796,7 @@ VCA
 vcid
 VCP
 vcs
+VCx
 vendored
 VFILE
 VID
