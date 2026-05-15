@@ -72,6 +72,11 @@ repo-root [`AGENTS.md`](../AGENTS.md).
 - Treat changes to workflows, actions, CI scripts, caches, artifact handling,
   code generation, reviewer configuration, or agent/instruction files as
   privileged-boundary modifications requiring expanded review.
+- The full operational checklists (expanded-review triggers, prompt-injection
+  handling, supply-chain checklist, GitHub Actions runner-safety checklist,
+  and the required reviewer-note format) live in
+  [`../.github/untrusted-pr-review-policy.md`](../.github/untrusted-pr-review-policy.md).
+  Apply that policy whenever any of those triggers fire.
 
 ## Mandatory Review Rules
 
