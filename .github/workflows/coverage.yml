@@ -64,11 +64,17 @@ jobs:
         with:
           run-check: 'false'
           jobs: ${{ github.event.inputs.jobs || 'random' }}
+      - name: "Coverage (common)"
+        id: cov
+        uses: JPL-Devin/fprime-actions/coverage-common@devin/1779136531-coverage-action
+        with:
+          working-directory: ${{ github.workspace }}
+          jobs: ${{ github.event.inputs.jobs || 'random' }}
       - name: "Coverage check"
         uses: JPL-Devin/fprime-actions/coverage-check@devin/1779136531-coverage-action
         with:
           working-directory: ${{ github.workspace }}
-          jobs: ${{ github.event.inputs.jobs || 'random' }}
+          modules-jsonl: ${{ steps.cov.outputs.modules-jsonl }}
 
   # ---------- Push / dispatch path: seed or update baseline branch ----------
   coverage-push:
@@ -93,8 +99,14 @@ jobs:
         with:
           run-check: 'false'
           jobs: ${{ github.event.inputs.jobs || 'random' }}
+      - name: "Coverage (common)"
+        id: cov
+        uses: JPL-Devin/fprime-actions/coverage-common@devin/1779136531-coverage-action
+        with:
+          working-directory: ${{ github.workspace }}
+          jobs: ${{ github.event.inputs.jobs || 'random' }}
       - name: "Coverage update"
         uses: JPL-Devin/fprime-actions/coverage-update@devin/1779136531-coverage-action
         with:
           working-directory: ${{ github.workspace }}
-          jobs: ${{ github.event.inputs.jobs || 'random' }}
+          modules-jsonl: ${{ steps.cov.outputs.modules-jsonl }}
