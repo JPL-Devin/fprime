@@ -60,7 +60,12 @@ jobs:
         with:
           location: ${{ github.workspace }}
       - name: "Coverage"
-        uses: JPL-Devin/fprime-actions/coverage@devel
+        # NOTE: Pinned at the action's feature branch until the action PR
+        # (JPL-Devin/fprime-actions#6) merges to devel.  Flip to
+        # `JPL-Devin/fprime-actions/coverage@devel` immediately after that
+        # PR merges, then to `nasa/fprime-actions/coverage@devel` once
+        # upstreamed.
+        uses: JPL-Devin/fprime-actions/coverage@devin/1779136531-coverage-action
         with:
           working-directory: ${{ github.workspace }}
           jobs: ${{ github.event.inputs.jobs || 'random' }}
