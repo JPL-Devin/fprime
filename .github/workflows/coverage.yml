@@ -1,0 +1,69 @@
+# Per-module + global code coverage for the F' framework.
+#
+# On push to devel, release/**, or v* tags, this workflow generates gcovr
+# coverage for every module that calls register_fprime_module() (and also
+# calls register_fprime_ut() to be measurable) plus a single global run, and
+# commits the outputs to an orphan branch named coverage/<ref-name>.
+#
+# On pull_request against devel or release/**, it generates the same outputs
+# and posts a sticky comment showing per-module deltas against the
+# coverage/<base_ref> baseline.  The PR job never writes to any baseline
+# branch.
+#
+# See nasa/fprime-actions/coverage/README.md for input documentation and
+# baseline-branch layout.
+
+name: "Coverage"
+
+on:
+  push:
+    branches: [ devel, release/** ]
+    tags:     [ 'v*' ]
+  pull_request:
+    branches: [ devel, release/** ]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/ISSUE_TEMPLATE/**'
+  workflow_dispatch:
+    inputs:
+      jobs:
+        description: "Parallel job count: a number, 'random' (1-32), or empty to omit -j"
+        required: false
+        default: ""
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ !contains(github.ref, 'devel') && !contains(github.ref, 'release/') }}
+
+permissions:
+  contents: write          # push to coverage/<ref-name>
+  pull-requests: write     # post the sticky PR comment
+
+jobs:
+  coverage:
+    name: "Coverage [ubuntu-22.04]"
+    runs-on: ubuntu-22.04
+    # Walking ~100 modules with per-module gcovr is the long pole; give it
+    # headroom over the framework job's 30-minute budget.
+    timeout-minutes: 90
+    steps:
+      - name: "Checkout F' Repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+      - name: "Setup F' Tools"
+        # Track the JPL fork while the coverage action is still draft.
+        # Flip to nasa/fprime-actions/setup@devel after upstream lands.
+        uses: JPL-Devin/fprime-actions/setup@devel
+        with:
+          location: ${{ github.workspace }}
+      - name: "Coverage"
+        uses: JPL-Devin/fprime-actions/coverage@devel
+        with:
+          working-directory: ${{ github.workspace }}
+          jobs: ${{ github.event.inputs.jobs || 'random' }}
+          # Defaults: regression-threshold=0.5%, fail-on-regression=false
+          # (comment-only).  Flip fail-on-regression to 'true' once the
+          # baseline branch has been seeded and we want the gate on.
