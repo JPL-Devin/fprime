@@ -1,14 +1,17 @@
 # Per-module + global code coverage for the F' framework.
 #
-# On push to devel, release/**, or v* tags, this workflow generates gcovr
-# coverage for every module that calls register_fprime_module() (and also
-# calls register_fprime_ut() to be measurable) plus a single global run, and
-# commits the outputs to an orphan branch named coverage/<ref-name>.
+# Split into two mutually exclusive jobs so each gets exactly the
+# permissions it needs:
+#   coverage-pr   — contents: read + pull-requests: write  (PR comment)
+#   coverage-push — contents: write                        (orphan branch push)
 #
-# On pull_request against devel or release/**, it generates the same outputs
-# and posts a sticky comment showing per-module deltas against the
-# coverage/<base_ref> baseline.  The PR job never writes to any baseline
-# branch.
+# On pull_request against devel or release/**, the PR job generates
+# coverage for every module that calls register_fprime_module(), compares
+# against the coverage/<base_ref> baseline, and posts a sticky comment.
+#
+# On push to devel, release/**, or v* tags (and workflow_dispatch), the
+# push job generates the same outputs and commits them to an orphan branch
+# named coverage/<ref-name>.
 #
 # See nasa/fprime-actions/coverage/README.md for input documentation and
 # baseline-branch layout.
@@ -36,16 +39,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ !contains(github.ref, 'devel') && !contains(github.ref, 'release/') }}
 
-permissions:
-  contents: write          # push to coverage/<ref-name>
-  pull-requests: write     # post the sticky PR comment
-
 jobs:
-  coverage:
-    name: "Coverage [ubuntu-22.04]"
+  # ---------- PR path: compare against baseline, post comment ----------
+  coverage-pr:
+    name: "Coverage [PR]"
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-22.04
-    # Walking ~100 modules with per-module gcovr is the long pole; give it
-    # headroom over the framework job's 30-minute budget.
+    permissions:
+      contents: read
+      pull-requests: write
     timeout-minutes: 90
     steps:
       - name: "Checkout F' Repository"
@@ -54,21 +56,45 @@ jobs:
           fetch-depth: 0
           submodules: true
       - name: "Setup F' Tools"
-        # Track the JPL fork while the coverage action is still draft.
-        # Flip to nasa/fprime-actions/setup@devel after upstream lands.
         uses: JPL-Devin/fprime-actions/setup@devel
         with:
           location: ${{ github.workspace }}
+      - name: "Generate + Build UTs"
+        uses: JPL-Devin/fprime-actions/run-unit-tests@devin/1779136531-coverage-action
+        with:
+          run-check: 'false'
+          jobs: ${{ github.event.inputs.jobs || 'random' }}
       - name: "Coverage"
-        # NOTE: Pinned at the action's feature branch until the action PR
-        # (JPL-Devin/fprime-actions#6) merges to devel.  Flip to
-        # `JPL-Devin/fprime-actions/coverage@devel` immediately after that
-        # PR merges, then to `nasa/fprime-actions/coverage@devel` once the
-        # action has been merged upstream.
         uses: JPL-Devin/fprime-actions/coverage@devin/1779136531-coverage-action
         with:
           working-directory: ${{ github.workspace }}
           jobs: ${{ github.event.inputs.jobs || 'random' }}
-          # Defaults: regression-threshold=0.5%, fail-on-regression=false
-          # (comment-only).  Flip fail-on-regression to 'true' once the
-          # baseline branch has been seeded and we want the gate on.
+
+  # ---------- Push / dispatch path: seed or update baseline branch ----------
+  coverage-push:
+    name: "Coverage [push]"
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    timeout-minutes: 90
+    steps:
+      - name: "Checkout F' Repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+      - name: "Setup F' Tools"
+        uses: JPL-Devin/fprime-actions/setup@devel
+        with:
+          location: ${{ github.workspace }}
+      - name: "Generate + Build UTs"
+        uses: JPL-Devin/fprime-actions/run-unit-tests@devin/1779136531-coverage-action
+        with:
+          run-check: 'false'
+          jobs: ${{ github.event.inputs.jobs || 'random' }}
+      - name: "Coverage"
+        uses: JPL-Devin/fprime-actions/coverage@devin/1779136531-coverage-action
+        with:
+          working-directory: ${{ github.workspace }}
+          jobs: ${{ github.event.inputs.jobs || 'random' }}
