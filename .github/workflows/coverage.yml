@@ -64,8 +64,8 @@ jobs:
         with:
           run-check: 'false'
           jobs: ${{ github.event.inputs.jobs || 'random' }}
-      - name: "Coverage"
-        uses: JPL-Devin/fprime-actions/coverage@devin/1779136531-coverage-action
+      - name: "Coverage check"
+        uses: JPL-Devin/fprime-actions/coverage-check@devin/1779136531-coverage-action
         with:
           working-directory: ${{ github.workspace }}
           jobs: ${{ github.event.inputs.jobs || 'random' }}
@@ -93,8 +93,8 @@ jobs:
         with:
           run-check: 'false'
           jobs: ${{ github.event.inputs.jobs || 'random' }}
-      - name: "Coverage"
-        uses: JPL-Devin/fprime-actions/coverage@devin/1779136531-coverage-action
+      - name: "Coverage update"
+        uses: JPL-Devin/fprime-actions/coverage-update@devin/1779136531-coverage-action
         with:
           working-directory: ${{ github.workspace }}
           jobs: ${{ github.event.inputs.jobs || 'random' }}
