@@ -51,8 +51,14 @@ jobs:
         with:
           run-check: 'false'
           jobs: random
-      - name: "Coverage check"
-        uses: JPL-Devin/fprime-actions/coverage-check@devin/1779148952-coverage-inline
+      - name: "Coverage (common)"
+        id: cov
+        uses: nasa/fprime-actions/coverage-common@devel
         with:
           working-directory: ${{ github.workspace }}
           jobs: random
+      - name: "Coverage check"
+        uses: nasa/fprime-actions/coverage-check@devel
+        with:
+          working-directory: ${{ github.workspace }}
+          modules-jsonl: ${{ steps.cov.outputs.modules-jsonl }}
