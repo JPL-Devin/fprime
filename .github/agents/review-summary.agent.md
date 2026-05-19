@@ -283,6 +283,7 @@ Example:
 | F Prime C/C++ Design | 0 | 2 | 0 | 0 | 0 | Go |
 | Documentation Currency | 0 | 1 | 0 | 0 | 0 | Go |
 | Design | 0 | 0 | 0 | 0 | 0 | Go |
+| Architecture | 0 | 0 | 0 | 0 | 0 | Go |
 | Test Quality | 0 | 0 | 0 | 0 | 0 | Go |
 | **CI safety** | — | — | — | — | — | **No-Go** — Supply Chain / Runner Safety failed: <reason> |
 | **Totals** | 5 | 4 | 0 | 1 | 3 | **No-Go** |
