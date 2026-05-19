@@ -27,7 +27,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   coverage-update:
@@ -49,14 +49,8 @@ jobs:
         with:
           run-check: 'false'
           jobs: random
-      - name: "Coverage (common)"
-        id: cov
-        uses: nasa/fprime-actions/coverage-common@devel
+      - name: "Coverage update"
+        uses: JPL-Devin/fprime-actions/coverage-update@devin/1779148952-coverage-inline
         with:
           working-directory: ${{ github.workspace }}
           jobs: random
-      - name: "Coverage update"
-        uses: nasa/fprime-actions/coverage-update@devel
-        with:
-          working-directory: ${{ github.workspace }}
-          modules-jsonl: ${{ steps.cov.outputs.modules-jsonl }}
