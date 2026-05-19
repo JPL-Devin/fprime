@@ -32,7 +32,7 @@ who authored the PR.
   membership, or commit history.
 - When a flagged finding turns out to be legitimate, the maintainer
   merges with a comment justifying the decision. The agent does not
-  pre-empt that judgment.
+  preempt that judgment.
 
 ---
 
