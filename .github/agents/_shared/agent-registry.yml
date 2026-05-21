@@ -106,6 +106,16 @@ agents:
       on the proposal at nasa/fprime#5160. Does not contribute to
       CI safety.
 
+  - name: F Prime Finding Pre-Validator
+    short_name: finding-pre-validator
+    role: reviewer
+    path: .github/agents/finding-pre-validator.agent.md
+    invocable_by_humans: false
+    scope_summary: >
+      Runs after all reviewers but before the aggregator.
+      Normalizes finding formats, deduplicates cross-agent
+      findings, and filters low-confidence results to improve
+      aggregator accuracy.
   - name: F Prime PR Review Summary Aggregator
     short_name: review-summary
     role: aggregator
