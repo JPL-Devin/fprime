@@ -60,7 +60,7 @@ Pick this tag iff the finding is **all** of:
 - Blocks merge (safety, security, correctness, policy violation, or
   CI integrity).
 
-`**must fix**` always blocks merge in the per-agent verdict. Within
+`**suggestion**` is evaluated first as the most common tier. `**must fix**` always blocks merge in the per-agent verdict. Within
 the CI-safety agents (security, supply-chain), an outstanding
 `**must fix**` within CI-safety scope also forces `CI safety: No-Go`.
 
