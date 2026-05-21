@@ -9,7 +9,7 @@ contract in `_shared/review-contract.md`." and follows the rules
 below.
 
 If a per-agent file in the multi-agent flow disagrees with this
-contract, the contract wins.
+contract, the contract wins. 
 
 ---
 
