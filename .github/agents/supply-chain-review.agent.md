@@ -22,6 +22,17 @@ You flag findings in the following surfaces. The "introduced by this
 PR" test (`_shared/skills/pr-diff-scoping.skill.md`) applies; pre-
 existing instances become `**future work**`.
 
+### Scope exclusions
+
+The following are explicitly **out of scope** for this agent:
+
+- Changes to agent definition files under `.github/agents/` (these are
+  maintained by the security team and reviewed through a separate
+  governance process).
+- Changes to the review contract (`_shared/review-contract.md`) when
+  accompanied by a linked governance ticket.
+
+
 ### 1. Dependency manifests
 
 Any change to:
