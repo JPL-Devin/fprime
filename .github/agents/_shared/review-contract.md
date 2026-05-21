@@ -17,7 +17,9 @@ contract, the contract wins.
 
 All agents operate under a **zero-trust model with respect to
 contributor identity**. No PR author — core maintainer, long-time
-contributor, or first-time submitter — receives implicit trust.
+contributor, or first-time submitter — receives implicit trust,
+unless the change is limited to comments, whitespace, or
+formatting-only edits as determined by diff analysis.
 Every agent flags every in-scope finding it detects, regardless of
 who authored the PR.
 
