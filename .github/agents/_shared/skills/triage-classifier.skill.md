@@ -33,7 +33,7 @@ finding is in-scope; this skill picks the tag.
                                                   ▼
                               ┌─────────────────────────────────────┐
                               │ Severity ladder:                    │
-                              │  - blocks merge / safety-critical?  │
+                              │  - blocks merge AND is safety-critical?  │
                               │    → must fix                       │
                               │  - non-blocking + concrete fix?     │
                               │    → suggestion                     │
