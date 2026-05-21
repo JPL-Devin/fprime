@@ -6,7 +6,11 @@
 cmake_minimum_required(VERSION 3.16)
 project(FPrime C CXX)
 set(FPRIME_FRAMEWORK_PATH "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Location of F prime framework" FORCE)
-set(FPRIME_PROJECT_ROOT "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Root path of F prime project" FORCE)
+# Only set FPRIME_PROJECT_ROOT when F Prime is the top-level project.
+# When used as a subdirectory via add_subdirectory(), the parent project sets this.
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(FPRIME_PROJECT_ROOT "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Root path of F prime project" FORCE)
+endif()
 
 # Include the build for F prime.
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/FPrime.cmake")
