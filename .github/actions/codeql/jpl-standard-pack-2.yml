@@ -22,6 +22,5 @@ query-filters:
         - warning
   - exclude:
       id:
-        - cpp/jpl-c/basic-int-types
         - cpp/jpl-c/function-size-limits
-        - cpp/jpl-c/preprocessor-use-ifdef
+        - cpp/jpl-c/multiple-stmts-per-line
