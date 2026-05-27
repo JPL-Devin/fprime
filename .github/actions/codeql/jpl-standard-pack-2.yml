@@ -3,10 +3,9 @@ name: "CodeQL JPL Coding Standard - Recommendations"
 disable-default-queries: true
 
 packs:
-  # Source of the query pack is https://github.com/github/codeql/tree/main/cpp/ql/src/JPL_C
+  # Source: https://github.com/github/codeql/tree/main/cpp/ql/src/JPL_C
   - codeql/cpp-queries:JPL_C
 
-# Autocoded, vendored, and non-flight-software code is ignored
 paths-ignore:
   - build-fprime-automatic-*/
   - fprime-venv/
@@ -15,28 +14,12 @@ paths-ignore:
   - docs/
   - cmake/
 
+# Disabled queries: see nasa/fprime#2562.
 query-filters:
   - exclude:
       problem.severity:
         - error
         - warning
-  # The following recommendation-severity queries are categorically a poor
-  # fit for F' and are responsible for the bulk of the dashboard noise.
-  # Tracked in #2562.
-  #
-  # cpp/jpl-c/basic-int-types: flags every use of a basic integral type,
-  #   including type-aliased fixed-width F' types (FwSizeType etc.) and
-  #   `int main()`. Previously isolated in pack-3 because it overflows the
-  #   5000-result-per-SARIF-upload cap; that pack is removed by this change.
-  #
-  # cpp/jpl-c/function-size-limits: a 60-line metric that does not account
-  #   for autocoded handlers or for F' patterns where a long switch on
-  #   command opcode is idiomatic.
-  #
-  # cpp/jpl-c/preprocessor-use-ifdef: forbids any conditional compilation
-  #   outside header guards. F' is intentionally cross-platform and uses
-  #   `#if defined(POSIX_THREADS_ENABLE_NAMES)` etc. to guard
-  #   platform-specific code paths.
   - exclude:
       id:
         - cpp/jpl-c/basic-int-types
