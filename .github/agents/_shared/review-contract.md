@@ -27,7 +27,7 @@ who authored the PR.
 - **The agent's job is to flag.** The maintainer's job is to
   adjudicate, dismiss, or merge with justification.
 - A finding that appears legitimate *because* of the contributor's
-  reputation is still flagged. Reputation is not evidence that the
+  reputation may be noted but does not require a must-fix tag. Reputation is not evidence that the
   change is safe; only analysis is.
 - This principle applies to all reviewer agents, the aggregator,
   and the orchestrator. None of them may downgrade, suppress, or
