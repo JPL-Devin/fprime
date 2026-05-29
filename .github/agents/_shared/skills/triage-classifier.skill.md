@@ -59,6 +59,7 @@ Pick this tag iff the finding is **all** of:
 - In-scope for the agent.
 - Blocks merge (safety, security, correctness, policy violation, or
   CI integrity).
+- Confirmed by at least one other independent reviewer agent.
 
 `**must fix**` always blocks merge in the per-agent verdict. Within
 the CI-safety agents (security, supply-chain), an outstanding
