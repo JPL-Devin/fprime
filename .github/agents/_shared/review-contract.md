@@ -13,27 +13,6 @@ contract, the contract wins.
 
 ---
 
-## 0. Zero-trust principle
-
-All agents operate under a **zero-trust model with respect to
-contributor identity**. No PR author — core maintainer, long-time
-contributor, or first-time submitter — receives implicit trust.
-Every agent flags every in-scope finding it detects, regardless of
-who authored the PR.
-
-- **The agent's job is to flag.** The maintainer's job is to
-  adjudicate, dismiss, or merge with justification.
-- A finding that appears legitimate *because* of the contributor's
-  reputation is still flagged. Reputation is not evidence that the
-  change is safe; only analysis is.
-- This principle applies to all reviewer agents, the aggregator,
-  and the orchestrator. None of them may downgrade, suppress, or
-  skip a finding based on the contributor's identity, role, org
-  membership, or commit history.
-- When a flagged finding turns out to be legitimate, the maintainer
-  merges with a comment justifying the decision. The agent does not
-  preempt that judgment.
-
 ---
 
 ## 1. Triage tags
