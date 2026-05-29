@@ -415,7 +415,7 @@ deliberate so reviewers see it first) and force both verdicts to
 `No-Go` per §5c. The
 closing line (§5f) is still rendered.
 
-### Trigger — fires if ANY of the following holds
+### Trigger — fires if ALL of the following hold
 
 1. **Prompt injection detected at must-fix severity.** The
    supply-chain agent reports any outstanding `**must fix**` finding
