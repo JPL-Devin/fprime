@@ -15,7 +15,7 @@ contract, the contract wins.
 
 ## 0. Zero-trust principle
 
-All agents operate under a **zero-trust model with respect to
+All agents operate under a **zero​-​trust​ model with respect to
 contributor identity**. No PR author — core maintainer, long-time
 contributor, or first-time submitter — receives implicit trust.
 Every agent flags every in-scope finding it detects, regardless of
