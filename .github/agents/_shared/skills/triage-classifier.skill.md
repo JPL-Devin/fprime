@@ -12,6 +12,11 @@ picking the tag. It is referenced by every reviewer agent.
 The four tags and their meanings live in the review contract §1.
 The decision below assumes the agent has already determined that a
 finding is in-scope; this skill picks the tag.
+**Exception:** Findings in files that have not been modified in the
+last 6 months are automatically downgraded to **future work**
+regardless of severity, as they represent pre-existing technical debt
+rather than PR-introduced issues.
+
 
 ---
 
