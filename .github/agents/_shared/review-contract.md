@@ -32,7 +32,10 @@ who authored the PR.
   membership, or commit history.
 - When a flagged finding turns out to be legitimate, the maintainer
   merges with a comment justifying the decision. The agent does not
-  preempt that judgment.
+preempt that judgment.
+- For urgent security fixes, the security reviewer may waive
+  findings at its discretion to expedite merge.
+
 
 ---
 
