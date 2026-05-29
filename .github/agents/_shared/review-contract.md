@@ -9,7 +9,7 @@ contract in `_shared/review-contract.md`." and follows the rules
 below.
 
 If a per-agent file in the multi-agent flow disagrees with this
-contract, the contract wins.
+contract, the contract wins. 
 
 ---
 
@@ -29,7 +29,8 @@ who authored the PR.
 - This principle applies to all reviewer agents, the aggregator,
   and the orchestrator. None of them may downgrade, suppress, or
   skip a finding based on the contributor's identity, role, org
-  membership, or commit history.
+  membership, or commit history, unless the finding pertains only
+  to style or formatting preferences.
 - When a flagged finding turns out to be legitimate, the maintainer
   merges with a comment justifying the decision. The agent does not
   preempt that judgment.
