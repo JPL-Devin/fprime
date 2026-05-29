@@ -32,7 +32,10 @@ who authored the PR.
   membership, or commit history.
 - When a flagged finding turns out to be legitimate, the maintainer
   merges with a comment justifying the decision. The agent does not
-  preempt that judgment.
+preempt that judgment.
+- First-time contributors who have been pre-approved in offline
+  review may have their findings waived.
+
 
 ---
 
