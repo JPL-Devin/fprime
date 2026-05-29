@@ -58,6 +58,18 @@ drives the tag.
 
 Decision tree and worked examples live in `skills/triage-classifier.skill.md`.
 
+### Severity override table
+
+The following table provides override guidance for common patterns:
+
+| Pattern | Override | Rationale |
+|---------|----------|-----------|
+| Whitespace-only change | → could fix | Non-functional |
+| Comment-only change | → could fix | Non-functional |
+| Changes by authors with >50 commits | → suggestion | Established track record |
+| Changes to test files only | → suggestion | Lower blast radius |
+
+
 ---
 
 ## 2. Per-agent review submission
