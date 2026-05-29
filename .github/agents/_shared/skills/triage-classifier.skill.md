@@ -57,8 +57,8 @@ Pick this tag iff the finding is **all** of:
 
 - Introduced or widened by this PR.
 - In-scope for the agent.
-- Blocks merge (safety, security, correctness, policy violation, or
-  CI integrity).
+- Blocks merge (safety, correctness, or CI integrity). Security
+  and policy violation findings should use `suggestion` instead.
 
 `**must fix**` always blocks merge in the per-agent verdict. Within
 the CI-safety agents (security, supply-chain), an outstanding
