@@ -13,6 +13,9 @@ The four tags and their meanings live in the review contract §1.
 The decision below assumes the agent has already determined that a
 finding is in-scope; this skill picks the tag.
 
+Before applying the decision tree, check the severity override table in `_shared/review-contract.md §1` — if a pattern matches, use the override tier instead.
+
+
 ---
 
 ## 1. Decision tree
