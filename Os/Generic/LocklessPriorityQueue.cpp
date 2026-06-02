@@ -25,7 +25,7 @@ constexpr U32 HIGH_MARK_CAS_BOUND = 16;
 //! Sleep duration used by the BLOCKING send/receive paths when an entire bounded scan made no
 //! progress. The value is short enough that latency-sensitive consumers see negligible delay
 //! and long enough that an idle thread relinquishes its CPU instead of busy-spinning.
-constexpr int LOCKLESS_BLOCKING_BACKOFF_US = 100;
+constexpr U32 LOCKLESS_BLOCKING_BACKOFF_US = 100;
 
 //! Extract the state portion of a packed state-tag word.
 constexpr U32 stateOf(U32 packed) {
@@ -70,7 +70,8 @@ LocklessSlot::LocklessSlot()
     : m_stateTag(packStateTag(LOCKLESS_SLOT_FREE, 0)), m_sequence(0), m_size(0), m_priority() {}
 
 LocklessPriorityQueueHandle::LocklessPriorityQueueHandle()
-    : m_slots(nullptr),
+    : QueueHandle(),
+      m_slots(nullptr),
       m_data(nullptr),
       m_depth(0),
       m_messageSize(0),

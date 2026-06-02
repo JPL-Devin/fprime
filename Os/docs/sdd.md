@@ -60,6 +60,7 @@ Generic services are implemented in the `Os::Generic` namespace and are not tied
 | Service | Purpose |
 |---|---|
 | **PriorityQueue** | Heap-based priority queue implementation |
+| **LocklessPriorityQueue** | Lockless ISR-safe priority queue implementation |
 
 
 ## 5. Implementation Architecture

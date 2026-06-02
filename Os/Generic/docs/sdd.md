@@ -5,6 +5,7 @@ This package provides generic implementations of various OSAL modules. These are
 Available implementations:
 
 1. [Os::PriorityQueue](#ospriorityqueue)
+2. [Os::LocklessPriorityQueue](#oslocklesspriorityqueue)
 
 
 ## Os::PriorityQueue
@@ -37,5 +38,22 @@ When an index is pushed into this structure, it starts at the first unused eleme
 When an index is pulled from this structure, the root is removed as it is the highest priority data structure. The last leaf of the tree is elevated to the root and `heapify` is then called to restore the max-heap invariant of the data structure.
 
 `heapify` starts at the newly ill-ordered root. It iteratively swaps this node with the highest-priority child until this node is the largest of the three (parent, left child, and right child) or until this node is swapped into a leaf position without children. The max-heap invariant is now restored.
+
+## Os::LocklessPriorityQueue
+
+Os::LocklessPriorityQueue is an ISR-safe, lockless implementation of Os::Queue that provides strict-priority delivery without requiring any operating-system lock. It is intended for flight-software contexts where a producer or consumer may run in interrupt context and therefore cannot block on an OS-level mutex or condition variable.
+
+All memory is allocated exactly once during `create` through the registered `Fw::MemAllocator`. No allocation occurs during `send`, `receive`, `getMessagesAvailable`, or `getMessageHighWaterMark`. The non-blocking variants of `send` and `receive` use only lock-free atomic operations and bounded `memcpy`, making them safe to invoke from ISR context.
+
+> [!NOTE]
+> The blocking variants (`BlockingType::BLOCKING`) spin-wait and must not be invoked from ISR context.
+
+### Os::LocklessPriorityQueue Key Algorithms
+
+The queue stores messages in a fixed pool of pre-allocated slots. Each slot is governed by a four-state atomic state machine (`FREE -> WRITING -> READY -> READING -> FREE`) with an embedded ABA tag that prevents the ABA problem across concurrent producers and consumers.
+
+Producers scan the slot array for a `FREE` slot, claim it via compare-exchange, populate the message data, and publish with a `release` store transitioning to `READY`. Consumers scan for the highest-priority `READY` slot (with FIFO tiebreak by sequence number), claim it via compare-exchange, copy the message out, and release back to `FREE`.
+
+All non-blocking control paths are bounded by `depth * MAX_RETRY_PASSES`. The detailed algorithm and memory-ordering rationale are documented in [`docs/sdd.md` (top-level)](../../../docs/sdd.md).
 
 

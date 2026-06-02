@@ -5,7 +5,6 @@
 #include <gtest/gtest.h>
 #include <atomic>
 #include <thread>
-#include <vector>
 #include "Fw/FPrimeBasicTypes.hpp"
 #include "Fw/Types/String.hpp"
 #include "Os/Generic/LocklessPriorityQueue.hpp"
@@ -24,11 +23,11 @@ constexpr U32 CONCURRENT_TOTAL_MESSAGES = CONCURRENT_PRODUCERS * CONCURRENT_MESS
 //! Shared state for the multi-producer / multi-consumer concurrency test.
 struct ConcurrentTestState {
     Os::Queue queue;
-    std::vector<std::atomic<U32>> received;
+    std::atomic<U32> received[CONCURRENT_TOTAL_MESSAGES];
     std::atomic<U32> consumed;
     std::atomic<bool> producers_done;
 
-    ConcurrentTestState() : received(CONCURRENT_TOTAL_MESSAGES), consumed(0), producers_done(false) {
+    ConcurrentTestState() : received(), consumed(0), producers_done(false) {
         for (U32 index = 0; index < CONCURRENT_TOTAL_MESSAGES; index++) {
             received[index].store(0, std::memory_order_relaxed);
         }
@@ -106,24 +105,22 @@ TEST(LocklessConcurrent, MultiProducerMultiConsumer) {
     ASSERT_EQ(state.queue.create(0, name, CONCURRENT_DEPTH, CONCURRENT_MESSAGE_SIZE),
               Os::QueueInterface::Status::OP_OK);
 
-    std::vector<std::thread> producer_threads;
-    producer_threads.reserve(CONCURRENT_PRODUCERS);
+    std::thread producer_threads[CONCURRENT_PRODUCERS];
     for (U32 producerIndex = 0; producerIndex < CONCURRENT_PRODUCERS; producerIndex++) {
-        producer_threads.emplace_back(producer_worker, &state, producerIndex);
+        producer_threads[producerIndex] = std::thread(producer_worker, &state, producerIndex);
     }
 
-    std::vector<std::thread> consumer_threads;
-    consumer_threads.reserve(CONCURRENT_CONSUMERS);
+    std::thread consumer_threads[CONCURRENT_CONSUMERS];
     for (U32 consumerIndex = 0; consumerIndex < CONCURRENT_CONSUMERS; consumerIndex++) {
-        consumer_threads.emplace_back(consumer_worker, &state);
+        consumer_threads[consumerIndex] = std::thread(consumer_worker, &state);
     }
 
-    for (std::thread& thread : producer_threads) {
-        thread.join();
+    for (U32 i = 0; i < CONCURRENT_PRODUCERS; i++) {
+        producer_threads[i].join();
     }
     state.producers_done.store(true, std::memory_order_release);
-    for (std::thread& thread : consumer_threads) {
-        thread.join();
+    for (U32 i = 0; i < CONCURRENT_CONSUMERS; i++) {
+        consumer_threads[i].join();
     }
 
     EXPECT_EQ(state.consumed.load(std::memory_order_acquire), CONCURRENT_TOTAL_MESSAGES);
@@ -181,8 +178,10 @@ TEST(LocklessLifetime, DestructWithoutCreate) {
         // No create(), no teardown(): the queue object simply leaves scope. The destructor
         // must be a no-op and must not perform any virtual dispatch into the memory
         // allocator registry.
+        EXPECT_EQ(queue.getMessagesAvailable(), 0u);
     }
-    SUCCEED();
+    // If the destructor were unsafe, ASan/UBSan would abort before reaching this assertion.
+    EXPECT_TRUE(true);
 }
 
 //! Validate that destroying a created queue *after* an explicit teardown is safe and that
