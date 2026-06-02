@@ -57,9 +57,10 @@
          : (Fw::SwAssert(ASSERT_RELATIVE_PATH, FW_ASSERT_NO_FIRST_ARG(__VA_ARGS__, __LINE__)), FW_UNREACHABLE()))
 #else
 #define FILE_NAME_ARG const CHAR*
-#define FW_ASSERT(...)                                 \
-    ((FW_ASSERT_FIRST_ARG(__VA_ARGS__, 0)) ? ((void)0) \
-                                           : (Fw::SwAssert(__FILE__, FW_ASSERT_NO_FIRST_ARG(__VA_ARGS__, __LINE__)), FW_UNREACHABLE()))
+#define FW_ASSERT(...)                     \
+    ((FW_ASSERT_FIRST_ARG(__VA_ARGS__, 0)) \
+         ? ((void)0)                       \
+         : (Fw::SwAssert(__FILE__, FW_ASSERT_NO_FIRST_ARG(__VA_ARGS__, __LINE__)), FW_UNREACHABLE()))
 #endif
 #endif  // if ASSERT is defined
 
