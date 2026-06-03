@@ -81,3 +81,19 @@ if (TARGET LocklessPriorityQueueTest)
     target_compile_options(LocklessPriorityQueueTest PRIVATE -Wno-conversion)
     target_include_directories(LocklessPriorityQueueTest PRIVATE "${CMAKE_CURRENT_LIST_DIR}/test/ut")
 endif()
+
+register_fprime_ut(
+    LocklessPriorityQueueTsanTest
+  SOURCES
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/LocklessPriorityQueueTsanTests.cpp"
+  DEPENDS
+    Fw_Types
+    Fw_Time
+    Os
+  CHOOSES_IMPLEMENTATIONS
+    Os_Generic_LocklessPriorityQueue
+)
+if (TARGET LocklessPriorityQueueTsanTest)
+    target_compile_options(LocklessPriorityQueueTsanTest PRIVATE -Wno-conversion)
+    target_include_directories(LocklessPriorityQueueTsanTest PRIVATE "${CMAKE_CURRENT_LIST_DIR}/test/ut")
+endif()

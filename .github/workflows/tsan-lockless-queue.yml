@@ -1,0 +1,57 @@
+name: "TSan: Lockless Priority Queue"
+
+on:
+  push:
+    branches: [ devel, release/** ]
+  pull_request:
+    branches: [ devel, release/** ]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/actions/spelling/**'
+      - '.github/ISSUE_TEMPLATE/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ !contains(github.ref, 'devel') && !contains(github.ref, 'release/') }}
+
+jobs:
+  tsan-lockless-queue:
+    name: "ThreadSanitizer Stress Tests"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    env:
+      TSAN_OPTIONS: "halt_on_error=1 history_size=5"
+
+    steps:
+      - name: "Checkout F´ Repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - uses: ./.github/actions/setup
+
+      - name: "Generate UT build with TSan flags"
+        run: |
+          fprime-util generate --ut \
+            -DCMAKE_CXX_FLAGS="-fsanitize=thread -g -O1" \
+            -DCMAKE_C_FLAGS="-fsanitize=thread -g -O1" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread"
+
+      - name: "Build lockless queue tests (TSan-instrumented)"
+        run: |
+          cmake --build build-fprime-automatic-native-ut \
+            --target LocklessPriorityQueueTest \
+            --target LocklessPriorityQueueTsanTest \
+            -j4
+
+      - name: "Run existing lockless queue tests under TSan"
+        run: |
+          cd build-fprime-automatic-native-ut
+          ctest -R "^LocklessPriorityQueueTest$" --output-on-failure --timeout 300
+
+      - name: "Run TSan stress and adversarial tests"
+        run: |
+          cd build-fprime-automatic-native-ut
+          ctest -R "^LocklessPriorityQueueTsanTest$" --output-on-failure --timeout 600
