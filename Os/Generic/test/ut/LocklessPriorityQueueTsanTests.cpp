@@ -40,35 +40,35 @@ U32 unpack_u32(const U8* buffer) {
 }
 
 // -----------------------------------------------------------------------
-// Generic MPMC harness (parameterised by depth, producers, consumers, msgs)
+// Generic multi-producer multi-consumer harness
 // -----------------------------------------------------------------------
 
-struct MpmcConfig {
+struct ConcurrentConfig {
     FwSizeType depth;
     U32 producers;
     U32 consumers;
     U32 messagesPerProducer;
 };
 
-struct MpmcState {
+struct ConcurrentState {
     Os::Queue queue;
     std::atomic<U32>* received;  // array of size totalMessages
     std::atomic<U32> consumed;
     std::atomic<bool> producersDone;
     U32 totalMessages;
 
-    explicit MpmcState(U32 total)
+    explicit ConcurrentState(U32 total)
         : received(new std::atomic<U32>[total]), consumed(0), producersDone(false), totalMessages(total) {
         for (U32 i = 0; i < total; i++) {
             received[i].store(0, std::memory_order_relaxed);
         }
     }
-    ~MpmcState() {
+    ~ConcurrentState() {
         delete[] received;
     }
 };
 
-void mpmc_producer(MpmcState* state, U32 producerIndex, U32 messagesPerProducer) {
+void concurrent_producer(ConcurrentState* state, U32 producerIndex, U32 messagesPerProducer) {
     for (U32 i = 0; i < messagesPerProducer; i++) {
         const U32 value = (producerIndex * messagesPerProducer) + i;
         U8 buffer[sizeof(U32)];
@@ -86,7 +86,7 @@ void mpmc_producer(MpmcState* state, U32 producerIndex, U32 messagesPerProducer)
     }
 }
 
-void mpmc_consumer(MpmcState* state) {
+void concurrent_consumer(ConcurrentState* state) {
     U8 buffer[sizeof(U32)];
     FwSizeType actualSize = 0;
     FwQueuePriorityType priority = 0;
@@ -112,10 +112,10 @@ void mpmc_consumer(MpmcState* state) {
     }
 }
 
-void run_mpmc(const MpmcConfig& cfg) {
+void run_concurrent(const ConcurrentConfig& cfg) {
     const U32 total = cfg.producers * cfg.messagesPerProducer;
-    MpmcState state(total);
-    Fw::String name("tsan-mpmc");
+    ConcurrentState state(total);
+    Fw::String name("tsan-concurrent");
     ASSERT_EQ(state.queue.create(0, name, cfg.depth, sizeof(U32)), Os::QueueInterface::Status::OP_OK);
 
     // Fixed-size arrays -- sized to the maximum we use in any test (16)
@@ -126,10 +126,10 @@ void run_mpmc(const MpmcConfig& cfg) {
     std::thread consumers[MAX_THREADS];
 
     for (U32 i = 0; i < cfg.consumers; i++) {
-        consumers[i] = std::thread(mpmc_consumer, &state);
+        consumers[i] = std::thread(concurrent_consumer, &state);
     }
     for (U32 i = 0; i < cfg.producers; i++) {
-        producers[i] = std::thread(mpmc_producer, &state, i, cfg.messagesPerProducer);
+        producers[i] = std::thread(concurrent_producer, &state, i, cfg.messagesPerProducer);
     }
 
     for (U32 i = 0; i < cfg.producers; i++) {
@@ -153,38 +153,38 @@ void run_mpmc(const MpmcConfig& cfg) {
 
 // High-thread-count stress: 8 producers, 8 consumers, 40k messages through a 32-slot queue.
 // Repeated multiple iterations to exercise different scheduling orders.
-TEST(TsanStress, HighThreadMpmc) {
+TEST(TsanStress, HighThreadConcurrent) {
     constexpr U32 ITERATIONS = 20;
-    const MpmcConfig cfg{32, 8, 8, 5000};
+    const ConcurrentConfig cfg{32, 8, 8, 5000};
     for (U32 iter = 0; iter < ITERATIONS; iter++) {
-        run_mpmc(cfg);
+        run_concurrent(cfg);
     }
 }
 
 // Extreme contention: many threads fighting over a tiny queue.
 TEST(TsanStress, TinyQueueHighContention) {
     constexpr U32 ITERATIONS = 50;
-    const MpmcConfig cfg{4, 8, 8, 500};
+    const ConcurrentConfig cfg{4, 8, 8, 500};
     for (U32 iter = 0; iter < ITERATIONS; iter++) {
-        run_mpmc(cfg);
+        run_concurrent(cfg);
     }
 }
 
 // Asymmetric: many producers, few consumers -- queue spends time near FULL.
 TEST(TsanStress, ManyProducersFewConsumers) {
     constexpr U32 ITERATIONS = 20;
-    const MpmcConfig cfg{16, 12, 2, 1000};
+    const ConcurrentConfig cfg{16, 12, 2, 1000};
     for (U32 iter = 0; iter < ITERATIONS; iter++) {
-        run_mpmc(cfg);
+        run_concurrent(cfg);
     }
 }
 
 // Asymmetric: few producers, many consumers -- queue spends time near EMPTY.
 TEST(TsanStress, FewProducersManyConsumers) {
     constexpr U32 ITERATIONS = 20;
-    const MpmcConfig cfg{16, 2, 12, 5000};
+    const ConcurrentConfig cfg{16, 2, 12, 5000};
     for (U32 iter = 0; iter < ITERATIONS; iter++) {
-        run_mpmc(cfg);
+        run_concurrent(cfg);
     }
 }
 
@@ -196,9 +196,9 @@ TEST(TsanStress, FewProducersManyConsumers) {
 // race for the single slot, exercising the CAS retry logic at its tightest.
 TEST(Adversarial, DepthOnePingPong) {
     constexpr U32 ITERATIONS = 50;
-    const MpmcConfig cfg{1, 4, 4, 500};
+    const ConcurrentConfig cfg{1, 4, 4, 500};
     for (U32 iter = 0; iter < ITERATIONS; iter++) {
-        run_mpmc(cfg);
+        run_concurrent(cfg);
     }
 }
 
@@ -351,7 +351,7 @@ TEST(Adversarial, HighWaterMarkAccuracy) {
     constexpr U32 TOTAL = PRODUCERS * MESSAGES_PER;
 
     Os::Queue queue;
-    Fw::String name("hwm-test");
+    Fw::String name("high-water-mark-test");
     ASSERT_EQ(queue.create(0, name, DEPTH, sizeof(U32)), Os::QueueInterface::Status::OP_OK);
 
     std::atomic<U32> consumed(0);
@@ -419,10 +419,9 @@ TEST(Adversarial, CreateTeardownRecreate) {
         Fw::String name("recycle-test");
         ASSERT_EQ(queue.create(0, name, DEPTH, sizeof(U32)), Os::QueueInterface::Status::OP_OK);
 
-        // Run a quick MPMC pass
-        const MpmcConfig cfg{DEPTH, 4, 4, MESSAGES / 4};
+        const ConcurrentConfig cfg{DEPTH, 4, 4, MESSAGES / 4};
         const U32 total = cfg.producers * cfg.messagesPerProducer;
-        MpmcState state(total);
+        ConcurrentState state(total);
         // Can't reuse state.queue; run the harness inline
         std::atomic<U32> localConsumed(0);
         std::atomic<bool> localDone(false);
