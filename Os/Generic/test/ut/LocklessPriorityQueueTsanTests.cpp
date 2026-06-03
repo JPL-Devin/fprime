@@ -515,9 +515,19 @@ TEST(Adversarial, SequenceWrapComparison) {
     // Reverse wrap: candidate near 0, best near U32_MAX  =>  candidate is newer
     EXPECT_FALSE(isOlder(3, std::numeric_limits<U32>::max() - 5));
 
-    // Edge: exactly at the half-way boundary
+    // Edge: exactly at the half-way boundary — both directions return true
+    // because (0 - 0x80000000) == (0x80000000 - 0) == 0x80000000 in unsigned
+    // arithmetic. This ambiguity is harmless in production: queue depth is
+    // always far smaller than 2^31, so two active slots can never be exactly
+    // half the U32 domain apart in sequence number.
     EXPECT_TRUE(isOlder(0, topBit));
-    EXPECT_FALSE(isOlder(topBit, 0));
+    EXPECT_TRUE(isOlder(topBit, 0));
+
+    // Slightly off the boundary — these ARE well-defined
+    EXPECT_TRUE(isOlder(0, topBit + 1));   // 0 is older than topBit+1
+    EXPECT_FALSE(isOlder(topBit + 1, 0));  // topBit+1 is newer than 0
+    EXPECT_FALSE(isOlder(0, topBit - 1));  // 0 is newer than topBit-1
+    EXPECT_TRUE(isOlder(topBit - 1, 0));   // topBit-1 is older than 0
 }
 
 // Mixed priority under contention: producers send messages with varying
