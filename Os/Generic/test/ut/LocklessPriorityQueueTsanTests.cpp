@@ -524,10 +524,10 @@ TEST(Adversarial, SequenceWrapComparison) {
     EXPECT_TRUE(isOlder(topBit, 0));
 
     // Slightly off the boundary — these ARE well-defined
-    EXPECT_TRUE(isOlder(0, topBit + 1));   // 0 is older than topBit+1
-    EXPECT_FALSE(isOlder(topBit + 1, 0));  // topBit+1 is newer than 0
-    EXPECT_FALSE(isOlder(0, topBit - 1));  // 0 is newer than topBit-1
-    EXPECT_TRUE(isOlder(topBit - 1, 0));   // topBit-1 is older than 0
+    EXPECT_FALSE(isOlder(0, topBit + 1));  // 0 is newer than topBit+1
+    EXPECT_TRUE(isOlder(topBit + 1, 0));   // topBit+1 is older than 0
+    EXPECT_TRUE(isOlder(0, topBit - 1));   // 0 is older than topBit-1
+    EXPECT_FALSE(isOlder(topBit - 1, 0));  // topBit-1 is newer than 0
 }
 
 // Mixed priority under contention: producers send messages with varying
