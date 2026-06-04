@@ -551,7 +551,7 @@ endfunction(register_fprime_ut)
 #
 ####
 function(fprime_add_unit_test_build_target)
-    fprime__internal_add_build_target("Unit Test" "INCLUDE_GTEST;UT_AUTO_HELPERS;CHOOSES_IMPLEMENTATIONS;TESTED_MODULE" ${ARGN})
+    fprime__internal_add_build_target("Unit Test" "INCLUDE_GTEST;UT_AUTO_HELPERS;CHOOSES_IMPLEMENTATIONS;TESTED_MODULE;WORKING_DIRECTORY" ${ARGN})
     clear_historical_variables()
     set(INTERNAL_MODULE_NAME "${INTERNAL_MODULE_NAME}" PARENT_SCOPE)
 endfunction()
