@@ -264,6 +264,11 @@ function(fprime__internal_add_build_target_helper TARGET_NAME TYPE SOURCES AUTOC
             FPRIME_TESTED_MODULE "${INTERNAL_TESTED_MODULE}"
         )
     endif()
+    if (DEFINED INTERNAL_WORKING_DIRECTORY)
+        set_target_properties("${TARGET_NAME}" PROPERTIES 
+            FPRIME_WORKING_DIRECTORY "${INTERNAL_WORKING_DIRECTORY}"
+        )
+    endif()
     fprime_util_metadata_add_build_target("${TARGET_NAME}")
     # TODO: this is needed because sub-builds still attempt register targets, but without the build target to add back in the
     #       autocoding output. Thus empty must be substituted. Would it be possible to force the library to be an INTERFACE
