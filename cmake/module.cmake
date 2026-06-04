@@ -14,6 +14,8 @@ include(target/ut) # For FPRIME__INTERNAL_UT_TARGET variable
 include(utilities)
 include(fprime-util)
 set(FPRIME__INTERNAL_BASE_CONTROL_SETS "HEADERS" "SOURCES" "DEPENDS" "EXCLUDE_FROM_ALL" "AUTOCODER_INPUTS" "REQUIRES_IMPLEMENTATIONS")
+# Flag directives that take no arguments (beyond FPRIME_CMAKE_ADD_OPTIONS which are also flags)
+set(FPRIME__INTERNAL_FLAG_DIRECTIVES "INCLUDE_GTEST" "UT_AUTO_HELPERS" "BASE_CONFIG")
 
 set(FPRIME__INTERNAL_EMPTY_CPP "${FPRIME_FRAMEWORK_PATH}/cmake/empty.cpp")
 
@@ -135,46 +137,67 @@ function(fprime__process_module_setup FPRIME_MODULE_TYPE ADDITIONAL_CONTROL_SETS
     elseif (DEFINED UT_AUTO_HELPERS)
         fprime_cmake_fatal_error("Cannot both set UT_AUTO_HELPERS and supply use new-style register_fprime_ut")
     else()
-        # Unset all the control lists so the module can track what controls were passed in along with their arguments
-        # allowing signal control sets that do not take arguments.
-        foreach(CONTROL_SET IN LISTS CONTROL_SETS)
-            unset("${CONTROL_SET}")
-        endforeach()
-    endif()
-    unset(CURRENT_LIST_NAME)
-    # Process all arguments and fill in the module sources
-    foreach (ARGUMENT IN LISTS INPUT_ARGUMENTS)
-        # EXISTS only defined for resolved absolute paths
-        set(RESOLVED_ARGUMENT "${ARGUMENT}")
-        resolve_path_variables(RESOLVED_ARGUMENT)
-        # If the argument is one of our control tokens, and the list is already defined, this means the user has specified
-        # the argument twice. This is likely an error.
-        if (ARGUMENT IN_LIST CONTROL_SETS AND DEFINED "${ARGUMENT}")
-            fprime_cmake_fatal_error("${ARGUMENT} supplied multiple times in call to register_fprime_module")
-        # Now update the current list and define the backing store for it. This will allow us to capture arguments
-        # between this and other control words.
-        elseif(ARGUMENT IN_LIST CONTROL_SETS)
-            # Check for control words that are zero-argument (flags) and set them to true
-            if (DEFINED CURRENT_LIST_NAME AND NOT DEFINED "LIST_${CURRENT_LIST_NAME}")
-                set("LIST_${CURRENT_LIST_NAME}" TRUE)
+        # Categorize control sets into options (flags) and multi-value keywords for cmake_parse_arguments
+        set(OPTION_KEYWORDS)
+        set(MULTI_VALUE_KEYWORDS)
+        foreach(CS IN LISTS CONTROL_SETS)
+            if (CS IN_LIST FPRIME_CMAKE_ADD_OPTIONS OR CS IN_LIST FPRIME__INTERNAL_FLAG_DIRECTIVES)
+                list(APPEND OPTION_KEYWORDS "${CS}")
+            else()
+                list(APPEND MULTI_VALUE_KEYWORDS "${CS}")
             endif()
-            set(CURRENT_LIST_NAME "${ARGUMENT}")
-            set("LIST_${CURRENT_LIST_NAME}")
-        # Check that file types' files exist
-        elseif(DEFINED CURRENT_LIST_NAME AND CURRENT_LIST_NAME IN_LIST FILE_CONTROL_SETS AND NOT EXISTS "${RESOLVED_ARGUMENT}")
-            fprime_cmake_fatal_error("${ARGUMENT} does not exist but was specified as a SOURCE/HEADER/AUTOCODER_INPUT")
-        # Add in an element to the active control list
-        elseif(DEFINED CURRENT_LIST_NAME)
-            list(APPEND "LIST_${CURRENT_LIST_NAME}" "${ARGUMENT}")
-        # Handle arguments supplied before any control word
-        else()
+        endforeach()
+
+        # Use native cmake_parse_arguments for robust argument parsing
+        cmake_parse_arguments(PARSED "${OPTION_KEYWORDS}" "" "${MULTI_VALUE_KEYWORDS}" ${INPUT_ARGUMENTS})
+
+        # Check for unparsed arguments (arguments before any keyword or unknown keywords)
+        if (PARSED_UNPARSED_ARGUMENTS)
             string(REPLACE ";" " " CONTROL_SETS_STRING "${CONTROL_SETS}")
-            fprime_cmake_fatal_error("One of ${CONTROL_SETS_STRING} must be specified before list elements: ${ARGUMENT}")
+            fprime_cmake_fatal_error("One of ${CONTROL_SETS_STRING} must be specified before list elements: ${PARSED_UNPARSED_ARGUMENTS}")
         endif()
-    endforeach()
-    # Check for control words that are zero-argument (flags) and set them to true
-    if (DEFINED CURRENT_LIST_NAME AND NOT DEFINED "LIST_${CURRENT_LIST_NAME}")
-        set("LIST_${CURRENT_LIST_NAME}" TRUE)
+
+        # Warn about empty multi-value keywords (e.g. DEPENDS with no arguments)
+        if (PARSED_KEYWORDS_MISSING_VALUES)
+            fprime_cmake_warning("Empty keyword section(s) provided with no arguments: ${PARSED_KEYWORDS_MISSING_VALUES}")
+        endif()
+
+        # Check for duplicate keywords
+        foreach(CS IN LISTS CONTROL_SETS)
+            set(_KEYWORD_COUNT 0)
+            foreach(ARG IN LISTS INPUT_ARGUMENTS)
+                if (ARG STREQUAL "${CS}")
+                    math(EXPR _KEYWORD_COUNT "${_KEYWORD_COUNT} + 1")
+                endif()
+            endforeach()
+            if (_KEYWORD_COUNT GREATER 1)
+                fprime_cmake_fatal_error("${CS} supplied multiple times in call to register_fprime_module")
+            endif()
+        endforeach()
+
+        # Validate file existence for file control sets
+        foreach(FILE_CS IN LISTS FILE_CONTROL_SETS)
+            if (DEFINED PARSED_${FILE_CS})
+                foreach(FILE_ARG IN LISTS PARSED_${FILE_CS})
+                    set(RESOLVED_FILE "${FILE_ARG}")
+                    resolve_path_variables(RESOLVED_FILE)
+                    if (NOT EXISTS "${RESOLVED_FILE}")
+                        fprime_cmake_fatal_error("${FILE_ARG} does not exist but was specified as a SOURCE/HEADER/AUTOCODER_INPUT")
+                    endif()
+                endforeach()
+            endif()
+        endforeach()
+
+        # Map cmake_parse_arguments results to LIST_* variables
+        foreach(CS IN LISTS CONTROL_SETS)
+            if (CS IN_LIST OPTION_KEYWORDS)
+                if (PARSED_${CS})
+                    set("LIST_${CS}" TRUE)
+                endif()
+            elseif(DEFINED PARSED_${CS})
+                set("LIST_${CS}" "${PARSED_${CS}}")
+            endif()
+        endforeach()
     endif()
     # Update caller scope with the new variables
     set(INTERNAL_CMAKE_ADD_OPTIONS)

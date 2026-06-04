@@ -696,7 +696,7 @@ function(register_fprime_implementation)
 
     # Validate the number of implementations passed to "IMPLEMENTS"
     list(LENGTH INTERNAL_IMPLEMENTS INTERNAL_IMPLEMENTS_LENGTH)
-    if (NOT INTERNAL_IMPLEMENTS_LENGTH EQUAL 1 OR "${INTERNAL_IMPLEMENTS}" STREQUAL "TRUE")
+    if (NOT INTERNAL_IMPLEMENTS_LENGTH EQUAL 1)
         fprime_cmake_fatal_error("Must supply exactly 1 argument to the IMPLEMENTS directive")
     endif()
     # Check implementation properties still in-sync before setting the target-driven equivalents
