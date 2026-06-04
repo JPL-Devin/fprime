@@ -157,10 +157,9 @@ function(fprime__process_module_setup FPRIME_MODULE_TYPE ADDITIONAL_CONTROL_SETS
             fprime_cmake_fatal_error("One of ${CONTROL_SETS_STRING} must be specified before list elements: ${PARSED_UNPARSED_ARGUMENTS}")
         endif()
 
-        # Warn about empty multi-value keywords (e.g. DEPENDS with no arguments)
-        if (PARSED_KEYWORDS_MISSING_VALUES)
-            fprime_cmake_warning("Empty keyword section(s) provided with no arguments: ${PARSED_KEYWORDS_MISSING_VALUES}")
-        endif()
+        # Note: PARSED_KEYWORDS_MISSING_VALUES is available for debugging empty keyword sections
+        # (e.g. DEPENDS with no arguments) but we do not warn here since many modules
+        # legitimately have empty HEADERS sections.
 
         # Check for duplicate keywords
         foreach(CS IN LISTS CONTROL_SETS)
