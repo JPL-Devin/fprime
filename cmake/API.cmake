@@ -551,7 +551,7 @@ endfunction(register_fprime_ut)
 #
 ####
 function(fprime_add_unit_test_build_target)
-    fprime__internal_add_build_target("Unit Test" "INCLUDE_GTEST;UT_AUTO_HELPERS;CHOOSES_IMPLEMENTATIONS;TESTED_MODULE" ${ARGN})
+    fprime__internal_add_build_target("Unit Test" "INCLUDE_GTEST;UT_AUTO_HELPERS;CHOOSES_IMPLEMENTATIONS;TESTED_MODULE;WORKING_DIRECTORY" ${ARGN})
     clear_historical_variables()
     set(INTERNAL_MODULE_NAME "${INTERNAL_MODULE_NAME}" PARENT_SCOPE)
 endfunction()
@@ -696,7 +696,7 @@ function(register_fprime_implementation)
 
     # Validate the number of implementations passed to "IMPLEMENTS"
     list(LENGTH INTERNAL_IMPLEMENTS INTERNAL_IMPLEMENTS_LENGTH)
-    if (NOT INTERNAL_IMPLEMENTS_LENGTH EQUAL 1 OR "${INTERNAL_IMPLEMENTS}" STREQUAL "TRUE")
+    if (NOT INTERNAL_IMPLEMENTS_LENGTH EQUAL 1)
         fprime_cmake_fatal_error("Must supply exactly 1 argument to the IMPLEMENTS directive")
     endif()
     # Check implementation properties still in-sync before setting the target-driven equivalents
