@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <config/FpConfig.hpp>
+#include <base_config/FpConfig.hpp>
 
 /**
  * \file AssertTypesTest.h
