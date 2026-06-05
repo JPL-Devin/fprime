@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 
 #include <Fw/Types/MmapAllocator.hpp>
-#include <config/FpConfig.hpp>
+#include <base_config/FpConfig.hpp>
 
 #include <unistd.h>
 
