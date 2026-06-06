@@ -3,6 +3,12 @@
 #
 # Sets a list of source files for cmake to process as part of autocoding.
 ####
+
+# Backward compatibility: forwarding headers for files that moved to base_config
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/FpConfig.hpp" "#include <base_config/FpConfig.hpp>\n")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/FpConfig.h" "#include <base_config/FpConfig.h>\n")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/FPrimeNumericalConfig.h" "#include <base_config/FPrimeNumericalConfig.h>\n")
+
 register_fprime_config(
     AUTOCODER_INPUTS
         "${CMAKE_CURRENT_LIST_DIR}/ComCfg.fpp"
