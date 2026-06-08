@@ -1,0 +1,2193 @@
+{
+  "schema": 2,
+  "ref": "coverage-test",
+  "ref_type": "branch",
+  "commit": "a2c6fd3c21d8decd1d8e3b2109bedcd662432746",
+  "generated_at": "2026-06-08T16:45:16Z",
+  "overall": {
+    "integration-linux": {
+      "line_pct": 19.93,
+      "line_covered": 11835,
+      "line_total": 59394,
+      "function_pct": 26.81,
+      "function_covered": 2081,
+      "function_total": 7762,
+      "branch_pct": 7.87,
+      "branch_covered": 5282,
+      "branch_total": 67116,
+      "report": "coverage-integration-linux/coverage-all.html"
+    }
+  },
+  "modules": [
+    {
+      "path": "CFDP/Checksum",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "CFDP/Checksum/coverage-integration-linux/index.html",
+        "summary": "CFDP/Checksum/coverage-integration-linux/summary.json",
+        "line_pct": 4.17,
+        "line_covered": 2,
+        "line_total": 48,
+        "function_pct": 15.38,
+        "function_covered": 2,
+        "function_total": 13,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 18
+      }
+    },
+    {
+      "path": "CFDP/Checksum/GTest",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "CFDP/Checksum/GTest/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Drv/AsyncByteStreamBufferAdapter",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Drv/AsyncByteStreamBufferAdapter/coverage-integration-linux/index.html",
+        "summary": "Drv/AsyncByteStreamBufferAdapter/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 26,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 7,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 6
+      }
+    },
+    {
+      "path": "Drv/ByteStreamBufferAdapter",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Drv/ByteStreamBufferAdapter/coverage-integration-linux/index.html",
+        "summary": "Drv/ByteStreamBufferAdapter/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 24,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 6,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 10
+      }
+    },
+    {
+      "path": "Drv/ByteStreamDriverModel",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Drv/ByteStreamDriverModel/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Drv/Interfaces",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Drv/Interfaces/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Drv/Ip",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Drv/Ip/coverage-integration-linux/index.html",
+        "summary": "Drv/Ip/coverage-integration-linux/summary.json",
+        "line_pct": 56.45,
+        "line_covered": 289,
+        "line_total": 512,
+        "function_pct": 65.57,
+        "function_covered": 40,
+        "function_total": 61,
+        "branch_pct": 33.72,
+        "branch_covered": 176,
+        "branch_total": 522
+      }
+    },
+    {
+      "path": "Drv/LinuxGpioDriver",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Drv/LinuxGpioDriver/coverage-integration-linux/index.html",
+        "summary": "Drv/LinuxGpioDriver/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 222,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 17,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 197
+      }
+    },
+    {
+      "path": "Drv/LinuxI2cDriver",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Drv/LinuxI2cDriver/coverage-integration-linux/index.html",
+        "summary": "Drv/LinuxI2cDriver/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 56,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 6,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 78
+      }
+    },
+    {
+      "path": "Drv/LinuxSpiDriver",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Drv/LinuxSpiDriver/coverage-integration-linux/index.html",
+        "summary": "Drv/LinuxSpiDriver/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 94,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 5,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 135
+      }
+    },
+    {
+      "path": "Drv/LinuxUartDriver",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Drv/LinuxUartDriver/coverage-integration-linux/index.html",
+        "summary": "Drv/LinuxUartDriver/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 234,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 10,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 257
+      }
+    },
+    {
+      "path": "Drv/Ports",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Drv/Ports/coverage-integration-linux/index.html",
+        "summary": "Drv/Ports/coverage-integration-linux/summary.json",
+        "line_pct": 8.33,
+        "line_covered": 2,
+        "line_total": 24,
+        "function_pct": 22.22,
+        "function_covered": 2,
+        "function_total": 9,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 18
+      }
+    },
+    {
+      "path": "Drv/Ports/DataTypes",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Drv/Ports/DataTypes/coverage-integration-linux/index.html",
+        "summary": "Drv/Ports/DataTypes/coverage-integration-linux/summary.json",
+        "line_pct": 8.33,
+        "line_covered": 2,
+        "line_total": 24,
+        "function_pct": 22.22,
+        "function_covered": 2,
+        "function_total": 9,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 18
+      }
+    },
+    {
+      "path": "Drv/TcpClient",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Drv/TcpClient/coverage-integration-linux/index.html",
+        "summary": "Drv/TcpClient/coverage-integration-linux/summary.json",
+        "line_pct": 80.0,
+        "line_covered": 32,
+        "line_total": 40,
+        "function_pct": 100.0,
+        "function_covered": 9,
+        "function_total": 9,
+        "branch_pct": 41.38,
+        "branch_covered": 12,
+        "branch_total": 29
+      }
+    },
+    {
+      "path": "Drv/TcpServer",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Drv/TcpServer/coverage-integration-linux/index.html",
+        "summary": "Drv/TcpServer/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 72,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 14,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 59
+      }
+    },
+    {
+      "path": "Drv/Udp",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Drv/Udp/coverage-integration-linux/index.html",
+        "summary": "Drv/Udp/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 47,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 11,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 32
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/array",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/array/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/component/active",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/component/active/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/component/empty",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/component/empty/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/component/passive",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/component/passive/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/component/queued",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/component/queued/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/dp",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/dp/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/enum",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/enum/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/interfaces",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/interfaces/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/sizeof",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/sizeof/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/state_machine/external_instance",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/external_instance/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/state_machine/internal/choice",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal/choice/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/state_machine/internal/harness",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal/harness/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/state_machine/internal/initial",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal/initial/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/state_machine/internal/state",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal/state/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/state_machine/internal_instance/choice",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal_instance/choice/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/state_machine/internal_instance/initial",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal_instance/initial/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/state_machine/internal_instance/state",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal_instance/state/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/struct",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/struct/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/topology/async",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/async/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/topology/components/Comp",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/components/Comp/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/topology/components/Framework",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/components/Framework/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/topology/components/Receiver",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/components/Receiver/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/topology/components/Sender",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/components/Sender/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/topology/guarded",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/guarded/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/topology/main",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/main/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/topology/ports",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/ports/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/topology/special_ports",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/special_ports/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/topology/sync",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/sync/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/topology/top_ports",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/top_ports/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "FppTestProject/FppTest/topology/types",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/types/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Fw/Buffer",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Buffer/coverage-integration-linux/index.html",
+        "summary": "Fw/Buffer/coverage-integration-linux/summary.json",
+        "line_pct": 80.9,
+        "line_covered": 72,
+        "line_total": 89,
+        "function_pct": 83.33,
+        "function_covered": 15,
+        "function_total": 18,
+        "branch_pct": 47.3,
+        "branch_covered": 35,
+        "branch_total": 74
+      }
+    },
+    {
+      "path": "Fw/Cmd",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Cmd/coverage-integration-linux/index.html",
+        "summary": "Fw/Cmd/coverage-integration-linux/summary.json",
+        "line_pct": 60.34,
+        "line_covered": 35,
+        "line_total": 58,
+        "function_pct": 72.73,
+        "function_covered": 16,
+        "function_total": 22,
+        "branch_pct": 21.88,
+        "branch_covered": 7,
+        "branch_total": 32
+      }
+    },
+    {
+      "path": "Fw/Com",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Com/coverage-integration-linux/index.html",
+        "summary": "Fw/Com/coverage-integration-linux/summary.json",
+        "line_pct": 65.31,
+        "line_covered": 96,
+        "line_total": 147,
+        "function_pct": 74.47,
+        "function_covered": 35,
+        "function_total": 47,
+        "branch_pct": 31.96,
+        "branch_covered": 31,
+        "branch_total": 97
+      }
+    },
+    {
+      "path": "Fw/Comp",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Comp/coverage-integration-linux/index.html",
+        "summary": "Fw/Comp/coverage-integration-linux/summary.json",
+        "line_pct": 69.3,
+        "line_covered": 79,
+        "line_total": 114,
+        "function_pct": 76.47,
+        "function_covered": 26,
+        "function_total": 34,
+        "branch_pct": 38.67,
+        "branch_covered": 29,
+        "branch_total": 75
+      }
+    },
+    {
+      "path": "Fw/DataStructures",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/DataStructures/coverage-integration-linux/index.html",
+        "summary": "Fw/DataStructures/coverage-integration-linux/summary.json",
+        "line_pct": 46.0,
+        "line_covered": 328,
+        "line_total": 713,
+        "function_pct": 37.66,
+        "function_covered": 212,
+        "function_total": 563,
+        "branch_pct": 26.63,
+        "branch_covered": 147,
+        "branch_total": 552
+      }
+    },
+    {
+      "path": "Fw/Dp",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Dp/coverage-integration-linux/index.html",
+        "summary": "Fw/Dp/coverage-integration-linux/summary.json",
+        "line_pct": 4.79,
+        "line_covered": 8,
+        "line_total": 167,
+        "function_pct": 9.38,
+        "function_covered": 3,
+        "function_total": 32,
+        "branch_pct": 1.56,
+        "branch_covered": 3,
+        "branch_total": 192
+      }
+    },
+    {
+      "path": "Fw/FilePacket",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/FilePacket/coverage-integration-linux/index.html",
+        "summary": "Fw/FilePacket/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 272,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 55,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 141
+      }
+    },
+    {
+      "path": "Fw/FilePacket/GTest",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Fw/FilePacket/GTest/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Fw/Fpy",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Fpy/coverage-integration-linux/index.html",
+        "summary": "Fw/Fpy/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 38,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 11,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 28
+      }
+    },
+    {
+      "path": "Fw/Interfaces",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Fw/Interfaces/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Fw/Log",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Log/coverage-integration-linux/index.html",
+        "summary": "Fw/Log/coverage-integration-linux/summary.json",
+        "line_pct": 62.62,
+        "line_covered": 67,
+        "line_total": 107,
+        "function_pct": 75.68,
+        "function_covered": 28,
+        "function_total": 37,
+        "branch_pct": 20.0,
+        "branch_covered": 14,
+        "branch_total": 70
+      }
+    },
+    {
+      "path": "Fw/Logger",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Logger/coverage-integration-linux/index.html",
+        "summary": "Fw/Logger/coverage-integration-linux/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 15,
+        "line_total": 15,
+        "function_pct": 100.0,
+        "function_covered": 4,
+        "function_total": 4,
+        "branch_pct": 50.0,
+        "branch_covered": 4,
+        "branch_total": 8
+      }
+    },
+    {
+      "path": "Fw/Obj",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Obj/coverage-integration-linux/index.html",
+        "summary": "Fw/Obj/coverage-integration-linux/summary.json",
+        "line_pct": 24.07,
+        "line_covered": 13,
+        "line_total": 54,
+        "function_pct": 35.71,
+        "function_covered": 5,
+        "function_total": 14,
+        "branch_pct": 7.5,
+        "branch_covered": 3,
+        "branch_total": 40
+      }
+    },
+    {
+      "path": "Fw/Port",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Port/coverage-integration-linux/index.html",
+        "summary": "Fw/Port/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 98,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 31,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 34
+      }
+    },
+    {
+      "path": "Fw/Ports/CompletionStatus",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Fw/Ports/CompletionStatus/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Fw/Ports/Ready",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Fw/Ports/Ready/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Fw/Ports/Signal",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Fw/Ports/Signal/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Fw/Ports/SuccessCondition",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Fw/Ports/SuccessCondition/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Fw/Prm",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Prm/coverage-integration-linux/index.html",
+        "summary": "Fw/Prm/coverage-integration-linux/summary.json",
+        "line_pct": 45.95,
+        "line_covered": 17,
+        "line_total": 37,
+        "function_pct": 43.75,
+        "function_covered": 7,
+        "function_total": 16,
+        "branch_pct": 25.0,
+        "branch_covered": 5,
+        "branch_total": 20
+      }
+    },
+    {
+      "path": "Fw/SerializableFile",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/SerializableFile/coverage-integration-linux/index.html",
+        "summary": "Fw/SerializableFile/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 50,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 5,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 72
+      }
+    },
+    {
+      "path": "Fw/SerializableFile/test/TestSerializable",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Fw/SerializableFile/test/TestSerializable/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Fw/Sm",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Sm/coverage-integration-linux/index.html",
+        "summary": "Fw/Sm/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 30,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 9,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 40
+      }
+    },
+    {
+      "path": "Fw/Test",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Test/coverage-integration-linux/index.html",
+        "summary": "Fw/Test/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 57,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 13,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 8
+      }
+    },
+    {
+      "path": "Fw/Time",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Time/coverage-integration-linux/index.html",
+        "summary": "Fw/Time/coverage-integration-linux/summary.json",
+        "line_pct": 41.84,
+        "line_covered": 100,
+        "line_total": 239,
+        "function_pct": 45.0,
+        "function_covered": 27,
+        "function_total": 60,
+        "branch_pct": 18.52,
+        "branch_covered": 40,
+        "branch_total": 216
+      }
+    },
+    {
+      "path": "Fw/Tlm",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Tlm/coverage-integration-linux/index.html",
+        "summary": "Fw/Tlm/coverage-integration-linux/summary.json",
+        "line_pct": 42.31,
+        "line_covered": 44,
+        "line_total": 104,
+        "function_pct": 59.26,
+        "function_covered": 16,
+        "function_total": 27,
+        "branch_pct": 16.18,
+        "branch_covered": 11,
+        "branch_total": 68
+      }
+    },
+    {
+      "path": "Fw/Types",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Fw/Types/coverage-integration-linux/index.html",
+        "summary": "Fw/Types/coverage-integration-linux/summary.json",
+        "line_pct": 32.13,
+        "line_covered": 470,
+        "line_total": 1463,
+        "function_pct": 35.53,
+        "function_covered": 113,
+        "function_total": 318,
+        "branch_pct": 23.12,
+        "branch_covered": 160,
+        "branch_total": 692
+      }
+    },
+    {
+      "path": "Fw/Types/GTest",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Fw/Types/GTest/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Os",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Os/coverage-integration-linux/index.html",
+        "summary": "Os/coverage-integration-linux/summary.json",
+        "line_pct": 44.75,
+        "line_covered": 1074,
+        "line_total": 2400,
+        "function_pct": 48.35,
+        "function_covered": 234,
+        "function_total": 484,
+        "branch_pct": 26.3,
+        "branch_covered": 450,
+        "branch_total": 1711
+      }
+    },
+    {
+      "path": "Os/Darwin",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Os/Darwin/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Os/Generic",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Os/Generic/coverage-integration-linux/index.html",
+        "summary": "Os/Generic/coverage-integration-linux/summary.json",
+        "line_pct": 84.79,
+        "line_covered": 223,
+        "line_total": 263,
+        "function_pct": 92.59,
+        "function_covered": 25,
+        "function_total": 27,
+        "branch_pct": 43.22,
+        "branch_covered": 102,
+        "branch_total": 236
+      }
+    },
+    {
+      "path": "Os/Generic/Types",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Os/Generic/Types/coverage-integration-linux/index.html",
+        "summary": "Os/Generic/Types/coverage-integration-linux/summary.json",
+        "line_pct": 93.4,
+        "line_covered": 99,
+        "line_total": 106,
+        "function_pct": 100.0,
+        "function_covered": 12,
+        "function_total": 12,
+        "branch_pct": 56.25,
+        "branch_covered": 36,
+        "branch_total": 64
+      }
+    },
+    {
+      "path": "Os/Models",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Os/Models/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Os/Posix",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Os/Posix/coverage-integration-linux/index.html",
+        "summary": "Os/Posix/coverage-integration-linux/summary.json",
+        "line_pct": 41.37,
+        "line_covered": 307,
+        "line_total": 742,
+        "function_pct": 60.0,
+        "function_covered": 57,
+        "function_total": 95,
+        "branch_pct": 21.75,
+        "branch_covered": 92,
+        "branch_total": 423
+      }
+    },
+    {
+      "path": "Svc/ActiveRateGroup",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/ActiveRateGroup/coverage-integration-linux/index.html",
+        "summary": "Svc/ActiveRateGroup/coverage-integration-linux/summary.json",
+        "line_pct": 87.23,
+        "line_covered": 41,
+        "line_total": 47,
+        "function_pct": 100.0,
+        "function_covered": 7,
+        "function_total": 7,
+        "branch_pct": 47.73,
+        "branch_covered": 21,
+        "branch_total": 44
+      }
+    },
+    {
+      "path": "Svc/ActiveTextLogger",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/ActiveTextLogger/coverage-integration-linux/index.html",
+        "summary": "Svc/ActiveTextLogger/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 104,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 10,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 94
+      }
+    },
+    {
+      "path": "Svc/AssertFatalAdapter",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/AssertFatalAdapter/coverage-integration-linux/index.html",
+        "summary": "Svc/AssertFatalAdapter/coverage-integration-linux/summary.json",
+        "line_pct": 21.05,
+        "line_covered": 12,
+        "line_total": 57,
+        "function_pct": 62.5,
+        "function_covered": 5,
+        "function_total": 8,
+        "branch_pct": 2.17,
+        "branch_covered": 1,
+        "branch_total": 46
+      }
+    },
+    {
+      "path": "Svc/BufferAccumulator",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/BufferAccumulator/coverage-integration-linux/index.html",
+        "summary": "Svc/BufferAccumulator/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 150,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 17,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 132
+      }
+    },
+    {
+      "path": "Svc/BufferLogger",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/BufferLogger/coverage-integration-linux/index.html",
+        "summary": "Svc/BufferLogger/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 147,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 23,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 118
+      }
+    },
+    {
+      "path": "Svc/BufferManager",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/BufferManager/coverage-integration-linux/index.html",
+        "summary": "Svc/BufferManager/coverage-integration-linux/summary.json",
+        "line_pct": 92.38,
+        "line_covered": 97,
+        "line_total": 105,
+        "function_pct": 100.0,
+        "function_covered": 7,
+        "function_total": 7,
+        "branch_pct": 51.92,
+        "branch_covered": 54,
+        "branch_total": 104
+      }
+    },
+    {
+      "path": "Svc/BufferRepeater",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/BufferRepeater/coverage-integration-linux/index.html",
+        "summary": "Svc/BufferRepeater/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 36,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 5,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 46
+      }
+    },
+    {
+      "path": "Svc/ChronoTime",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/ChronoTime/coverage-integration-linux/index.html",
+        "summary": "Svc/ChronoTime/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 8,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 3,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 8
+      }
+    },
+    {
+      "path": "Svc/CmdDispatcher",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/CmdDispatcher/coverage-integration-linux/index.html",
+        "summary": "Svc/CmdDispatcher/coverage-integration-linux/summary.json",
+        "line_pct": 62.11,
+        "line_covered": 59,
+        "line_total": 95,
+        "function_pct": 75.0,
+        "function_covered": 9,
+        "function_total": 12,
+        "branch_pct": 28.19,
+        "branch_covered": 53,
+        "branch_total": 188
+      }
+    },
+    {
+      "path": "Svc/CmdSequencer",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/CmdSequencer/coverage-integration-linux/index.html",
+        "summary": "Svc/CmdSequencer/coverage-integration-linux/summary.json",
+        "line_pct": 39.46,
+        "line_covered": 320,
+        "line_total": 811,
+        "function_pct": 50.96,
+        "function_covered": 53,
+        "function_total": 104,
+        "branch_pct": 20.35,
+        "branch_covered": 163,
+        "branch_total": 801
+      }
+    },
+    {
+      "path": "Svc/CmdSplitter",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/CmdSplitter/coverage-integration-linux/index.html",
+        "summary": "Svc/CmdSplitter/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 19,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 5,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 22
+      }
+    },
+    {
+      "path": "Svc/ComLogger",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/ComLogger/coverage-integration-linux/index.html",
+        "summary": "Svc/ComLogger/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 112,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 12,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 118
+      }
+    },
+    {
+      "path": "Svc/ComSplitter",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/ComSplitter/coverage-integration-linux/index.html",
+        "summary": "Svc/ComSplitter/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 12,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 3,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 12
+      }
+    },
+    {
+      "path": "Svc/ComStub",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/ComStub/coverage-integration-linux/index.html",
+        "summary": "Svc/ComStub/coverage-integration-linux/summary.json",
+        "line_pct": 51.52,
+        "line_covered": 34,
+        "line_total": 66,
+        "function_pct": 70.0,
+        "function_covered": 7,
+        "function_total": 10,
+        "branch_pct": 33.78,
+        "branch_covered": 25,
+        "branch_total": 74
+      }
+    },
+    {
+      "path": "Svc/Cycle",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Cycle/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/DpCatalog",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/DpCatalog/coverage-integration-linux/index.html",
+        "summary": "Svc/DpCatalog/coverage-integration-linux/summary.json",
+        "line_pct": 7.5,
+        "line_covered": 33,
+        "line_total": 440,
+        "function_pct": 18.75,
+        "function_covered": 6,
+        "function_total": 32,
+        "branch_pct": 4.02,
+        "branch_covered": 27,
+        "branch_total": 671
+      }
+    },
+    {
+      "path": "Svc/DpManager",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/DpManager/coverage-integration-linux/index.html",
+        "summary": "Svc/DpManager/coverage-integration-linux/summary.json",
+        "line_pct": 30.77,
+        "line_covered": 12,
+        "line_total": 39,
+        "function_pct": 37.5,
+        "function_covered": 3,
+        "function_total": 8,
+        "branch_pct": 18.18,
+        "branch_covered": 8,
+        "branch_total": 44
+      }
+    },
+    {
+      "path": "Svc/DpPorts",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/DpPorts/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/DpWriter",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/DpWriter/coverage-integration-linux/index.html",
+        "summary": "Svc/DpWriter/coverage-integration-linux/summary.json",
+        "line_pct": 9.84,
+        "line_covered": 12,
+        "line_total": 122,
+        "function_pct": 40.0,
+        "function_covered": 4,
+        "function_total": 10,
+        "branch_pct": 6.4,
+        "branch_covered": 11,
+        "branch_total": 172
+      }
+    },
+    {
+      "path": "Svc/Fatal",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/Fatal/coverage-integration-linux/index.html",
+        "summary": "Svc/Fatal/coverage-integration-linux/summary.json",
+        "line_pct": 33.33,
+        "line_covered": 3,
+        "line_total": 9,
+        "function_pct": 66.67,
+        "function_covered": 2,
+        "function_total": 3,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 4
+      }
+    },
+    {
+      "path": "Svc/FatalHandler",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/FatalHandler/coverage-integration-linux/index.html",
+        "summary": "Svc/FatalHandler/coverage-integration-linux/summary.json",
+        "line_pct": 33.33,
+        "line_covered": 3,
+        "line_total": 9,
+        "function_pct": 66.67,
+        "function_covered": 2,
+        "function_total": 3,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 4
+      }
+    },
+    {
+      "path": "Svc/FileDownlink",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/FileDownlink/coverage-integration-linux/index.html",
+        "summary": "Svc/FileDownlink/coverage-integration-linux/summary.json",
+        "line_pct": 13.97,
+        "line_covered": 50,
+        "line_total": 358,
+        "function_pct": 29.55,
+        "function_covered": 13,
+        "function_total": 44,
+        "branch_pct": 3.89,
+        "branch_covered": 16,
+        "branch_total": 411
+      }
+    },
+    {
+      "path": "Svc/FileDownlinkPorts",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/FileDownlinkPorts/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/FileManager",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/FileManager/coverage-integration-linux/index.html",
+        "summary": "Svc/FileManager/coverage-integration-linux/summary.json",
+        "line_pct": 14.81,
+        "line_covered": 24,
+        "line_total": 162,
+        "function_pct": 33.33,
+        "function_covered": 5,
+        "function_total": 15,
+        "branch_pct": 2.75,
+        "branch_covered": 6,
+        "branch_total": 218
+      }
+    },
+    {
+      "path": "Svc/FileUplink",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/FileUplink/coverage-integration-linux/index.html",
+        "summary": "Svc/FileUplink/coverage-integration-linux/summary.json",
+        "line_pct": 7.25,
+        "line_covered": 14,
+        "line_total": 193,
+        "function_pct": 20.69,
+        "function_covered": 6,
+        "function_total": 29,
+        "branch_pct": 0.7,
+        "branch_covered": 1,
+        "branch_total": 143
+      }
+    },
+    {
+      "path": "Svc/FileWorker",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/FileWorker/coverage-integration-linux/index.html",
+        "summary": "Svc/FileWorker/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 306,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 14,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 499
+      }
+    },
+    {
+      "path": "Svc/FprimeDeframer",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/FprimeDeframer/coverage-integration-linux/index.html",
+        "summary": "Svc/FprimeDeframer/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 53,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 4,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 112
+      }
+    },
+    {
+      "path": "Svc/FprimeFramer",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/FprimeFramer/coverage-integration-linux/index.html",
+        "summary": "Svc/FprimeFramer/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 31,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 5,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 64
+      }
+    },
+    {
+      "path": "Svc/FprimeProtocol",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/FprimeProtocol/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/FprimeRouter",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/FprimeRouter/coverage-integration-linux/index.html",
+        "summary": "Svc/FprimeRouter/coverage-integration-linux/summary.json",
+        "line_pct": 47.22,
+        "line_covered": 17,
+        "line_total": 36,
+        "function_pct": 80.0,
+        "function_covered": 4,
+        "function_total": 5,
+        "branch_pct": 24.32,
+        "branch_covered": 9,
+        "branch_total": 37
+      }
+    },
+    {
+      "path": "Svc/FpySequencer",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/FpySequencer/coverage-integration-linux/index.html",
+        "summary": "Svc/FpySequencer/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 2001,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 205,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 2716
+      }
+    },
+    {
+      "path": "Svc/GenericHub",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/GenericHub/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Health",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/Health/coverage-integration-linux/index.html",
+        "summary": "Svc/Health/coverage-integration-linux/summary.json",
+        "line_pct": 42.86,
+        "line_covered": 48,
+        "line_total": 112,
+        "function_pct": 60.0,
+        "function_covered": 6,
+        "function_total": 10,
+        "branch_pct": 17.12,
+        "branch_covered": 25,
+        "branch_total": 146
+      }
+    },
+    {
+      "path": "Svc/Interfaces",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Interfaces/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/LinuxTimer",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/LinuxTimer/coverage-integration-linux/index.html",
+        "summary": "Svc/LinuxTimer/coverage-integration-linux/summary.json",
+        "line_pct": 96.88,
+        "line_covered": 31,
+        "line_total": 32,
+        "function_pct": 100.0,
+        "function_covered": 4,
+        "function_total": 4,
+        "branch_pct": 46.88,
+        "branch_covered": 15,
+        "branch_total": 32
+      }
+    },
+    {
+      "path": "Svc/OsTime",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/OsTime/coverage-integration-linux/index.html",
+        "summary": "Svc/OsTime/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 70,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 14,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 100
+      }
+    },
+    {
+      "path": "Svc/PassiveConsoleTextLogger",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/PassiveConsoleTextLogger/coverage-integration-linux/index.html",
+        "summary": "Svc/PassiveConsoleTextLogger/coverage-integration-linux/summary.json",
+        "line_pct": 58.54,
+        "line_covered": 24,
+        "line_total": 41,
+        "function_pct": 75.0,
+        "function_covered": 3,
+        "function_total": 4,
+        "branch_pct": 40.0,
+        "branch_covered": 8,
+        "branch_total": 20
+      }
+    },
+    {
+      "path": "Svc/PassiveRateGroup",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/PassiveRateGroup/coverage-integration-linux/index.html",
+        "summary": "Svc/PassiveRateGroup/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 25,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 4,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 40
+      }
+    },
+    {
+      "path": "Svc/Ping",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Ping/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/PolyDb",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/PolyDb/coverage-integration-linux/index.html",
+        "summary": "Svc/PolyDb/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 17,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 4,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 24
+      }
+    },
+    {
+      "path": "Svc/PolyIf",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/PolyIf/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Ports/CommsPorts",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Ports/CommsPorts/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Ports/FilePorts",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Ports/FilePorts/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Ports/OsTimeEpoch",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Ports/OsTimeEpoch/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Ports/TlmPacketizerPorts",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Ports/TlmPacketizerPorts/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Ports/VersionPorts",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Ports/VersionPorts/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/PosixTime",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/PosixTime/coverage-integration-linux/index.html",
+        "summary": "Svc/PosixTime/coverage-integration-linux/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 6,
+        "line_total": 6,
+        "function_pct": 100.0,
+        "function_covered": 3,
+        "function_total": 3,
+        "branch_pct": 50.0,
+        "branch_covered": 2,
+        "branch_total": 4
+      }
+    },
+    {
+      "path": "Svc/PrmDb",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/PrmDb/coverage-integration-linux/index.html",
+        "summary": "Svc/PrmDb/coverage-integration-linux/summary.json",
+        "line_pct": 13.7,
+        "line_covered": 47,
+        "line_total": 343,
+        "function_pct": 45.0,
+        "function_covered": 9,
+        "function_total": 20,
+        "branch_pct": 4.45,
+        "branch_covered": 31,
+        "branch_total": 696
+      }
+    },
+    {
+      "path": "Svc/RateGroupDriver",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/RateGroupDriver/coverage-integration-linux/index.html",
+        "summary": "Svc/RateGroupDriver/coverage-integration-linux/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 23,
+        "line_total": 23,
+        "function_pct": 100.0,
+        "function_covered": 4,
+        "function_total": 4,
+        "branch_pct": 58.33,
+        "branch_covered": 14,
+        "branch_total": 24
+      }
+    },
+    {
+      "path": "Svc/Sched",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Sched/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Seq",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/Seq/coverage-integration-linux/index.html",
+        "summary": "Svc/Seq/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 78,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 10,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 122
+      }
+    },
+    {
+      "path": "Svc/SeqDispatcher",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/SeqDispatcher/coverage-integration-linux/index.html",
+        "summary": "Svc/SeqDispatcher/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 78,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 10,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 122
+      }
+    },
+    {
+      "path": "Svc/StaticMemory",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/StaticMemory/coverage-integration-linux/index.html",
+        "summary": "Svc/StaticMemory/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 20,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 4,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 16
+      }
+    },
+    {
+      "path": "Svc/Subtopologies/CdhCore",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Subtopologies/CdhCore/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Subtopologies/ComCcsds",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Subtopologies/ComCcsds/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Subtopologies/ComFprime",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Subtopologies/ComFprime/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Subtopologies/ComLoggerTee",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Subtopologies/ComLoggerTee/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Subtopologies/DataProducts",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Subtopologies/DataProducts/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Subtopologies/FileHandling",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Subtopologies/FileHandling/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/SystemResources",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/SystemResources/coverage-integration-linux/index.html",
+        "summary": "Svc/SystemResources/coverage-integration-linux/summary.json",
+        "line_pct": 93.15,
+        "line_covered": 68,
+        "line_total": 73,
+        "function_pct": 87.5,
+        "function_covered": 7,
+        "function_total": 8,
+        "branch_pct": 50.0,
+        "branch_covered": 29,
+        "branch_total": 58
+      }
+    },
+    {
+      "path": "Svc/TlmChan",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/TlmChan/coverage-integration-linux/index.html",
+        "summary": "Svc/TlmChan/coverage-integration-linux/summary.json",
+        "line_pct": 64.0,
+        "line_covered": 80,
+        "line_total": 125,
+        "function_pct": 85.71,
+        "function_covered": 6,
+        "function_total": 7,
+        "branch_pct": 37.31,
+        "branch_covered": 50,
+        "branch_total": 134
+      }
+    },
+    {
+      "path": "Svc/TlmPacketizer",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/TlmPacketizer/coverage-integration-linux/index.html",
+        "summary": "Svc/TlmPacketizer/coverage-integration-linux/summary.json",
+        "line_pct": 0.0,
+        "line_covered": 0,
+        "line_total": 294,
+        "function_pct": 0.0,
+        "function_covered": 0,
+        "function_total": 20,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 484
+      }
+    },
+    {
+      "path": "Svc/Types/TlmPacketizerTypes",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/Types/TlmPacketizerTypes/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "Svc/Version",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Svc/Version/coverage-integration-linux/index.html",
+        "summary": "Svc/Version/coverage-integration-linux/summary.json",
+        "line_pct": 18.83,
+        "line_covered": 29,
+        "line_total": 154,
+        "function_pct": 50.0,
+        "function_covered": 6,
+        "function_total": 12,
+        "branch_pct": 10.48,
+        "branch_covered": 22,
+        "branch_total": 210
+      }
+    },
+    {
+      "path": "Svc/WatchDog",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "Svc/WatchDog/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "TestDeploymentsProject/Ref/BlockDriver",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "TestDeploymentsProject/Ref/BlockDriver/coverage-integration-linux/index.html",
+        "summary": "TestDeploymentsProject/Ref/BlockDriver/coverage-integration-linux/summary.json",
+        "line_pct": 72.73,
+        "line_covered": 8,
+        "line_total": 11,
+        "function_pct": 80.0,
+        "function_covered": 4,
+        "function_total": 5,
+        "branch_pct": 50.0,
+        "branch_covered": 2,
+        "branch_total": 4
+      }
+    },
+    {
+      "path": "TestDeploymentsProject/Ref/PingReceiver",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "TestDeploymentsProject/Ref/PingReceiver/coverage-integration-linux/index.html",
+        "summary": "TestDeploymentsProject/Ref/PingReceiver/coverage-integration-linux/summary.json",
+        "line_pct": 66.67,
+        "line_covered": 8,
+        "line_total": 12,
+        "function_pct": 75.0,
+        "function_covered": 3,
+        "function_total": 4,
+        "branch_pct": 30.0,
+        "branch_covered": 3,
+        "branch_total": 10
+      }
+    },
+    {
+      "path": "TestDeploymentsProject/Ref/RecvBuffApp",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "TestDeploymentsProject/Ref/RecvBuffApp/coverage-integration-linux/index.html",
+        "summary": "TestDeploymentsProject/Ref/RecvBuffApp/coverage-integration-linux/summary.json",
+        "line_pct": 40.0,
+        "line_covered": 22,
+        "line_total": 55,
+        "function_pct": 75.0,
+        "function_covered": 3,
+        "function_total": 4,
+        "branch_pct": 17.72,
+        "branch_covered": 14,
+        "branch_total": 79
+      }
+    },
+    {
+      "path": "TestDeploymentsProject/Ref/SendBuffApp",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "TestDeploymentsProject/Ref/SendBuffApp/coverage-integration-linux/index.html",
+        "summary": "TestDeploymentsProject/Ref/SendBuffApp/coverage-integration-linux/summary.json",
+        "line_pct": 43.04,
+        "line_covered": 34,
+        "line_total": 79,
+        "function_pct": 50.0,
+        "function_covered": 4,
+        "function_total": 8,
+        "branch_pct": 20.43,
+        "branch_covered": 19,
+        "branch_total": 93
+      }
+    },
+    {
+      "path": "TestDeploymentsProject/Ref/SignalGen",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "TestDeploymentsProject/Ref/SignalGen/coverage-integration-linux/index.html",
+        "summary": "TestDeploymentsProject/Ref/SignalGen/coverage-integration-linux/summary.json",
+        "line_pct": 47.97,
+        "line_covered": 71,
+        "line_total": 148,
+        "function_pct": 60.0,
+        "function_covered": 6,
+        "function_total": 10,
+        "branch_pct": 28.99,
+        "branch_covered": 49,
+        "branch_total": 169
+      }
+    },
+    {
+      "path": "TestDeploymentsProject/Ref/Top",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "TestDeploymentsProject/Ref/Top/coverage-integration-linux/index.html",
+        "summary": "TestDeploymentsProject/Ref/Top/coverage-integration-linux/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 38,
+        "line_total": 38,
+        "function_pct": 100.0,
+        "function_covered": 5,
+        "function_total": 5,
+        "branch_pct": 50.0,
+        "branch_covered": 6,
+        "branch_total": 12
+      }
+    },
+    {
+      "path": "TestDeploymentsProject/Ref/TypeDemo",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "TestDeploymentsProject/Ref/TypeDemo/coverage-integration-linux/index.html",
+        "summary": "TestDeploymentsProject/Ref/TypeDemo/coverage-integration-linux/summary.json",
+        "line_pct": 2.17,
+        "line_covered": 2,
+        "line_total": 92,
+        "function_pct": 14.29,
+        "function_covered": 2,
+        "function_total": 14,
+        "branch_pct": 0.0,
+        "branch_covered": 0,
+        "branch_total": 284
+      }
+    },
+    {
+      "path": "Utils",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Utils/coverage-integration-linux/index.html",
+        "summary": "Utils/coverage-integration-linux/summary.json",
+        "line_pct": 24.13,
+        "line_covered": 132,
+        "line_total": 547,
+        "function_pct": 26.44,
+        "function_covered": 23,
+        "function_total": 87,
+        "branch_pct": 13.16,
+        "branch_covered": 65,
+        "branch_total": 494
+      }
+    },
+    {
+      "path": "Utils/Hash",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Utils/Hash/coverage-integration-linux/index.html",
+        "summary": "Utils/Hash/coverage-integration-linux/summary.json",
+        "line_pct": 18.08,
+        "line_covered": 32,
+        "line_total": 177,
+        "function_pct": 11.76,
+        "function_covered": 4,
+        "function_total": 34,
+        "branch_pct": 15.09,
+        "branch_covered": 16,
+        "branch_total": 106
+      }
+    },
+    {
+      "path": "Utils/Types",
+      "has_ut": true,
+      "integration-linux": {
+        "has_coverage": true,
+        "report": "Utils/Types/coverage-integration-linux/index.html",
+        "summary": "Utils/Types/coverage-integration-linux/summary.json",
+        "line_pct": 65.79,
+        "line_covered": 100,
+        "line_total": 152,
+        "function_pct": 79.17,
+        "function_covered": 19,
+        "function_total": 24,
+        "branch_pct": 37.12,
+        "branch_covered": 49,
+        "branch_total": 132
+      }
+    },
+    {
+      "path": "cmake/test/data/TestDeployment/TestBuildAutocoder",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "cmake/test/data/TestDeployment/TestBuildAutocoder/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "cmake/test/data/TestDeployment/TestChainedAutocoder",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "cmake/test/data/TestDeployment/TestChainedAutocoder/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "cmake/test/data/TestDeployment/TestHeaderAutocoder",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "cmake/test/data/TestDeployment/TestHeaderAutocoder/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "cmake/test/data/TestDeployment/TestTargetAutocoder",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "cmake/test/data/TestDeployment/TestTargetAutocoder/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "cmake/test/data/test-fprime-library/TestLibrary/TestComponent",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "cmake/test/data/test-fprime-library/TestLibrary/TestComponent/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "cmake/test/data/test-fprime-library2/TestLibrary2/TestComponent",
+      "has_ut": false,
+      "integration-linux": {
+        "has_coverage": false,
+        "report": "cmake/test/data/test-fprime-library2/TestLibrary2/TestComponent/coverage-integration-linux/index.html"
+      }
+    }
+  ]
+}
