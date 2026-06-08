@@ -3,8 +3,20 @@
   "ref": "coverage-test",
   "ref_type": "branch",
   "commit": "a2c6fd3c21d8decd1d8e3b2109bedcd662432746",
-  "generated_at": "2026-06-08T16:45:16Z",
+  "generated_at": "2026-06-08T16:45:49Z",
   "overall": {
+    "ut": {
+      "line_pct": 81.21,
+      "line_covered": 14336,
+      "line_total": 17652,
+      "function_pct": 60.49,
+      "function_covered": 4835,
+      "function_total": 7993,
+      "branch_pct": 48.35,
+      "branch_covered": 9293,
+      "branch_total": 19219,
+      "report": "coverage-ut/coverage-all.html"
+    },
     "integration-linux": {
       "line_pct": 19.93,
       "line_covered": 11835,
@@ -22,6 +34,20 @@
     {
       "path": "CFDP/Checksum",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "CFDP/Checksum/coverage-ut/index.html",
+        "summary": "CFDP/Checksum/coverage-ut/summary.json",
+        "line_pct": 71.15,
+        "line_covered": 37,
+        "line_total": 52,
+        "function_pct": 57.14,
+        "function_covered": 8,
+        "function_total": 14,
+        "branch_pct": 44.44,
+        "branch_covered": 16,
+        "branch_total": 36
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "CFDP/Checksum/coverage-integration-linux/index.html",
@@ -40,6 +66,10 @@
     {
       "path": "CFDP/Checksum/GTest",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "CFDP/Checksum/GTest/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "CFDP/Checksum/GTest/coverage-integration-linux/index.html"
@@ -48,6 +78,20 @@
     {
       "path": "Drv/AsyncByteStreamBufferAdapter",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Drv/AsyncByteStreamBufferAdapter/coverage-ut/index.html",
+        "summary": "Drv/AsyncByteStreamBufferAdapter/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 26,
+        "line_total": 26,
+        "function_pct": 100.0,
+        "function_covered": 7,
+        "function_total": 7,
+        "branch_pct": 100.0,
+        "branch_covered": 6,
+        "branch_total": 6
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Drv/AsyncByteStreamBufferAdapter/coverage-integration-linux/index.html",
@@ -66,6 +110,20 @@
     {
       "path": "Drv/ByteStreamBufferAdapter",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Drv/ByteStreamBufferAdapter/coverage-ut/index.html",
+        "summary": "Drv/ByteStreamBufferAdapter/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 24,
+        "line_total": 24,
+        "function_pct": 100.0,
+        "function_covered": 6,
+        "function_total": 6,
+        "branch_pct": 80.0,
+        "branch_covered": 8,
+        "branch_total": 10
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Drv/ByteStreamBufferAdapter/coverage-integration-linux/index.html",
@@ -84,6 +142,10 @@
     {
       "path": "Drv/ByteStreamDriverModel",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Drv/ByteStreamDriverModel/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Drv/ByteStreamDriverModel/coverage-integration-linux/index.html"
@@ -92,6 +154,10 @@
     {
       "path": "Drv/Interfaces",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Drv/Interfaces/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Drv/Interfaces/coverage-integration-linux/index.html"
@@ -100,6 +166,20 @@
     {
       "path": "Drv/Ip",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Drv/Ip/coverage-ut/index.html",
+        "summary": "Drv/Ip/coverage-ut/summary.json",
+        "line_pct": 44.32,
+        "line_covered": 230,
+        "line_total": 519,
+        "function_pct": 57.38,
+        "function_covered": 35,
+        "function_total": 61,
+        "branch_pct": 21.25,
+        "branch_covered": 119,
+        "branch_total": 560
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Drv/Ip/coverage-integration-linux/index.html",
@@ -118,6 +198,10 @@
     {
       "path": "Drv/LinuxGpioDriver",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Drv/LinuxGpioDriver/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Drv/LinuxGpioDriver/coverage-integration-linux/index.html",
@@ -136,6 +220,10 @@
     {
       "path": "Drv/LinuxI2cDriver",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Drv/LinuxI2cDriver/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Drv/LinuxI2cDriver/coverage-integration-linux/index.html",
@@ -154,6 +242,10 @@
     {
       "path": "Drv/LinuxSpiDriver",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Drv/LinuxSpiDriver/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Drv/LinuxSpiDriver/coverage-integration-linux/index.html",
@@ -172,6 +264,10 @@
     {
       "path": "Drv/LinuxUartDriver",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Drv/LinuxUartDriver/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Drv/LinuxUartDriver/coverage-integration-linux/index.html",
@@ -190,6 +286,10 @@
     {
       "path": "Drv/Ports",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Drv/Ports/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Drv/Ports/coverage-integration-linux/index.html",
@@ -208,6 +308,10 @@
     {
       "path": "Drv/Ports/DataTypes",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Drv/Ports/DataTypes/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Drv/Ports/DataTypes/coverage-integration-linux/index.html",
@@ -226,6 +330,20 @@
     {
       "path": "Drv/TcpClient",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Drv/TcpClient/coverage-ut/index.html",
+        "summary": "Drv/TcpClient/coverage-ut/summary.json",
+        "line_pct": 75.0,
+        "line_covered": 30,
+        "line_total": 40,
+        "function_pct": 100.0,
+        "function_covered": 9,
+        "function_total": 9,
+        "branch_pct": 31.03,
+        "branch_covered": 9,
+        "branch_total": 29
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Drv/TcpClient/coverage-integration-linux/index.html",
@@ -244,6 +362,20 @@
     {
       "path": "Drv/TcpServer",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Drv/TcpServer/coverage-ut/index.html",
+        "summary": "Drv/TcpServer/coverage-ut/summary.json",
+        "line_pct": 84.72,
+        "line_covered": 61,
+        "line_total": 72,
+        "function_pct": 100.0,
+        "function_covered": 14,
+        "function_total": 14,
+        "branch_pct": 44.26,
+        "branch_covered": 27,
+        "branch_total": 61
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Drv/TcpServer/coverage-integration-linux/index.html",
@@ -262,6 +394,20 @@
     {
       "path": "Drv/Udp",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Drv/Udp/coverage-ut/index.html",
+        "summary": "Drv/Udp/coverage-ut/summary.json",
+        "line_pct": 68.09,
+        "line_covered": 32,
+        "line_total": 47,
+        "function_pct": 90.91,
+        "function_covered": 10,
+        "function_total": 11,
+        "branch_pct": 28.12,
+        "branch_covered": 9,
+        "branch_total": 32
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Drv/Udp/coverage-integration-linux/index.html",
@@ -280,6 +426,10 @@
     {
       "path": "FppTestProject/FppTest/array",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/array/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/array/coverage-integration-linux/index.html"
@@ -288,6 +438,10 @@
     {
       "path": "FppTestProject/FppTest/component/active",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/component/active/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/component/active/coverage-integration-linux/index.html"
@@ -296,6 +450,10 @@
     {
       "path": "FppTestProject/FppTest/component/empty",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/component/empty/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/component/empty/coverage-integration-linux/index.html"
@@ -304,6 +462,10 @@
     {
       "path": "FppTestProject/FppTest/component/passive",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/component/passive/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/component/passive/coverage-integration-linux/index.html"
@@ -312,6 +474,10 @@
     {
       "path": "FppTestProject/FppTest/component/queued",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/component/queued/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/component/queued/coverage-integration-linux/index.html"
@@ -320,6 +486,10 @@
     {
       "path": "FppTestProject/FppTest/dp",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/dp/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/dp/coverage-integration-linux/index.html"
@@ -328,6 +498,10 @@
     {
       "path": "FppTestProject/FppTest/enum",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/enum/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/enum/coverage-integration-linux/index.html"
@@ -336,6 +510,10 @@
     {
       "path": "FppTestProject/FppTest/interfaces",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/interfaces/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/interfaces/coverage-integration-linux/index.html"
@@ -344,6 +522,10 @@
     {
       "path": "FppTestProject/FppTest/sizeof",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/sizeof/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/sizeof/coverage-integration-linux/index.html"
@@ -352,6 +534,10 @@
     {
       "path": "FppTestProject/FppTest/state_machine/external_instance",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/external_instance/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/state_machine/external_instance/coverage-integration-linux/index.html"
@@ -360,6 +546,10 @@
     {
       "path": "FppTestProject/FppTest/state_machine/internal/choice",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal/choice/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/state_machine/internal/choice/coverage-integration-linux/index.html"
@@ -368,6 +558,10 @@
     {
       "path": "FppTestProject/FppTest/state_machine/internal/harness",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal/harness/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/state_machine/internal/harness/coverage-integration-linux/index.html"
@@ -376,6 +570,10 @@
     {
       "path": "FppTestProject/FppTest/state_machine/internal/initial",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal/initial/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/state_machine/internal/initial/coverage-integration-linux/index.html"
@@ -384,6 +582,10 @@
     {
       "path": "FppTestProject/FppTest/state_machine/internal/state",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal/state/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/state_machine/internal/state/coverage-integration-linux/index.html"
@@ -392,6 +594,10 @@
     {
       "path": "FppTestProject/FppTest/state_machine/internal_instance/choice",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal_instance/choice/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/state_machine/internal_instance/choice/coverage-integration-linux/index.html"
@@ -400,6 +606,10 @@
     {
       "path": "FppTestProject/FppTest/state_machine/internal_instance/initial",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal_instance/initial/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/state_machine/internal_instance/initial/coverage-integration-linux/index.html"
@@ -408,6 +618,10 @@
     {
       "path": "FppTestProject/FppTest/state_machine/internal_instance/state",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/state_machine/internal_instance/state/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/state_machine/internal_instance/state/coverage-integration-linux/index.html"
@@ -416,6 +630,10 @@
     {
       "path": "FppTestProject/FppTest/struct",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/struct/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/struct/coverage-integration-linux/index.html"
@@ -424,6 +642,10 @@
     {
       "path": "FppTestProject/FppTest/topology/async",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/async/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/topology/async/coverage-integration-linux/index.html"
@@ -432,6 +654,10 @@
     {
       "path": "FppTestProject/FppTest/topology/components/Comp",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/components/Comp/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/topology/components/Comp/coverage-integration-linux/index.html"
@@ -440,6 +666,10 @@
     {
       "path": "FppTestProject/FppTest/topology/components/Framework",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/components/Framework/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/topology/components/Framework/coverage-integration-linux/index.html"
@@ -448,6 +678,10 @@
     {
       "path": "FppTestProject/FppTest/topology/components/Receiver",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/components/Receiver/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/topology/components/Receiver/coverage-integration-linux/index.html"
@@ -456,6 +690,10 @@
     {
       "path": "FppTestProject/FppTest/topology/components/Sender",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/components/Sender/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/topology/components/Sender/coverage-integration-linux/index.html"
@@ -464,6 +702,10 @@
     {
       "path": "FppTestProject/FppTest/topology/guarded",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/guarded/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/topology/guarded/coverage-integration-linux/index.html"
@@ -472,6 +714,10 @@
     {
       "path": "FppTestProject/FppTest/topology/main",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/main/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/topology/main/coverage-integration-linux/index.html"
@@ -480,6 +726,10 @@
     {
       "path": "FppTestProject/FppTest/topology/ports",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/ports/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/topology/ports/coverage-integration-linux/index.html"
@@ -488,6 +738,10 @@
     {
       "path": "FppTestProject/FppTest/topology/special_ports",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/special_ports/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/topology/special_ports/coverage-integration-linux/index.html"
@@ -496,6 +750,10 @@
     {
       "path": "FppTestProject/FppTest/topology/sync",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/sync/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/topology/sync/coverage-integration-linux/index.html"
@@ -504,6 +762,10 @@
     {
       "path": "FppTestProject/FppTest/topology/top_ports",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/top_ports/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/topology/top_ports/coverage-integration-linux/index.html"
@@ -512,6 +774,10 @@
     {
       "path": "FppTestProject/FppTest/topology/types",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "FppTestProject/FppTest/topology/types/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "FppTestProject/FppTest/topology/types/coverage-integration-linux/index.html"
@@ -520,6 +786,20 @@
     {
       "path": "Fw/Buffer",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Fw/Buffer/coverage-ut/index.html",
+        "summary": "Fw/Buffer/coverage-ut/summary.json",
+        "line_pct": 81.25,
+        "line_covered": 78,
+        "line_total": 96,
+        "function_pct": 89.47,
+        "function_covered": 17,
+        "function_total": 19,
+        "branch_pct": 43.75,
+        "branch_covered": 35,
+        "branch_total": 80
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Buffer/coverage-integration-linux/index.html",
@@ -538,6 +818,10 @@
     {
       "path": "Fw/Cmd",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Cmd/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Cmd/coverage-integration-linux/index.html",
@@ -556,6 +840,10 @@
     {
       "path": "Fw/Com",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Com/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Com/coverage-integration-linux/index.html",
@@ -574,6 +862,10 @@
     {
       "path": "Fw/Comp",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Comp/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Comp/coverage-integration-linux/index.html",
@@ -592,6 +884,20 @@
     {
       "path": "Fw/DataStructures",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Fw/DataStructures/coverage-ut/index.html",
+        "summary": "Fw/DataStructures/coverage-ut/summary.json",
+        "line_pct": 98.12,
+        "line_covered": 1094,
+        "line_total": 1115,
+        "function_pct": 97.14,
+        "function_covered": 509,
+        "function_total": 524,
+        "branch_pct": 57.03,
+        "branch_covered": 499,
+        "branch_total": 875
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/DataStructures/coverage-integration-linux/index.html",
@@ -610,6 +916,20 @@
     {
       "path": "Fw/Dp",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Fw/Dp/coverage-ut/index.html",
+        "summary": "Fw/Dp/coverage-ut/summary.json",
+        "line_pct": 94.83,
+        "line_covered": 165,
+        "line_total": 174,
+        "function_pct": 96.67,
+        "function_covered": 29,
+        "function_total": 30,
+        "branch_pct": 47.92,
+        "branch_covered": 92,
+        "branch_total": 192
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Dp/coverage-integration-linux/index.html",
@@ -628,6 +948,20 @@
     {
       "path": "Fw/FilePacket",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Fw/FilePacket/coverage-ut/index.html",
+        "summary": "Fw/FilePacket/coverage-ut/summary.json",
+        "line_pct": 75.24,
+        "line_covered": 231,
+        "line_total": 307,
+        "function_pct": 89.06,
+        "function_covered": 57,
+        "function_total": 64,
+        "branch_pct": 41.43,
+        "branch_covered": 104,
+        "branch_total": 251
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/FilePacket/coverage-integration-linux/index.html",
@@ -646,6 +980,10 @@
     {
       "path": "Fw/FilePacket/GTest",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/FilePacket/GTest/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Fw/FilePacket/GTest/coverage-integration-linux/index.html"
@@ -654,6 +992,10 @@
     {
       "path": "Fw/Fpy",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Fpy/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Fpy/coverage-integration-linux/index.html",
@@ -672,6 +1014,10 @@
     {
       "path": "Fw/Interfaces",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Interfaces/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Fw/Interfaces/coverage-integration-linux/index.html"
@@ -680,6 +1026,20 @@
     {
       "path": "Fw/Log",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Fw/Log/coverage-ut/index.html",
+        "summary": "Fw/Log/coverage-ut/summary.json",
+        "line_pct": 71.43,
+        "line_covered": 60,
+        "line_total": 84,
+        "function_pct": 72.41,
+        "function_covered": 21,
+        "function_total": 29,
+        "branch_pct": 34.48,
+        "branch_covered": 20,
+        "branch_total": 58
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Log/coverage-integration-linux/index.html",
@@ -698,6 +1058,20 @@
     {
       "path": "Fw/Logger",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Fw/Logger/coverage-ut/index.html",
+        "summary": "Fw/Logger/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 16,
+        "line_total": 16,
+        "function_pct": 100.0,
+        "function_covered": 4,
+        "function_total": 4,
+        "branch_pct": 62.5,
+        "branch_covered": 5,
+        "branch_total": 8
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Logger/coverage-integration-linux/index.html",
@@ -716,6 +1090,10 @@
     {
       "path": "Fw/Obj",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Obj/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Obj/coverage-integration-linux/index.html",
@@ -734,6 +1112,10 @@
     {
       "path": "Fw/Port",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Port/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Port/coverage-integration-linux/index.html",
@@ -752,6 +1134,10 @@
     {
       "path": "Fw/Ports/CompletionStatus",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Ports/CompletionStatus/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Fw/Ports/CompletionStatus/coverage-integration-linux/index.html"
@@ -760,6 +1146,10 @@
     {
       "path": "Fw/Ports/Ready",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Ports/Ready/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Fw/Ports/Ready/coverage-integration-linux/index.html"
@@ -768,6 +1158,10 @@
     {
       "path": "Fw/Ports/Signal",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Ports/Signal/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Fw/Ports/Signal/coverage-integration-linux/index.html"
@@ -776,6 +1170,10 @@
     {
       "path": "Fw/Ports/SuccessCondition",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Ports/SuccessCondition/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Fw/Ports/SuccessCondition/coverage-integration-linux/index.html"
@@ -784,6 +1182,10 @@
     {
       "path": "Fw/Prm",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Prm/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Prm/coverage-integration-linux/index.html",
@@ -802,6 +1204,20 @@
     {
       "path": "Fw/SerializableFile",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Fw/SerializableFile/coverage-ut/index.html",
+        "summary": "Fw/SerializableFile/coverage-ut/summary.json",
+        "line_pct": 90.0,
+        "line_covered": 45,
+        "line_total": 50,
+        "function_pct": 100.0,
+        "function_covered": 5,
+        "function_total": 5,
+        "branch_pct": 44.44,
+        "branch_covered": 32,
+        "branch_total": 72
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/SerializableFile/coverage-integration-linux/index.html",
@@ -820,6 +1236,10 @@
     {
       "path": "Fw/SerializableFile/test/TestSerializable",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/SerializableFile/test/TestSerializable/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Fw/SerializableFile/test/TestSerializable/coverage-integration-linux/index.html"
@@ -828,6 +1248,10 @@
     {
       "path": "Fw/Sm",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Sm/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Sm/coverage-integration-linux/index.html",
@@ -846,6 +1270,10 @@
     {
       "path": "Fw/Test",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Test/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Test/coverage-integration-linux/index.html",
@@ -864,6 +1292,20 @@
     {
       "path": "Fw/Time",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Fw/Time/coverage-ut/index.html",
+        "summary": "Fw/Time/coverage-ut/summary.json",
+        "line_pct": 88.62,
+        "line_covered": 218,
+        "line_total": 246,
+        "function_pct": 85.48,
+        "function_covered": 53,
+        "function_total": 62,
+        "branch_pct": 50.0,
+        "branch_covered": 123,
+        "branch_total": 246
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Time/coverage-integration-linux/index.html",
@@ -882,6 +1324,20 @@
     {
       "path": "Fw/Tlm",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Fw/Tlm/coverage-ut/index.html",
+        "summary": "Fw/Tlm/coverage-ut/summary.json",
+        "line_pct": 53.76,
+        "line_covered": 50,
+        "line_total": 93,
+        "function_pct": 60.0,
+        "function_covered": 12,
+        "function_total": 20,
+        "branch_pct": 24.29,
+        "branch_covered": 17,
+        "branch_total": 70
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Tlm/coverage-integration-linux/index.html",
@@ -900,6 +1356,20 @@
     {
       "path": "Fw/Types",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Fw/Types/coverage-ut/index.html",
+        "summary": "Fw/Types/coverage-ut/summary.json",
+        "line_pct": 54.75,
+        "line_covered": 836,
+        "line_total": 1527,
+        "function_pct": 57.62,
+        "function_covered": 189,
+        "function_total": 328,
+        "branch_pct": 29.67,
+        "branch_covered": 289,
+        "branch_total": 974
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Fw/Types/coverage-integration-linux/index.html",
@@ -918,6 +1388,10 @@
     {
       "path": "Fw/Types/GTest",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Fw/Types/GTest/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Fw/Types/GTest/coverage-integration-linux/index.html"
@@ -926,6 +1400,20 @@
     {
       "path": "Os",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Os/coverage-ut/index.html",
+        "summary": "Os/coverage-ut/summary.json",
+        "line_pct": 18.08,
+        "line_covered": 438,
+        "line_total": 2423,
+        "function_pct": 19.52,
+        "function_covered": 97,
+        "function_total": 497,
+        "branch_pct": 12.01,
+        "branch_covered": 232,
+        "branch_total": 1931
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Os/coverage-integration-linux/index.html",
@@ -944,6 +1432,10 @@
     {
       "path": "Os/Darwin",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "Os/Darwin/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Os/Darwin/coverage-integration-linux/index.html"
@@ -952,6 +1444,20 @@
     {
       "path": "Os/Generic",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Os/Generic/coverage-ut/index.html",
+        "summary": "Os/Generic/coverage-ut/summary.json",
+        "line_pct": 89.1,
+        "line_covered": 237,
+        "line_total": 266,
+        "function_pct": 96.3,
+        "function_covered": 26,
+        "function_total": 27,
+        "branch_pct": 48.02,
+        "branch_covered": 121,
+        "branch_total": 252
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Os/Generic/coverage-integration-linux/index.html",
@@ -970,6 +1476,20 @@
     {
       "path": "Os/Generic/Types",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Os/Generic/Types/coverage-ut/index.html",
+        "summary": "Os/Generic/Types/coverage-ut/summary.json",
+        "line_pct": 92.45,
+        "line_covered": 98,
+        "line_total": 106,
+        "function_pct": 91.67,
+        "function_covered": 11,
+        "function_total": 12,
+        "branch_pct": 60.94,
+        "branch_covered": 39,
+        "branch_total": 64
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Os/Generic/Types/coverage-integration-linux/index.html",
@@ -988,6 +1508,10 @@
     {
       "path": "Os/Models",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Os/Models/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Os/Models/coverage-integration-linux/index.html"
@@ -996,6 +1520,20 @@
     {
       "path": "Os/Posix",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Os/Posix/coverage-ut/index.html",
+        "summary": "Os/Posix/coverage-ut/summary.json",
+        "line_pct": 62.4,
+        "line_covered": 468,
+        "line_total": 750,
+        "function_pct": 84.21,
+        "function_covered": 80,
+        "function_total": 95,
+        "branch_pct": 40.8,
+        "branch_covered": 215,
+        "branch_total": 527
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Os/Posix/coverage-integration-linux/index.html",
@@ -1014,6 +1552,20 @@
     {
       "path": "Svc/ActiveRateGroup",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/ActiveRateGroup/coverage-ut/index.html",
+        "summary": "Svc/ActiveRateGroup/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 48,
+        "line_total": 48,
+        "function_pct": 100.0,
+        "function_covered": 7,
+        "function_total": 7,
+        "branch_pct": 60.87,
+        "branch_covered": 28,
+        "branch_total": 46
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/ActiveRateGroup/coverage-integration-linux/index.html",
@@ -1032,6 +1584,20 @@
     {
       "path": "Svc/ActiveTextLogger",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/ActiveTextLogger/coverage-ut/index.html",
+        "summary": "Svc/ActiveTextLogger/coverage-ut/summary.json",
+        "line_pct": 79.05,
+        "line_covered": 83,
+        "line_total": 105,
+        "function_pct": 90.0,
+        "function_covered": 9,
+        "function_total": 10,
+        "branch_pct": 53.85,
+        "branch_covered": 56,
+        "branch_total": 104
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/ActiveTextLogger/coverage-integration-linux/index.html",
@@ -1050,6 +1616,20 @@
     {
       "path": "Svc/AssertFatalAdapter",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/AssertFatalAdapter/coverage-ut/index.html",
+        "summary": "Svc/AssertFatalAdapter/coverage-ut/summary.json",
+        "line_pct": 94.74,
+        "line_covered": 54,
+        "line_total": 57,
+        "function_pct": 100.0,
+        "function_covered": 8,
+        "function_total": 8,
+        "branch_pct": 58.7,
+        "branch_covered": 27,
+        "branch_total": 46
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/AssertFatalAdapter/coverage-integration-linux/index.html",
@@ -1068,6 +1648,20 @@
     {
       "path": "Svc/BufferAccumulator",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/BufferAccumulator/coverage-ut/index.html",
+        "summary": "Svc/BufferAccumulator/coverage-ut/summary.json",
+        "line_pct": 88.0,
+        "line_covered": 132,
+        "line_total": 150,
+        "function_pct": 94.12,
+        "function_covered": 16,
+        "function_total": 17,
+        "branch_pct": 54.79,
+        "branch_covered": 80,
+        "branch_total": 146
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/BufferAccumulator/coverage-integration-linux/index.html",
@@ -1086,6 +1680,20 @@
     {
       "path": "Svc/BufferLogger",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/BufferLogger/coverage-ut/index.html",
+        "summary": "Svc/BufferLogger/coverage-ut/summary.json",
+        "line_pct": 92.62,
+        "line_covered": 138,
+        "line_total": 149,
+        "function_pct": 86.96,
+        "function_covered": 20,
+        "function_total": 23,
+        "branch_pct": 57.46,
+        "branch_covered": 77,
+        "branch_total": 134
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/BufferLogger/coverage-integration-linux/index.html",
@@ -1104,6 +1712,20 @@
     {
       "path": "Svc/BufferManager",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/BufferManager/coverage-ut/index.html",
+        "summary": "Svc/BufferManager/coverage-ut/summary.json",
+        "line_pct": 99.05,
+        "line_covered": 104,
+        "line_total": 105,
+        "function_pct": 100.0,
+        "function_covered": 7,
+        "function_total": 7,
+        "branch_pct": 55.93,
+        "branch_covered": 66,
+        "branch_total": 118
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/BufferManager/coverage-integration-linux/index.html",
@@ -1122,6 +1744,20 @@
     {
       "path": "Svc/BufferRepeater",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/BufferRepeater/coverage-ut/index.html",
+        "summary": "Svc/BufferRepeater/coverage-ut/summary.json",
+        "line_pct": 91.67,
+        "line_covered": 33,
+        "line_total": 36,
+        "function_pct": 100.0,
+        "function_covered": 5,
+        "function_total": 5,
+        "branch_pct": 55.56,
+        "branch_covered": 30,
+        "branch_total": 54
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/BufferRepeater/coverage-integration-linux/index.html",
@@ -1140,6 +1776,20 @@
     {
       "path": "Svc/ChronoTime",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/ChronoTime/coverage-ut/index.html",
+        "summary": "Svc/ChronoTime/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 8,
+        "line_total": 8,
+        "function_pct": 100.0,
+        "function_covered": 3,
+        "function_total": 3,
+        "branch_pct": 50.0,
+        "branch_covered": 4,
+        "branch_total": 8
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/ChronoTime/coverage-integration-linux/index.html",
@@ -1158,6 +1808,20 @@
     {
       "path": "Svc/CmdDispatcher",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/CmdDispatcher/coverage-ut/index.html",
+        "summary": "Svc/CmdDispatcher/coverage-ut/summary.json",
+        "line_pct": 96.97,
+        "line_covered": 96,
+        "line_total": 99,
+        "function_pct": 91.67,
+        "function_covered": 11,
+        "function_total": 12,
+        "branch_pct": 52.6,
+        "branch_covered": 101,
+        "branch_total": 192
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/CmdDispatcher/coverage-integration-linux/index.html",
@@ -1176,6 +1840,20 @@
     {
       "path": "Svc/CmdSequencer",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/CmdSequencer/coverage-ut/index.html",
+        "summary": "Svc/CmdSequencer/coverage-ut/summary.json",
+        "line_pct": 93.89,
+        "line_covered": 769,
+        "line_total": 819,
+        "function_pct": 97.12,
+        "function_covered": 101,
+        "function_total": 104,
+        "branch_pct": 56.64,
+        "branch_covered": 482,
+        "branch_total": 851
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/CmdSequencer/coverage-integration-linux/index.html",
@@ -1194,6 +1872,20 @@
     {
       "path": "Svc/CmdSplitter",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/CmdSplitter/coverage-ut/index.html",
+        "summary": "Svc/CmdSplitter/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 19,
+        "line_total": 19,
+        "function_pct": 100.0,
+        "function_covered": 5,
+        "function_total": 5,
+        "branch_pct": 54.55,
+        "branch_covered": 12,
+        "branch_total": 22
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/CmdSplitter/coverage-integration-linux/index.html",
@@ -1212,6 +1904,20 @@
     {
       "path": "Svc/ComLogger",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/ComLogger/coverage-ut/index.html",
+        "summary": "Svc/ComLogger/coverage-ut/summary.json",
+        "line_pct": 97.37,
+        "line_covered": 111,
+        "line_total": 114,
+        "function_pct": 91.67,
+        "function_covered": 11,
+        "function_total": 12,
+        "branch_pct": 59.15,
+        "branch_covered": 84,
+        "branch_total": 142
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/ComLogger/coverage-integration-linux/index.html",
@@ -1230,6 +1936,20 @@
     {
       "path": "Svc/ComSplitter",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/ComSplitter/coverage-ut/index.html",
+        "summary": "Svc/ComSplitter/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 12,
+        "line_total": 12,
+        "function_pct": 100.0,
+        "function_covered": 3,
+        "function_total": 3,
+        "branch_pct": 66.67,
+        "branch_covered": 8,
+        "branch_total": 12
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/ComSplitter/coverage-integration-linux/index.html",
@@ -1248,6 +1968,20 @@
     {
       "path": "Svc/ComStub",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/ComStub/coverage-ut/index.html",
+        "summary": "Svc/ComStub/coverage-ut/summary.json",
+        "line_pct": 98.51,
+        "line_covered": 66,
+        "line_total": 67,
+        "function_pct": 100.0,
+        "function_covered": 10,
+        "function_total": 10,
+        "branch_pct": 59.76,
+        "branch_covered": 49,
+        "branch_total": 82
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/ComStub/coverage-integration-linux/index.html",
@@ -1266,6 +2000,10 @@
     {
       "path": "Svc/Cycle",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Cycle/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Cycle/coverage-integration-linux/index.html"
@@ -1274,6 +2012,20 @@
     {
       "path": "Svc/DpCatalog",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/DpCatalog/coverage-ut/index.html",
+        "summary": "Svc/DpCatalog/coverage-ut/summary.json",
+        "line_pct": 78.0,
+        "line_covered": 351,
+        "line_total": 450,
+        "function_pct": 100.0,
+        "function_covered": 32,
+        "function_total": 32,
+        "branch_pct": 42.92,
+        "branch_covered": 300,
+        "branch_total": 699
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/DpCatalog/coverage-integration-linux/index.html",
@@ -1292,6 +2044,20 @@
     {
       "path": "Svc/DpManager",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/DpManager/coverage-ut/index.html",
+        "summary": "Svc/DpManager/coverage-ut/summary.json",
+        "line_pct": 97.44,
+        "line_covered": 38,
+        "line_total": 39,
+        "function_pct": 100.0,
+        "function_covered": 8,
+        "function_total": 8,
+        "branch_pct": 52.27,
+        "branch_covered": 23,
+        "branch_total": 44
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/DpManager/coverage-integration-linux/index.html",
@@ -1310,6 +2076,10 @@
     {
       "path": "Svc/DpPorts",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/DpPorts/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/DpPorts/coverage-integration-linux/index.html"
@@ -1318,6 +2088,20 @@
     {
       "path": "Svc/DpWriter",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/DpWriter/coverage-ut/index.html",
+        "summary": "Svc/DpWriter/coverage-ut/summary.json",
+        "line_pct": 97.58,
+        "line_covered": 121,
+        "line_total": 124,
+        "function_pct": 90.0,
+        "function_covered": 9,
+        "function_total": 10,
+        "branch_pct": 62.07,
+        "branch_covered": 108,
+        "branch_total": 174
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/DpWriter/coverage-integration-linux/index.html",
@@ -1336,6 +2120,10 @@
     {
       "path": "Svc/Fatal",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Fatal/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/Fatal/coverage-integration-linux/index.html",
@@ -1354,6 +2142,10 @@
     {
       "path": "Svc/FatalHandler",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/FatalHandler/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/FatalHandler/coverage-integration-linux/index.html",
@@ -1372,6 +2164,20 @@
     {
       "path": "Svc/FileDownlink",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/FileDownlink/coverage-ut/index.html",
+        "summary": "Svc/FileDownlink/coverage-ut/summary.json",
+        "line_pct": 84.15,
+        "line_covered": 308,
+        "line_total": 366,
+        "function_pct": 90.91,
+        "function_covered": 40,
+        "function_total": 44,
+        "branch_pct": 45.29,
+        "branch_covered": 197,
+        "branch_total": 435
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/FileDownlink/coverage-integration-linux/index.html",
@@ -1390,6 +2196,10 @@
     {
       "path": "Svc/FileDownlinkPorts",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/FileDownlinkPorts/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/FileDownlinkPorts/coverage-integration-linux/index.html"
@@ -1398,6 +2208,20 @@
     {
       "path": "Svc/FileManager",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/FileManager/coverage-ut/index.html",
+        "summary": "Svc/FileManager/coverage-ut/summary.json",
+        "line_pct": 88.41,
+        "line_covered": 145,
+        "line_total": 164,
+        "function_pct": 93.33,
+        "function_covered": 14,
+        "function_total": 15,
+        "branch_pct": 50.45,
+        "branch_covered": 112,
+        "branch_total": 222
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/FileManager/coverage-integration-linux/index.html",
@@ -1416,6 +2240,20 @@
     {
       "path": "Svc/FileUplink",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/FileUplink/coverage-ut/index.html",
+        "summary": "Svc/FileUplink/coverage-ut/summary.json",
+        "line_pct": 92.78,
+        "line_covered": 180,
+        "line_total": 194,
+        "function_pct": 96.55,
+        "function_covered": 28,
+        "function_total": 29,
+        "branch_pct": 54.78,
+        "branch_covered": 86,
+        "branch_total": 157
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/FileUplink/coverage-integration-linux/index.html",
@@ -1434,6 +2272,20 @@
     {
       "path": "Svc/FileWorker",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/FileWorker/coverage-ut/index.html",
+        "summary": "Svc/FileWorker/coverage-ut/summary.json",
+        "line_pct": 90.29,
+        "line_covered": 279,
+        "line_total": 309,
+        "function_pct": 100.0,
+        "function_covered": 14,
+        "function_total": 14,
+        "branch_pct": 47.53,
+        "branch_covered": 241,
+        "branch_total": 507
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/FileWorker/coverage-integration-linux/index.html",
@@ -1452,6 +2304,20 @@
     {
       "path": "Svc/FprimeDeframer",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/FprimeDeframer/coverage-ut/index.html",
+        "summary": "Svc/FprimeDeframer/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 53,
+        "line_total": 53,
+        "function_pct": 100.0,
+        "function_covered": 4,
+        "function_total": 4,
+        "branch_pct": 58.04,
+        "branch_covered": 65,
+        "branch_total": 112
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/FprimeDeframer/coverage-integration-linux/index.html",
@@ -1470,6 +2336,20 @@
     {
       "path": "Svc/FprimeFramer",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/FprimeFramer/coverage-ut/index.html",
+        "summary": "Svc/FprimeFramer/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 31,
+        "line_total": 31,
+        "function_pct": 100.0,
+        "function_covered": 5,
+        "function_total": 5,
+        "branch_pct": 42.19,
+        "branch_covered": 27,
+        "branch_total": 64
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/FprimeFramer/coverage-integration-linux/index.html",
@@ -1488,6 +2368,10 @@
     {
       "path": "Svc/FprimeProtocol",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/FprimeProtocol/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/FprimeProtocol/coverage-integration-linux/index.html"
@@ -1496,6 +2380,20 @@
     {
       "path": "Svc/FprimeRouter",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/FprimeRouter/coverage-ut/index.html",
+        "summary": "Svc/FprimeRouter/coverage-ut/summary.json",
+        "line_pct": 88.89,
+        "line_covered": 32,
+        "line_total": 36,
+        "function_pct": 100.0,
+        "function_covered": 5,
+        "function_total": 5,
+        "branch_pct": 48.65,
+        "branch_covered": 18,
+        "branch_total": 37
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/FprimeRouter/coverage-integration-linux/index.html",
@@ -1514,6 +2412,20 @@
     {
       "path": "Svc/FpySequencer",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/FpySequencer/coverage-ut/index.html",
+        "summary": "Svc/FpySequencer/coverage-ut/summary.json",
+        "line_pct": 86.45,
+        "line_covered": 1767,
+        "line_total": 2044,
+        "function_pct": 99.02,
+        "function_covered": 203,
+        "function_total": 205,
+        "branch_pct": 51.84,
+        "branch_covered": 1467,
+        "branch_total": 2830
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/FpySequencer/coverage-integration-linux/index.html",
@@ -1532,6 +2444,20 @@
     {
       "path": "Svc/GenericHub",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/GenericHub/coverage-ut/index.html",
+        "summary": "Svc/GenericHub/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 179,
+        "line_total": 179,
+        "function_pct": 100.0,
+        "function_covered": 12,
+        "function_total": 12,
+        "branch_pct": 50.29,
+        "branch_covered": 174,
+        "branch_total": 346
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/GenericHub/coverage-integration-linux/index.html"
@@ -1540,6 +2466,20 @@
     {
       "path": "Svc/Health",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/Health/coverage-ut/index.html",
+        "summary": "Svc/Health/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 112,
+        "line_total": 112,
+        "function_pct": 100.0,
+        "function_covered": 10,
+        "function_total": 10,
+        "branch_pct": 60.0,
+        "branch_covered": 90,
+        "branch_total": 150
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/Health/coverage-integration-linux/index.html",
@@ -1558,6 +2498,10 @@
     {
       "path": "Svc/Interfaces",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Interfaces/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Interfaces/coverage-integration-linux/index.html"
@@ -1566,6 +2510,20 @@
     {
       "path": "Svc/LinuxTimer",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/LinuxTimer/coverage-ut/index.html",
+        "summary": "Svc/LinuxTimer/coverage-ut/summary.json",
+        "line_pct": 97.06,
+        "line_covered": 33,
+        "line_total": 34,
+        "function_pct": 100.0,
+        "function_covered": 4,
+        "function_total": 4,
+        "branch_pct": 47.06,
+        "branch_covered": 16,
+        "branch_total": 34
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/LinuxTimer/coverage-integration-linux/index.html",
@@ -1584,6 +2542,20 @@
     {
       "path": "Svc/OsTime",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/OsTime/coverage-ut/index.html",
+        "summary": "Svc/OsTime/coverage-ut/summary.json",
+        "line_pct": 70.0,
+        "line_covered": 35,
+        "line_total": 50,
+        "function_pct": 83.33,
+        "function_covered": 5,
+        "function_total": 6,
+        "branch_pct": 37.8,
+        "branch_covered": 31,
+        "branch_total": 82
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/OsTime/coverage-integration-linux/index.html",
@@ -1602,6 +2574,10 @@
     {
       "path": "Svc/PassiveConsoleTextLogger",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/PassiveConsoleTextLogger/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/PassiveConsoleTextLogger/coverage-integration-linux/index.html",
@@ -1620,6 +2596,20 @@
     {
       "path": "Svc/PassiveRateGroup",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/PassiveRateGroup/coverage-ut/index.html",
+        "summary": "Svc/PassiveRateGroup/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 26,
+        "line_total": 26,
+        "function_pct": 100.0,
+        "function_covered": 4,
+        "function_total": 4,
+        "branch_pct": 52.5,
+        "branch_covered": 21,
+        "branch_total": 40
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/PassiveRateGroup/coverage-integration-linux/index.html",
@@ -1638,6 +2628,10 @@
     {
       "path": "Svc/Ping",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Ping/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Ping/coverage-integration-linux/index.html"
@@ -1646,6 +2640,20 @@
     {
       "path": "Svc/PolyDb",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/PolyDb/coverage-ut/index.html",
+        "summary": "Svc/PolyDb/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 17,
+        "line_total": 17,
+        "function_pct": 100.0,
+        "function_covered": 4,
+        "function_total": 4,
+        "branch_pct": 42.5,
+        "branch_covered": 17,
+        "branch_total": 40
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/PolyDb/coverage-integration-linux/index.html",
@@ -1664,6 +2672,10 @@
     {
       "path": "Svc/PolyIf",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/PolyIf/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/PolyIf/coverage-integration-linux/index.html"
@@ -1672,6 +2684,10 @@
     {
       "path": "Svc/Ports/CommsPorts",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Ports/CommsPorts/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Ports/CommsPorts/coverage-integration-linux/index.html"
@@ -1680,6 +2696,10 @@
     {
       "path": "Svc/Ports/FilePorts",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Ports/FilePorts/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Ports/FilePorts/coverage-integration-linux/index.html"
@@ -1688,6 +2708,10 @@
     {
       "path": "Svc/Ports/OsTimeEpoch",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Ports/OsTimeEpoch/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Ports/OsTimeEpoch/coverage-integration-linux/index.html"
@@ -1696,6 +2720,10 @@
     {
       "path": "Svc/Ports/TlmPacketizerPorts",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Ports/TlmPacketizerPorts/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Ports/TlmPacketizerPorts/coverage-integration-linux/index.html"
@@ -1704,6 +2732,10 @@
     {
       "path": "Svc/Ports/VersionPorts",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Ports/VersionPorts/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Ports/VersionPorts/coverage-integration-linux/index.html"
@@ -1712,6 +2744,20 @@
     {
       "path": "Svc/PosixTime",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/PosixTime/coverage-ut/index.html",
+        "summary": "Svc/PosixTime/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 7,
+        "line_total": 7,
+        "function_pct": 100.0,
+        "function_covered": 3,
+        "function_total": 3,
+        "branch_pct": 50.0,
+        "branch_covered": 3,
+        "branch_total": 6
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/PosixTime/coverage-integration-linux/index.html",
@@ -1730,6 +2776,20 @@
     {
       "path": "Svc/PrmDb",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/PrmDb/coverage-ut/index.html",
+        "summary": "Svc/PrmDb/coverage-ut/summary.json",
+        "line_pct": 92.2,
+        "line_covered": 319,
+        "line_total": 346,
+        "function_pct": 90.0,
+        "function_covered": 18,
+        "function_total": 20,
+        "branch_pct": 51.29,
+        "branch_covered": 359,
+        "branch_total": 700
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/PrmDb/coverage-integration-linux/index.html",
@@ -1748,6 +2808,20 @@
     {
       "path": "Svc/RateGroupDriver",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/RateGroupDriver/coverage-ut/index.html",
+        "summary": "Svc/RateGroupDriver/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 24,
+        "line_total": 24,
+        "function_pct": 100.0,
+        "function_covered": 5,
+        "function_total": 5,
+        "branch_pct": 62.5,
+        "branch_covered": 20,
+        "branch_total": 32
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/RateGroupDriver/coverage-integration-linux/index.html",
@@ -1766,6 +2840,10 @@
     {
       "path": "Svc/Sched",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Sched/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Sched/coverage-integration-linux/index.html"
@@ -1774,6 +2852,10 @@
     {
       "path": "Svc/Seq",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Seq/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/Seq/coverage-integration-linux/index.html",
@@ -1792,6 +2874,20 @@
     {
       "path": "Svc/SeqDispatcher",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/SeqDispatcher/coverage-ut/index.html",
+        "summary": "Svc/SeqDispatcher/coverage-ut/summary.json",
+        "line_pct": 73.08,
+        "line_covered": 57,
+        "line_total": 78,
+        "function_pct": 80.0,
+        "function_covered": 8,
+        "function_total": 10,
+        "branch_pct": 49.18,
+        "branch_covered": 60,
+        "branch_total": 122
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/SeqDispatcher/coverage-integration-linux/index.html",
@@ -1810,6 +2906,20 @@
     {
       "path": "Svc/StaticMemory",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/StaticMemory/coverage-ut/index.html",
+        "summary": "Svc/StaticMemory/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 20,
+        "line_total": 20,
+        "function_pct": 100.0,
+        "function_covered": 4,
+        "function_total": 4,
+        "branch_pct": 55.0,
+        "branch_covered": 11,
+        "branch_total": 20
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/StaticMemory/coverage-integration-linux/index.html",
@@ -1828,6 +2938,10 @@
     {
       "path": "Svc/Subtopologies/CdhCore",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Subtopologies/CdhCore/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Subtopologies/CdhCore/coverage-integration-linux/index.html"
@@ -1836,6 +2950,10 @@
     {
       "path": "Svc/Subtopologies/ComCcsds",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Subtopologies/ComCcsds/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Subtopologies/ComCcsds/coverage-integration-linux/index.html"
@@ -1844,6 +2962,10 @@
     {
       "path": "Svc/Subtopologies/ComFprime",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Subtopologies/ComFprime/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Subtopologies/ComFprime/coverage-integration-linux/index.html"
@@ -1852,6 +2974,10 @@
     {
       "path": "Svc/Subtopologies/ComLoggerTee",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Subtopologies/ComLoggerTee/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Subtopologies/ComLoggerTee/coverage-integration-linux/index.html"
@@ -1860,6 +2986,10 @@
     {
       "path": "Svc/Subtopologies/DataProducts",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Subtopologies/DataProducts/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Subtopologies/DataProducts/coverage-integration-linux/index.html"
@@ -1868,6 +2998,10 @@
     {
       "path": "Svc/Subtopologies/FileHandling",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Subtopologies/FileHandling/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Subtopologies/FileHandling/coverage-integration-linux/index.html"
@@ -1876,6 +3010,20 @@
     {
       "path": "Svc/SystemResources",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/SystemResources/coverage-ut/index.html",
+        "summary": "Svc/SystemResources/coverage-ut/summary.json",
+        "line_pct": 98.63,
+        "line_covered": 72,
+        "line_total": 73,
+        "function_pct": 100.0,
+        "function_covered": 8,
+        "function_total": 8,
+        "branch_pct": 55.0,
+        "branch_covered": 33,
+        "branch_total": 60
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/SystemResources/coverage-integration-linux/index.html",
@@ -1894,6 +3042,20 @@
     {
       "path": "Svc/TlmChan",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/TlmChan/coverage-ut/index.html",
+        "summary": "Svc/TlmChan/coverage-ut/summary.json",
+        "line_pct": 82.4,
+        "line_covered": 103,
+        "line_total": 125,
+        "function_pct": 85.71,
+        "function_covered": 6,
+        "function_total": 7,
+        "branch_pct": 48.57,
+        "branch_covered": 68,
+        "branch_total": 140
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/TlmChan/coverage-integration-linux/index.html",
@@ -1912,6 +3074,20 @@
     {
       "path": "Svc/TlmPacketizer",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/TlmPacketizer/coverage-ut/index.html",
+        "summary": "Svc/TlmPacketizer/coverage-ut/summary.json",
+        "line_pct": 92.54,
+        "line_covered": 273,
+        "line_total": 295,
+        "function_pct": 100.0,
+        "function_covered": 20,
+        "function_total": 20,
+        "branch_pct": 54.46,
+        "branch_covered": 281,
+        "branch_total": 516
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/TlmPacketizer/coverage-integration-linux/index.html",
@@ -1930,6 +3106,10 @@
     {
       "path": "Svc/Types/TlmPacketizerTypes",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Types/TlmPacketizerTypes/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/Types/TlmPacketizerTypes/coverage-integration-linux/index.html"
@@ -1938,6 +3118,20 @@
     {
       "path": "Svc/Version",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/Version/coverage-ut/index.html",
+        "summary": "Svc/Version/coverage-ut/summary.json",
+        "line_pct": 96.1,
+        "line_covered": 148,
+        "line_total": 154,
+        "function_pct": 100.0,
+        "function_covered": 12,
+        "function_total": 12,
+        "branch_pct": 54.91,
+        "branch_covered": 123,
+        "branch_total": 224
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Svc/Version/coverage-integration-linux/index.html",
@@ -1956,6 +3150,10 @@
     {
       "path": "Svc/WatchDog",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/WatchDog/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "Svc/WatchDog/coverage-integration-linux/index.html"
@@ -1964,6 +3162,10 @@
     {
       "path": "TestDeploymentsProject/Ref/BlockDriver",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "TestDeploymentsProject/Ref/BlockDriver/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "TestDeploymentsProject/Ref/BlockDriver/coverage-integration-linux/index.html",
@@ -1982,6 +3184,10 @@
     {
       "path": "TestDeploymentsProject/Ref/PingReceiver",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "TestDeploymentsProject/Ref/PingReceiver/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "TestDeploymentsProject/Ref/PingReceiver/coverage-integration-linux/index.html",
@@ -2000,6 +3206,10 @@
     {
       "path": "TestDeploymentsProject/Ref/RecvBuffApp",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "TestDeploymentsProject/Ref/RecvBuffApp/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "TestDeploymentsProject/Ref/RecvBuffApp/coverage-integration-linux/index.html",
@@ -2018,6 +3228,10 @@
     {
       "path": "TestDeploymentsProject/Ref/SendBuffApp",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "TestDeploymentsProject/Ref/SendBuffApp/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "TestDeploymentsProject/Ref/SendBuffApp/coverage-integration-linux/index.html",
@@ -2036,6 +3250,10 @@
     {
       "path": "TestDeploymentsProject/Ref/SignalGen",
       "has_ut": true,
+      "ut": {
+        "has_coverage": false,
+        "report": "TestDeploymentsProject/Ref/SignalGen/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "TestDeploymentsProject/Ref/SignalGen/coverage-integration-linux/index.html",
@@ -2054,6 +3272,10 @@
     {
       "path": "TestDeploymentsProject/Ref/Top",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "TestDeploymentsProject/Ref/Top/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "TestDeploymentsProject/Ref/Top/coverage-integration-linux/index.html",
@@ -2072,6 +3294,10 @@
     {
       "path": "TestDeploymentsProject/Ref/TypeDemo",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "TestDeploymentsProject/Ref/TypeDemo/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "TestDeploymentsProject/Ref/TypeDemo/coverage-integration-linux/index.html",
@@ -2090,6 +3316,20 @@
     {
       "path": "Utils",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Utils/coverage-ut/index.html",
+        "summary": "Utils/coverage-ut/summary.json",
+        "line_pct": 19.93,
+        "line_covered": 111,
+        "line_total": 557,
+        "function_pct": 26.44,
+        "function_covered": 23,
+        "function_total": 87,
+        "branch_pct": 14.53,
+        "branch_covered": 77,
+        "branch_total": 530
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Utils/coverage-integration-linux/index.html",
@@ -2108,6 +3348,10 @@
     {
       "path": "Utils/Hash",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Utils/Hash/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Utils/Hash/coverage-integration-linux/index.html",
@@ -2126,6 +3370,20 @@
     {
       "path": "Utils/Types",
       "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Utils/Types/coverage-ut/index.html",
+        "summary": "Utils/Types/coverage-ut/summary.json",
+        "line_pct": 92.11,
+        "line_covered": 140,
+        "line_total": 152,
+        "function_pct": 95.83,
+        "function_covered": 23,
+        "function_total": 24,
+        "branch_pct": 58.45,
+        "branch_covered": 83,
+        "branch_total": 142
+      },
       "integration-linux": {
         "has_coverage": true,
         "report": "Utils/Types/coverage-integration-linux/index.html",
@@ -2144,6 +3402,10 @@
     {
       "path": "cmake/test/data/TestDeployment/TestBuildAutocoder",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "cmake/test/data/TestDeployment/TestBuildAutocoder/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "cmake/test/data/TestDeployment/TestBuildAutocoder/coverage-integration-linux/index.html"
@@ -2152,6 +3414,10 @@
     {
       "path": "cmake/test/data/TestDeployment/TestChainedAutocoder",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "cmake/test/data/TestDeployment/TestChainedAutocoder/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "cmake/test/data/TestDeployment/TestChainedAutocoder/coverage-integration-linux/index.html"
@@ -2160,6 +3426,10 @@
     {
       "path": "cmake/test/data/TestDeployment/TestHeaderAutocoder",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "cmake/test/data/TestDeployment/TestHeaderAutocoder/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "cmake/test/data/TestDeployment/TestHeaderAutocoder/coverage-integration-linux/index.html"
@@ -2168,6 +3438,10 @@
     {
       "path": "cmake/test/data/TestDeployment/TestTargetAutocoder",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "cmake/test/data/TestDeployment/TestTargetAutocoder/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "cmake/test/data/TestDeployment/TestTargetAutocoder/coverage-integration-linux/index.html"
@@ -2176,6 +3450,10 @@
     {
       "path": "cmake/test/data/test-fprime-library/TestLibrary/TestComponent",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "cmake/test/data/test-fprime-library/TestLibrary/TestComponent/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "cmake/test/data/test-fprime-library/TestLibrary/TestComponent/coverage-integration-linux/index.html"
@@ -2184,6 +3462,10 @@
     {
       "path": "cmake/test/data/test-fprime-library2/TestLibrary2/TestComponent",
       "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "cmake/test/data/test-fprime-library2/TestLibrary2/TestComponent/coverage-ut/index.html"
+      },
       "integration-linux": {
         "has_coverage": false,
         "report": "cmake/test/data/test-fprime-library2/TestLibrary2/TestComponent/coverage-integration-linux/index.html"
