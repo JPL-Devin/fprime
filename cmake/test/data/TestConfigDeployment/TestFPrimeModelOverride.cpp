@@ -15,5 +15,5 @@
 // ======================================================================
 #include <type_traits>
 #include <cstdint>
-#include "config/FwChanIdTypeAliasAc.h"
+#include "base_config/FwChanIdTypeAliasAc.h"
 static_assert(std::is_same<FwChanIdType,uint64_t>::value, "FwChanIdType not a U64, model override failed");

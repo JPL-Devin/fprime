@@ -12,6 +12,7 @@
 
 #include "GenericHubTester.hpp"
 #include <STest/Pick/Pick.hpp>
+#include "config/FppConstantsAc.hpp"
 
 #define INSTANCE 0
 #define MAX_HISTORY_SIZE 10000

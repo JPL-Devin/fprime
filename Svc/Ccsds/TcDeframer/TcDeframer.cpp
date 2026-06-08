@@ -5,11 +5,12 @@
 // ======================================================================
 
 #include "Svc/Ccsds/TcDeframer/TcDeframer.hpp"
+#include "Fw/FPrimeBasicTypes.hpp"
 #include "Svc/Ccsds/Types/FppConstantsAc.hpp"
 #include "Svc/Ccsds/Types/TCHeaderSerializableAc.hpp"
 #include "Svc/Ccsds/Types/TCTrailerSerializableAc.hpp"
 #include "Svc/Ccsds/Utils/CRC16.hpp"
-#include "config/FpConfig.hpp"
+#include "config/FppConstantsAc.hpp"
 
 namespace Svc {
 namespace Ccsds {

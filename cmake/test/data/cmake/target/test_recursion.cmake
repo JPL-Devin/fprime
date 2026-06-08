@@ -62,6 +62,7 @@ set(EXPECTED_FULL_DEPENDENCIES
     UnixPlatformTypes
     Utils_Hash
     __fprime_config
+    default_base_config
     default_config
 )
 

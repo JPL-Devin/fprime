@@ -97,3 +97,7 @@ enum TimeBase : FwTimeBaseStoreType {
     TB_WORKSTATION_TIME = 2  @< Time as reported on workstation where software is running. For testing. (Required)
     TB_DONT_CARE = 0xFFFF    @< Don't care value for sequences. If FwTimeBaseStoreType is changed, value should be changed (Required)
 } default TB_NONE;
+
+@ The width of packet descriptors when they are serialized by the framework
+dictionary type FwPacketDescriptorType = U16
+constant SIZE_OF_FwPacketDescriptorType = 2  @< Size of FwPacketDescriptorType in bytes
