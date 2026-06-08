@@ -1428,6 +1428,35 @@ TEST(TypesTest, StringTest) {
 
     ASSERT_EQ(es, es2);
     ASSERT_EQ(es2, "ExternalString");
+
+    // Test bounded char* constructor
+    {
+        // Normal case: length < capacity
+        const char data[] = "Hello, World!";
+        Fw::String bounded(data, 5);
+        ASSERT_EQ(bounded, "Hello");
+        ASSERT_EQ(bounded.length(), 5);
+    }
+    {
+        // Non-null-terminated buffer
+        const char raw[] = {'A', 'B', 'C', 'D'};  // no null terminator
+        Fw::String bounded(raw, 3);
+        ASSERT_EQ(bounded, "ABC");
+        ASSERT_EQ(bounded.length(), 3);
+    }
+    {
+        // Length exceeds capacity — should truncate
+        char longStr[300];
+        memset(longStr, 'X', sizeof(longStr));
+        Fw::String bounded(longStr, sizeof(longStr));
+        ASSERT_EQ(bounded.length(), bounded.getCapacity() - 1);
+    }
+    {
+        // Zero length
+        Fw::String bounded("anything", 0);
+        ASSERT_EQ(bounded, "");
+        ASSERT_EQ(bounded.length(), 0);
+    }
 }
 
 TEST(TypesTest, ObjectNameTest) {
