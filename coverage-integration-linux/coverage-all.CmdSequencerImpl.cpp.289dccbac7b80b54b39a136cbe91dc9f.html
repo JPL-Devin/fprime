@@ -26,7 +26,7 @@
     </tr>
     <tr>
       <th scope="row">Date:</th>
-      <td>2026-06-08 16:39:05</td>
+      <td>2026-06-08 18:16:59</td>
     </tr>
   </table>
 </div>
@@ -92,9 +92,9 @@
     <tr><td><a href="#l402">Svc::CmdSequencerComponentImpl::performCmd_Step() (line 402)</a></td><td>called 2 times</td><td>57.0%</td></tr>
     <tr><td><a href="#l458">Svc::CmdSequencerComponentImpl::performCmd_Step_ABSOLUTE(Fw::Time&amp;) (line 458)</a></td><td>called 2 times</td><td>83.0%</td></tr>
     <tr><td><a href="#l453">Svc::CmdSequencerComponentImpl::performCmd_Step_RELATIVE(Fw::Time&amp;) (line 453)</a></td><td>called 2 times</td><td>100.0%</td></tr>
-    <tr><td><a href="#l467">Svc::CmdSequencerComponentImpl::pingIn_handler(short, unsigned int) (line 467)</a></td><td>called 58 times</td><td>100.0%</td></tr>
+    <tr><td><a href="#l467">Svc::CmdSequencerComponentImpl::pingIn_handler(short, unsigned int) (line 467)</a></td><td>called 57 times</td><td>100.0%</td></tr>
     <tr><td><a href="#l388">Svc::CmdSequencerComponentImpl::requireRunMode(Svc::CmdSequencerComponentImpl::RunMode) (line 388)</a></td><td>called 1 time</td><td>60.0%</td></tr>
-    <tr><td><a href="#l312">Svc::CmdSequencerComponentImpl::schedIn_handler(short, unsigned int) (line 312)</a></td><td>called 116 times</td><td>58.0%</td></tr>
+    <tr><td><a href="#l312">Svc::CmdSequencerComponentImpl::schedIn_handler(short, unsigned int) (line 312)</a></td><td>called 114 times</td><td>58.0%</td></tr>
     <tr><td><a href="#l190">Svc::CmdSequencerComponentImpl::seqCancelIn_handler(short) (line 190)</a></td><td>not called</td><td>0.0%</td></tr>
     <tr><td><a href="#l186">Svc::CmdSequencerComponentImpl::seqDispatchIn_handler(short, Fw::StringBase&amp;) (line 186)</a></td><td>not called</td><td>0.0%</td></tr>
     <tr><td><a href="#l179">Svc::CmdSequencerComponentImpl::seqRunIn_handler(short, Fw::StringBase const&amp;, Svc::SeqArgs const&amp;) (line 179)</a></td><td>not called</td><td>0.0%</td></tr>
@@ -2391,7 +2391,7 @@
       <td class="lineno"><a id="l312" href="#l312">312</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">116</td>
+      <td class="linecount coveredLine">114</td>
       <td class="src coveredLine"><span class="kt">void</span><span class="w"> </span><span class="n">CmdSequencerComponentImpl</span><span class="w"> </span><span class="o">::</span><span class="n">schedIn_handler</span><span class="p">(</span><span class="n">FwIndexType</span><span class="w"> </span><span class="n">portNum</span><span class="p">,</span><span class="w"> </span><span class="n">U32</span><span class="w"> </span><span class="n">order</span><span class="p">)</span><span class="w"> </span><span class="p">{</span></td>
     </tr>
     <tr class="source-line">
@@ -2400,12 +2400,12 @@
         <details class="linebranchDetails">
           <summary class="linebranchSummary">1/2</summary>
           <div class="linebranchContents">
-            <div class="takenBranch">&check; Branch 1 taken 116 times.</div>
+            <div class="takenBranch">&check; Branch 1 taken 114 times.</div>
             <div class="notTakenBranch">&cross; Branch 2 not taken.</div>
           </div>
         </details>
       </td>
-      <td class="linecount partialCoveredLine">116</td>
+      <td class="linecount partialCoveredLine">114</td>
       <td class="src partialCoveredLine"><span class="w">    </span><span class="n">Fw</span><span class="o">::</span><span class="n">Time</span><span class="w"> </span><span class="n">currTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">getTime</span><span class="p">();</span></td>
     </tr>
     <tr class="source-line">
@@ -2421,16 +2421,16 @@
         <details class="linebranchDetails">
           <summary class="linebranchSummary">4/6</summary>
           <div class="linebranchContents">
-            <div class="takenBranch">&check; Branch 1 taken 116 times.</div>
+            <div class="takenBranch">&check; Branch 1 taken 114 times.</div>
             <div class="notTakenBranch">&cross; Branch 2 not taken.</div>
-            <div class="takenBranch">&check; Branch 4 taken 116 times.</div>
+            <div class="takenBranch">&check; Branch 4 taken 114 times.</div>
             <div class="notTakenBranch">&cross; Branch 5 not taken.</div>
             <div class="takenBranch">&check; Branch 7 taken 1 times.</div>
-            <div class="takenBranch">&check; Branch 8 taken 115 times.</div>
+            <div class="takenBranch">&check; Branch 8 taken 113 times.</div>
           </div>
         </details>
       </td>
-      <td class="linecount partialCoveredLine">116</td>
+      <td class="linecount partialCoveredLine">114</td>
       <td class="src partialCoveredLine"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">m_cmdTimer</span><span class="p">.</span><span class="n">isExpiredAt</span><span class="p">(</span><span class="n">currTime</span><span class="p">))</span><span class="w"> </span><span class="p">{</span></td>
     </tr>
     <tr class="source-line">
@@ -2481,16 +2481,16 @@
         <details class="linebranchDetails">
           <summary class="linebranchSummary">3/6</summary>
           <div class="linebranchContents">
-            <div class="takenBranch">&check; Branch 1 taken 115 times.</div>
+            <div class="takenBranch">&check; Branch 1 taken 113 times.</div>
             <div class="notTakenBranch">&cross; Branch 2 not taken.</div>
-            <div class="takenBranch">&check; Branch 4 taken 115 times.</div>
+            <div class="takenBranch">&check; Branch 4 taken 113 times.</div>
             <div class="notTakenBranch">&cross; Branch 5 not taken.</div>
             <div class="notTakenBranch">&cross; Branch 7 not taken.</div>
-            <div class="takenBranch">&check; Branch 8 taken 115 times.</div>
+            <div class="takenBranch">&check; Branch 8 taken 113 times.</div>
           </div>
         </details>
       </td>
-      <td class="linecount partialCoveredLine">115</td>
+      <td class="linecount partialCoveredLine">113</td>
       <td class="src partialCoveredLine"><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">m_cmdTimeoutTimer</span><span class="p">.</span><span class="n">isExpiredAt</span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">getTime</span><span class="p">()))</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c1">// check for command timeout</span></td>
     </tr>
     <tr class="source-line">
@@ -2525,7 +2525,7 @@
       <td class="lineno"><a id="l325" href="#l325">325</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">116</td>
+      <td class="linecount coveredLine">114</td>
       <td class="src coveredLine"><span class="p">}</span></td>
     </tr>
     <tr class="source-line">
@@ -3638,7 +3638,7 @@
       <td class="lineno"><a id="l467" href="#l467">467</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">58</td>
+      <td class="linecount coveredLine">57</td>
       <td class="src coveredLine"><span class="kt">void</span><span class="w"> </span><span class="n">CmdSequencerComponentImpl</span><span class="w"> </span><span class="o">::</span><span class="n">pingIn_handler</span><span class="p">(</span><span class="n">FwIndexType</span><span class="w"> </span><span class="n">portNum</span><span class="p">,</span><span class="w"> </span><span class="cm">/*!&lt; The port number*/</span></td>
     </tr>
     <tr class="source-line">
@@ -3666,14 +3666,14 @@
       <td class="lineno"><a id="l471" href="#l471">471</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">58</td>
+      <td class="linecount coveredLine">57</td>
       <td class="src coveredLine"><span class="w">    </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">pingOut_out</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">key</span><span class="p">);</span></td>
     </tr>
     <tr class="source-line">
       <td class="lineno"><a id="l472" href="#l472">472</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">58</td>
+      <td class="linecount coveredLine">57</td>
       <td class="src coveredLine"><span class="p">}</span></td>
     </tr>
     <tr class="source-line">
