@@ -48,4 +48,4 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
     steps:
       - name: "Post sticky coverage comment"
-        uses: nasa/fprime-actions/coverage-comment@devel
+        uses: JPL-Devin/fprime-actions/coverage-comment@devin/1780361490-integration-coverage

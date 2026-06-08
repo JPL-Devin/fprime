@@ -18,7 +18,7 @@ name: "Coverage Update"
 
 on:
   push:
-    branches: [ devel, release/** ]
+    branches: [ devel, release/**, coverage-test ]
     tags:     [ 'v*' ]
   workflow_dispatch:
 
@@ -30,8 +30,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  coverage-update:
-    name: "Coverage [push]"
+  ut-coverage-update:
+    name: "UT Coverage [push]"
     # ubuntu-24.04 ships gcov-13, which is required: gcov-11 (Ubuntu
     # 22.04 default) has counter-overflow bugs and pathological slowness
     # on heavily-templated test code that can turn a 30 s coverage run
@@ -46,21 +46,64 @@ jobs:
           fetch-depth: 0
           submodules: true
       - name: "Setup F' Tools"
-        uses: nasa/fprime-actions/setup@devel
+        uses: JPL-Devin/fprime-actions/setup@devin/1780361490-integration-coverage
         with:
           location: ${{ github.workspace }}
       - name: "Generate + Build UTs"
-        uses: nasa/fprime-actions/run-unit-tests@devel
+        uses: JPL-Devin/fprime-actions/run-unit-tests@devin/1780361490-integration-coverage
         with:
           run-check: 'false'
           jobs: random
       - name: "Coverage (common)"
         id: cov
-        uses: nasa/fprime-actions/coverage-common@devel
+        uses: JPL-Devin/fprime-actions/coverage-common@devin/1780361490-integration-coverage
         with:
           working-directory: ${{ github.workspace }}
       - name: "Coverage update"
-        uses: nasa/fprime-actions/coverage-update@devel
+        uses: JPL-Devin/fprime-actions/coverage-update@devin/1780361490-integration-coverage
         with:
           working-directory: ${{ github.workspace }}
           modules-jsonl: ${{ steps.cov.outputs.modules-jsonl }}
+
+  integration-coverage-update:
+    name: "Integration Coverage [push]"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: "Checkout F' Repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+      - name: "Setup F' Tools"
+        uses: JPL-Devin/fprime-actions/setup@devin/1780361490-integration-coverage
+        with:
+          location: ${{ github.workspace }}
+      - name: "Build Ref with coverage"
+        uses: JPL-Devin/fprime-actions/build@devin/1780361490-integration-coverage
+        with:
+          working-directory: "TestDeploymentsProject"
+          generate-args: >-
+            -DCMAKE_CXX_FLAGS="--coverage"
+            -DCMAKE_C_FLAGS="--coverage"
+            -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+      - name: "Integration Tests"
+        uses: JPL-Devin/fprime-actions/run-integration-tests@devin/1780361490-integration-coverage
+        with:
+          gds-working-directory: "TestDeploymentsProject"
+          test-working-directory: "TestDeploymentsProject/Ref/test/int"
+          binary: "build-fprime-automatic-native/Ref/bin/Ref"
+          gds-args: "--dictionary build-fprime-automatic-native/Ref/dict/RefTopologyDictionary.json"
+          pytest-args: "--deployment-config ${{ github.workspace }}/TestDeploymentsProject/Ref/test/int/int_config.json"
+      - name: "Integration Coverage (common)"
+        id: intcov
+        uses: JPL-Devin/fprime-actions/coverage-integration-common@devin/1780361490-integration-coverage
+        with:
+          working-directory: ${{ github.workspace }}
+          build-cache: TestDeploymentsProject/build-fprime-automatic-native
+      - name: "Integration Coverage update"
+        uses: JPL-Devin/fprime-actions/coverage-update@devin/1780361490-integration-coverage
+        with:
+          working-directory: ${{ github.workspace }}
+          modules-jsonl: ${{ steps.intcov.outputs.modules-jsonl }}
+          coverage-kind: ${{ steps.intcov.outputs.coverage-kind }}
