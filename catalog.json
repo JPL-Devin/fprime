@@ -2,15 +2,15 @@
   "schema": 2,
   "ref": "coverage-test",
   "ref_type": "branch",
-  "commit": "a2c6fd3c21d8decd1d8e3b2109bedcd662432746",
-  "generated_at": "2026-06-08T16:45:49Z",
+  "commit": "e7be4fe9bbf7c203ec84a835ffade8d9af25e76f",
+  "generated_at": "2026-06-08T18:23:10Z",
   "overall": {
     "ut": {
-      "line_pct": 81.21,
-      "line_covered": 14336,
+      "line_pct": 81.23,
+      "line_covered": 14338,
       "line_total": 17652,
-      "function_pct": 60.49,
-      "function_covered": 4835,
+      "function_pct": 60.45,
+      "function_covered": 4832,
       "function_total": 7993,
       "branch_pct": 48.35,
       "branch_covered": 9293,
@@ -888,14 +888,14 @@
         "has_coverage": true,
         "report": "Fw/DataStructures/coverage-ut/index.html",
         "summary": "Fw/DataStructures/coverage-ut/summary.json",
-        "line_pct": 98.12,
-        "line_covered": 1094,
+        "line_pct": 98.48,
+        "line_covered": 1098,
         "line_total": 1115,
-        "function_pct": 97.14,
-        "function_covered": 509,
+        "function_pct": 96.95,
+        "function_covered": 508,
         "function_total": 524,
-        "branch_pct": 57.03,
-        "branch_covered": 499,
+        "branch_pct": 57.37,
+        "branch_covered": 502,
         "branch_total": 875
       },
       "integration-linux": {
@@ -1524,8 +1524,8 @@
         "has_coverage": true,
         "report": "Os/Posix/coverage-ut/index.html",
         "summary": "Os/Posix/coverage-ut/summary.json",
-        "line_pct": 62.4,
-        "line_covered": 468,
+        "line_pct": 62.27,
+        "line_covered": 467,
         "line_total": 750,
         "function_pct": 84.21,
         "function_covered": 80,
@@ -1547,6 +1547,27 @@
         "branch_pct": 21.75,
         "branch_covered": 92,
         "branch_total": 423
+      }
+    },
+    {
+      "path": "Svc/ActivePhaser",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/ActivePhaser/coverage-ut/index.html",
+        "summary": "Svc/ActivePhaser/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 91,
+        "line_total": 91,
+        "function_pct": 100.0,
+        "function_covered": 11,
+        "function_total": 11,
+        "branch_pct": 72.09,
+        "branch_covered": 62,
+        "branch_total": 86
+      },
+      "integration-linux": {
+        "has_coverage": false
       }
     },
     {
@@ -1774,6 +1795,175 @@
       }
     },
     {
+      "path": "Svc/Ccsds/AosDeframer",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/Ccsds/AosDeframer/coverage-ut/index.html",
+        "summary": "Svc/Ccsds/AosDeframer/coverage-ut/summary.json",
+        "line_pct": 98.51,
+        "line_covered": 265,
+        "line_total": 269,
+        "function_pct": 100.0,
+        "function_covered": 16,
+        "function_total": 16,
+        "branch_pct": 61.1,
+        "branch_covered": 223,
+        "branch_total": 365
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
+      "path": "Svc/Ccsds/AosFramer",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/Ccsds/AosFramer/coverage-ut/index.html",
+        "summary": "Svc/Ccsds/AosFramer/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 188,
+        "line_total": 188,
+        "function_pct": 100.0,
+        "function_covered": 17,
+        "function_total": 17,
+        "branch_pct": 48.97,
+        "branch_covered": 142,
+        "branch_total": 290
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
+      "path": "Svc/Ccsds/ApidManager",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/Ccsds/ApidManager/coverage-ut/index.html",
+        "summary": "Svc/Ccsds/ApidManager/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 25,
+        "line_total": 25,
+        "function_pct": 100.0,
+        "function_covered": 6,
+        "function_total": 6,
+        "branch_pct": 58.33,
+        "branch_covered": 14,
+        "branch_total": 24
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
+      "path": "Svc/Ccsds/Ports",
+      "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Ccsds/Ports/coverage-ut/index.html"
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
+      "path": "Svc/Ccsds/SpacePacketDeframer",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/Ccsds/SpacePacketDeframer/coverage-ut/index.html",
+        "summary": "Svc/Ccsds/SpacePacketDeframer/coverage-ut/summary.json",
+        "line_pct": 87.5,
+        "line_covered": 35,
+        "line_total": 40,
+        "function_pct": 100.0,
+        "function_covered": 4,
+        "function_total": 4,
+        "branch_pct": 47.44,
+        "branch_covered": 37,
+        "branch_total": 78
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
+      "path": "Svc/Ccsds/SpacePacketFramer",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/Ccsds/SpacePacketFramer/coverage-ut/index.html",
+        "summary": "Svc/Ccsds/SpacePacketFramer/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 38,
+        "line_total": 38,
+        "function_pct": 100.0,
+        "function_covered": 5,
+        "function_total": 5,
+        "branch_pct": 37.5,
+        "branch_covered": 27,
+        "branch_total": 72
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
+      "path": "Svc/Ccsds/TcDeframer",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/Ccsds/TcDeframer/coverage-ut/index.html",
+        "summary": "Svc/Ccsds/TcDeframer/coverage-ut/summary.json",
+        "line_pct": 94.83,
+        "line_covered": 55,
+        "line_total": 58,
+        "function_pct": 100.0,
+        "function_covered": 6,
+        "function_total": 6,
+        "branch_pct": 53.92,
+        "branch_covered": 55,
+        "branch_total": 102
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
+      "path": "Svc/Ccsds/TmFramer",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/Ccsds/TmFramer/coverage-ut/index.html",
+        "summary": "Svc/Ccsds/TmFramer/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 60,
+        "line_total": 60,
+        "function_pct": 100.0,
+        "function_covered": 6,
+        "function_total": 6,
+        "branch_pct": 42.71,
+        "branch_covered": 41,
+        "branch_total": 96
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
+      "path": "Svc/Ccsds/Types",
+      "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "Svc/Ccsds/Types/coverage-ut/index.html"
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
       "path": "Svc/ChronoTime",
       "has_ut": true,
       "ut": {
@@ -1902,6 +2092,27 @@
       }
     },
     {
+      "path": "Svc/ComAggregator",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/ComAggregator/coverage-ut/index.html",
+        "summary": "Svc/ComAggregator/coverage-ut/summary.json",
+        "line_pct": 95.65,
+        "line_covered": 66,
+        "line_total": 69,
+        "function_pct": 93.75,
+        "function_covered": 15,
+        "function_total": 16,
+        "branch_pct": 51.79,
+        "branch_covered": 29,
+        "branch_total": 56
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
       "path": "Svc/ComLogger",
       "has_ut": true,
       "ut": {
@@ -1931,6 +2142,48 @@
         "branch_pct": 0.0,
         "branch_covered": 0,
         "branch_total": 118
+      }
+    },
+    {
+      "path": "Svc/ComQueue",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/ComQueue/coverage-ut/index.html",
+        "summary": "Svc/ComQueue/coverage-ut/summary.json",
+        "line_pct": 97.93,
+        "line_covered": 236,
+        "line_total": 241,
+        "function_pct": 100.0,
+        "function_covered": 20,
+        "function_total": 20,
+        "branch_pct": 57.26,
+        "branch_covered": 213,
+        "branch_total": 372
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
+      "path": "Svc/ComRetry",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/ComRetry/coverage-ut/index.html",
+        "summary": "Svc/ComRetry/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 50,
+        "line_total": 50,
+        "function_pct": 100.0,
+        "function_covered": 6,
+        "function_total": 6,
+        "branch_pct": 61.67,
+        "branch_covered": 37,
+        "branch_total": 60
+      },
+      "integration-linux": {
+        "has_coverage": false
       }
     },
     {
@@ -2118,6 +2371,27 @@
       }
     },
     {
+      "path": "Svc/EventManager",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/EventManager/coverage-ut/index.html",
+        "summary": "Svc/EventManager/coverage-ut/summary.json",
+        "line_pct": 93.62,
+        "line_covered": 88,
+        "line_total": 94,
+        "function_pct": 87.5,
+        "function_covered": 7,
+        "function_total": 8,
+        "branch_pct": 59.59,
+        "branch_covered": 87,
+        "branch_total": 146
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
       "path": "Svc/Fatal",
       "has_ut": false,
       "ut": {
@@ -2159,6 +2433,27 @@
         "branch_pct": 0.0,
         "branch_covered": 0,
         "branch_total": 4
+      }
+    },
+    {
+      "path": "Svc/FileDispatcher",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/FileDispatcher/coverage-ut/index.html",
+        "summary": "Svc/FileDispatcher/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 39,
+        "line_total": 39,
+        "function_pct": 100.0,
+        "function_covered": 6,
+        "function_total": 6,
+        "branch_pct": 64.58,
+        "branch_covered": 31,
+        "branch_total": 48
+      },
+      "integration-linux": {
+        "has_coverage": false
       }
     },
     {
@@ -2442,6 +2737,27 @@
       }
     },
     {
+      "path": "Svc/FrameAccumulator",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/FrameAccumulator/coverage-ut/index.html",
+        "summary": "Svc/FrameAccumulator/coverage-ut/summary.json",
+        "line_pct": 95.85,
+        "line_covered": 185,
+        "line_total": 193,
+        "function_pct": 100.0,
+        "function_covered": 11,
+        "function_total": 11,
+        "branch_pct": 47.4,
+        "branch_covered": 146,
+        "branch_total": 308
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
       "path": "Svc/GenericHub",
       "has_ut": true,
       "ut": {
@@ -2569,6 +2885,27 @@
         "branch_pct": 0.0,
         "branch_covered": 0,
         "branch_total": 100
+      }
+    },
+    {
+      "path": "Svc/PassThroughRouter",
+      "has_ut": true,
+      "ut": {
+        "has_coverage": true,
+        "report": "Svc/PassThroughRouter/coverage-ut/index.html",
+        "summary": "Svc/PassThroughRouter/coverage-ut/summary.json",
+        "line_pct": 100.0,
+        "line_covered": 9,
+        "line_total": 9,
+        "function_pct": 100.0,
+        "function_covered": 4,
+        "function_total": 4,
+        "branch_pct": 50.0,
+        "branch_covered": 2,
+        "branch_total": 4
+      },
+      "integration-linux": {
+        "has_coverage": false
       }
     },
     {
@@ -3182,6 +3519,17 @@
       }
     },
     {
+      "path": "TestDeploymentsProject/Ref/DpDemo",
+      "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "TestDeploymentsProject/Ref/DpDemo/coverage-ut/index.html"
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
       "path": "TestDeploymentsProject/Ref/PingReceiver",
       "has_ut": false,
       "ut": {
@@ -3400,6 +3748,17 @@
       }
     },
     {
+      "path": "cmake/test/data/TestConfigDeployment",
+      "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "cmake/test/data/TestConfigDeployment/coverage-ut/index.html"
+      },
+      "integration-linux": {
+        "has_coverage": false
+      }
+    },
+    {
       "path": "cmake/test/data/TestDeployment/TestBuildAutocoder",
       "has_ut": false,
       "ut": {
@@ -3433,6 +3792,17 @@
       "integration-linux": {
         "has_coverage": false,
         "report": "cmake/test/data/TestDeployment/TestHeaderAutocoder/coverage-integration-linux/index.html"
+      }
+    },
+    {
+      "path": "cmake/test/data/TestDeployment/TestRelative",
+      "has_ut": false,
+      "ut": {
+        "has_coverage": false,
+        "report": "cmake/test/data/TestDeployment/TestRelative/coverage-ut/index.html"
+      },
+      "integration-linux": {
+        "has_coverage": false
       }
     },
     {
