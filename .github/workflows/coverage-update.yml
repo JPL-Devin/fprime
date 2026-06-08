@@ -92,8 +92,8 @@ jobs:
         with:
           gds-working-directory: "TestDeploymentsProject"
           test-working-directory: "TestDeploymentsProject/Ref/test/int"
-          binary: "build-fprime-automatic-native/Ref/bin/Ref"
-          gds-args: "--dictionary build-fprime-automatic-native/Ref/dict/RefTopologyDictionary.json"
+          binary: "build-artifacts/*/Ref/bin/Ref"
+          gds-args: "--dictionary build-artifacts/*/Ref/dict/RefTopologyDictionary.json"
           pytest-args: "--deployment-config ${{ github.workspace }}/TestDeploymentsProject/Ref/test/int/int_config.json"
       - name: "Integration Coverage (common)"
         id: intcov
