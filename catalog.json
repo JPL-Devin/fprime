@@ -2,19 +2,19 @@
   "schema": 2,
   "ref": "coverage-test",
   "ref_type": "branch",
-  "commit": "e7be4fe9bbf7c203ec84a835ffade8d9af25e76f",
-  "generated_at": "2026-06-08T18:23:27Z",
+  "commit": "f102c1bdace451674393b83b560f1c1d2aab215e",
+  "generated_at": "2026-06-09T00:36:12Z",
   "overall": {
     "ut": {
-      "line_pct": 81.23,
-      "line_covered": 14338,
-      "line_total": 17652,
-      "function_pct": 60.45,
-      "function_covered": 4832,
-      "function_total": 7993,
-      "branch_pct": 48.35,
-      "branch_covered": 9293,
-      "branch_total": 19219,
+      "line_pct": 81.17,
+      "line_covered": 14367,
+      "line_total": 17699,
+      "function_pct": 60.57,
+      "function_covered": 4860,
+      "function_total": 8024,
+      "branch_pct": 71.52,
+      "branch_covered": 8102,
+      "branch_total": 11328,
       "report": "coverage-ut/coverage-all.html"
     },
     "integration-linux": {
@@ -44,9 +44,9 @@
         "function_pct": 57.14,
         "function_covered": 8,
         "function_total": 14,
-        "branch_pct": 44.44,
-        "branch_covered": 16,
-        "branch_total": 36
+        "branch_pct": 53.85,
+        "branch_covered": 14,
+        "branch_total": 26
       },
       "integration-linux": {
         "has_coverage": true,
@@ -120,9 +120,9 @@
         "function_pct": 100.0,
         "function_covered": 6,
         "function_total": 6,
-        "branch_pct": 80.0,
+        "branch_pct": 100.0,
         "branch_covered": 8,
-        "branch_total": 10
+        "branch_total": 8
       },
       "integration-linux": {
         "has_coverage": true,
@@ -176,9 +176,9 @@
         "function_pct": 57.38,
         "function_covered": 35,
         "function_total": 61,
-        "branch_pct": 21.25,
-        "branch_covered": 119,
-        "branch_total": 560
+        "branch_pct": 25.36,
+        "branch_covered": 89,
+        "branch_total": 351
       },
       "integration-linux": {
         "has_coverage": true,
@@ -340,9 +340,9 @@
         "function_pct": 100.0,
         "function_covered": 9,
         "function_total": 9,
-        "branch_pct": 31.03,
+        "branch_pct": 47.37,
         "branch_covered": 9,
-        "branch_total": 29
+        "branch_total": 19
       },
       "integration-linux": {
         "has_coverage": true,
@@ -372,9 +372,9 @@
         "function_pct": 100.0,
         "function_covered": 14,
         "function_total": 14,
-        "branch_pct": 44.26,
+        "branch_pct": 60.0,
         "branch_covered": 27,
-        "branch_total": 61
+        "branch_total": 45
       },
       "integration-linux": {
         "has_coverage": true,
@@ -404,9 +404,9 @@
         "function_pct": 90.91,
         "function_covered": 10,
         "function_total": 11,
-        "branch_pct": 28.12,
+        "branch_pct": 42.86,
         "branch_covered": 9,
-        "branch_total": 32
+        "branch_total": 21
       },
       "integration-linux": {
         "has_coverage": true,
@@ -796,9 +796,9 @@
         "function_pct": 89.47,
         "function_covered": 17,
         "function_total": 19,
-        "branch_pct": 43.75,
-        "branch_covered": 35,
-        "branch_total": 80
+        "branch_pct": 58.62,
+        "branch_covered": 34,
+        "branch_total": 58
       },
       "integration-linux": {
         "has_coverage": true,
@@ -891,12 +891,12 @@
         "line_pct": 98.48,
         "line_covered": 1098,
         "line_total": 1115,
-        "function_pct": 96.95,
-        "function_covered": 508,
+        "function_pct": 97.14,
+        "function_covered": 509,
         "function_total": 524,
-        "branch_pct": 57.37,
-        "branch_covered": 502,
-        "branch_total": 875
+        "branch_pct": 83.21,
+        "branch_covered": 451,
+        "branch_total": 542
       },
       "integration-linux": {
         "has_coverage": true,
@@ -926,9 +926,9 @@
         "function_pct": 96.67,
         "function_covered": 29,
         "function_total": 30,
-        "branch_pct": 47.92,
-        "branch_covered": 92,
-        "branch_total": 192
+        "branch_pct": 95.95,
+        "branch_covered": 71,
+        "branch_total": 74
       },
       "integration-linux": {
         "has_coverage": true,
@@ -958,9 +958,9 @@
         "function_pct": 89.06,
         "function_covered": 57,
         "function_total": 64,
-        "branch_pct": 41.43,
-        "branch_covered": 104,
-        "branch_total": 251
+        "branch_pct": 54.3,
+        "branch_covered": 82,
+        "branch_total": 151
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1036,9 +1036,9 @@
         "function_pct": 72.41,
         "function_covered": 21,
         "function_total": 29,
-        "branch_pct": 34.48,
-        "branch_covered": 20,
-        "branch_total": 58
+        "branch_pct": 60.0,
+        "branch_covered": 18,
+        "branch_total": 30
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1068,9 +1068,9 @@
         "function_pct": 100.0,
         "function_covered": 4,
         "function_total": 4,
-        "branch_pct": 62.5,
+        "branch_pct": 100.0,
         "branch_covered": 5,
-        "branch_total": 8
+        "branch_total": 5
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1214,9 +1214,9 @@
         "function_pct": 100.0,
         "function_covered": 5,
         "function_total": 5,
-        "branch_pct": 44.44,
-        "branch_covered": 32,
-        "branch_total": 72
+        "branch_pct": 79.41,
+        "branch_covered": 27,
+        "branch_total": 34
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1302,9 +1302,9 @@
         "function_pct": 85.48,
         "function_covered": 53,
         "function_total": 62,
-        "branch_pct": 50.0,
-        "branch_covered": 123,
-        "branch_total": 246
+        "branch_pct": 86.84,
+        "branch_covered": 99,
+        "branch_total": 114
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1334,9 +1334,9 @@
         "function_pct": 60.0,
         "function_covered": 12,
         "function_total": 20,
-        "branch_pct": 24.29,
-        "branch_covered": 17,
-        "branch_total": 70
+        "branch_pct": 37.5,
+        "branch_covered": 15,
+        "branch_total": 40
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1366,9 +1366,9 @@
         "function_pct": 57.62,
         "function_covered": 189,
         "function_total": 328,
-        "branch_pct": 29.67,
-        "branch_covered": 289,
-        "branch_total": 974
+        "branch_pct": 34.96,
+        "branch_covered": 215,
+        "branch_total": 615
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1410,9 +1410,9 @@
         "function_pct": 19.52,
         "function_covered": 97,
         "function_total": 497,
-        "branch_pct": 12.01,
-        "branch_covered": 232,
-        "branch_total": 1931
+        "branch_pct": 14.41,
+        "branch_covered": 165,
+        "branch_total": 1145
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1454,9 +1454,9 @@
         "function_pct": 96.3,
         "function_covered": 26,
         "function_total": 27,
-        "branch_pct": 48.02,
-        "branch_covered": 121,
-        "branch_total": 252
+        "branch_pct": 67.18,
+        "branch_covered": 88,
+        "branch_total": 131
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1486,9 +1486,9 @@
         "function_pct": 91.67,
         "function_covered": 11,
         "function_total": 12,
-        "branch_pct": 60.94,
-        "branch_covered": 39,
-        "branch_total": 64
+        "branch_pct": 82.14,
+        "branch_covered": 23,
+        "branch_total": 28
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1524,15 +1524,15 @@
         "has_coverage": true,
         "report": "Os/Posix/coverage-ut/index.html",
         "summary": "Os/Posix/coverage-ut/summary.json",
-        "line_pct": 62.27,
-        "line_covered": 467,
+        "line_pct": 62.0,
+        "line_covered": 465,
         "line_total": 750,
         "function_pct": 84.21,
         "function_covered": 80,
         "function_total": 95,
-        "branch_pct": 40.8,
-        "branch_covered": 215,
-        "branch_total": 527
+        "branch_pct": 43.87,
+        "branch_covered": 186,
+        "branch_total": 424
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1562,9 +1562,9 @@
         "function_pct": 100.0,
         "function_covered": 11,
         "function_total": 11,
-        "branch_pct": 72.09,
-        "branch_covered": 62,
-        "branch_total": 86
+        "branch_pct": 81.97,
+        "branch_covered": 50,
+        "branch_total": 61
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1594,9 +1594,9 @@
         "function_pct": 100.0,
         "function_covered": 7,
         "function_total": 7,
-        "branch_pct": 60.87,
-        "branch_covered": 28,
-        "branch_total": 46
+        "branch_pct": 92.31,
+        "branch_covered": 24,
+        "branch_total": 26
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1626,9 +1626,9 @@
         "function_pct": 90.0,
         "function_covered": 9,
         "function_total": 10,
-        "branch_pct": 53.85,
-        "branch_covered": 56,
-        "branch_total": 104
+        "branch_pct": 71.23,
+        "branch_covered": 52,
+        "branch_total": 73
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1658,9 +1658,9 @@
         "function_pct": 100.0,
         "function_covered": 8,
         "function_total": 8,
-        "branch_pct": 58.7,
-        "branch_covered": 27,
-        "branch_total": 46
+        "branch_pct": 86.67,
+        "branch_covered": 26,
+        "branch_total": 30
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1690,9 +1690,9 @@
         "function_pct": 94.12,
         "function_covered": 16,
         "function_total": 17,
-        "branch_pct": 54.79,
-        "branch_covered": 80,
-        "branch_total": 146
+        "branch_pct": 74.49,
+        "branch_covered": 73,
+        "branch_total": 98
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1722,9 +1722,9 @@
         "function_pct": 86.96,
         "function_covered": 20,
         "function_total": 23,
-        "branch_pct": 57.46,
-        "branch_covered": 77,
-        "branch_total": 134
+        "branch_pct": 80.46,
+        "branch_covered": 70,
+        "branch_total": 87
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1754,9 +1754,9 @@
         "function_pct": 100.0,
         "function_covered": 7,
         "function_total": 7,
-        "branch_pct": 55.93,
-        "branch_covered": 66,
-        "branch_total": 118
+        "branch_pct": 83.64,
+        "branch_covered": 46,
+        "branch_total": 55
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1786,9 +1786,9 @@
         "function_pct": 100.0,
         "function_covered": 5,
         "function_total": 5,
-        "branch_pct": 55.56,
-        "branch_covered": 30,
-        "branch_total": 54
+        "branch_pct": 75.0,
+        "branch_covered": 27,
+        "branch_total": 36
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1818,9 +1818,9 @@
         "function_pct": 100.0,
         "function_covered": 16,
         "function_total": 16,
-        "branch_pct": 61.1,
-        "branch_covered": 223,
-        "branch_total": 365
+        "branch_pct": 89.45,
+        "branch_covered": 195,
+        "branch_total": 218
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1850,9 +1850,9 @@
         "function_pct": 100.0,
         "function_covered": 17,
         "function_total": 17,
-        "branch_pct": 48.97,
-        "branch_covered": 142,
-        "branch_total": 290
+        "branch_pct": 84.09,
+        "branch_covered": 111,
+        "branch_total": 132
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1882,9 +1882,9 @@
         "function_pct": 100.0,
         "function_covered": 6,
         "function_total": 6,
-        "branch_pct": 58.33,
-        "branch_covered": 14,
-        "branch_total": 24
+        "branch_pct": 92.86,
+        "branch_covered": 13,
+        "branch_total": 14
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1926,9 +1926,9 @@
         "function_pct": 100.0,
         "function_covered": 4,
         "function_total": 4,
-        "branch_pct": 47.44,
-        "branch_covered": 37,
-        "branch_total": 78
+        "branch_pct": 76.09,
+        "branch_covered": 35,
+        "branch_total": 46
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1958,9 +1958,9 @@
         "function_pct": 100.0,
         "function_covered": 5,
         "function_total": 5,
-        "branch_pct": 37.5,
-        "branch_covered": 27,
-        "branch_total": 72
+        "branch_pct": 94.74,
+        "branch_covered": 18,
+        "branch_total": 19
       },
       "integration-linux": {
         "has_coverage": true,
@@ -1990,9 +1990,9 @@
         "function_pct": 100.0,
         "function_covered": 6,
         "function_total": 6,
-        "branch_pct": 53.92,
-        "branch_covered": 55,
-        "branch_total": 102
+        "branch_pct": 87.04,
+        "branch_covered": 47,
+        "branch_total": 54
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2022,9 +2022,9 @@
         "function_pct": 100.0,
         "function_covered": 6,
         "function_total": 6,
-        "branch_pct": 42.71,
-        "branch_covered": 41,
-        "branch_total": 96
+        "branch_pct": 93.94,
+        "branch_covered": 31,
+        "branch_total": 33
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2066,9 +2066,9 @@
         "function_pct": 100.0,
         "function_covered": 3,
         "function_total": 3,
-        "branch_pct": 50.0,
+        "branch_pct": 100.0,
         "branch_covered": 4,
-        "branch_total": 8
+        "branch_total": 4
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2098,9 +2098,9 @@
         "function_pct": 91.67,
         "function_covered": 11,
         "function_total": 12,
-        "branch_pct": 52.6,
-        "branch_covered": 101,
-        "branch_total": 192
+        "branch_pct": 91.75,
+        "branch_covered": 89,
+        "branch_total": 97
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2130,9 +2130,9 @@
         "function_pct": 97.12,
         "function_covered": 101,
         "function_total": 104,
-        "branch_pct": 56.64,
-        "branch_covered": 482,
-        "branch_total": 851
+        "branch_pct": 84.63,
+        "branch_covered": 457,
+        "branch_total": 540
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2162,9 +2162,9 @@
         "function_pct": 100.0,
         "function_covered": 5,
         "function_total": 5,
-        "branch_pct": 54.55,
-        "branch_covered": 12,
-        "branch_total": 22
+        "branch_pct": 100.0,
+        "branch_covered": 10,
+        "branch_total": 10
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2194,9 +2194,9 @@
         "function_pct": 93.75,
         "function_covered": 15,
         "function_total": 16,
-        "branch_pct": 51.79,
-        "branch_covered": 29,
-        "branch_total": 56
+        "branch_pct": 96.0,
+        "branch_covered": 24,
+        "branch_total": 25
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2226,9 +2226,9 @@
         "function_pct": 91.67,
         "function_covered": 11,
         "function_total": 12,
-        "branch_pct": 59.15,
-        "branch_covered": 84,
-        "branch_total": 142
+        "branch_pct": 83.91,
+        "branch_covered": 73,
+        "branch_total": 87
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2258,9 +2258,9 @@
         "function_pct": 100.0,
         "function_covered": 20,
         "function_total": 20,
-        "branch_pct": 57.26,
-        "branch_covered": 213,
-        "branch_total": 372
+        "branch_pct": 89.19,
+        "branch_covered": 165,
+        "branch_total": 185
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2290,9 +2290,9 @@
         "function_pct": 100.0,
         "function_covered": 6,
         "function_total": 6,
-        "branch_pct": 61.67,
-        "branch_covered": 37,
-        "branch_total": 60
+        "branch_pct": 85.71,
+        "branch_covered": 24,
+        "branch_total": 28
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2322,9 +2322,9 @@
         "function_pct": 100.0,
         "function_covered": 3,
         "function_total": 3,
-        "branch_pct": 66.67,
-        "branch_covered": 8,
-        "branch_total": 12
+        "branch_pct": 100.0,
+        "branch_covered": 6,
+        "branch_total": 6
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2354,9 +2354,9 @@
         "function_pct": 100.0,
         "function_covered": 10,
         "function_total": 10,
-        "branch_pct": 59.76,
-        "branch_covered": 49,
-        "branch_total": 82
+        "branch_pct": 85.19,
+        "branch_covered": 46,
+        "branch_total": 54
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2398,9 +2398,9 @@
         "function_pct": 100.0,
         "function_covered": 32,
         "function_total": 32,
-        "branch_pct": 42.92,
-        "branch_covered": 300,
-        "branch_total": 699
+        "branch_pct": 66.27,
+        "branch_covered": 279,
+        "branch_total": 421
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2430,9 +2430,9 @@
         "function_pct": 100.0,
         "function_covered": 8,
         "function_total": 8,
-        "branch_pct": 52.27,
+        "branch_pct": 100.0,
         "branch_covered": 23,
-        "branch_total": 44
+        "branch_total": 23
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2474,9 +2474,9 @@
         "function_pct": 90.0,
         "function_covered": 9,
         "function_total": 10,
-        "branch_pct": 62.07,
-        "branch_covered": 108,
-        "branch_total": 174
+        "branch_pct": 97.22,
+        "branch_covered": 105,
+        "branch_total": 108
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2506,9 +2506,9 @@
         "function_pct": 87.5,
         "function_covered": 7,
         "function_total": 8,
-        "branch_pct": 59.59,
-        "branch_covered": 87,
-        "branch_total": 146
+        "branch_pct": 85.15,
+        "branch_covered": 86,
+        "branch_total": 101
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2582,9 +2582,9 @@
         "function_pct": 100.0,
         "function_covered": 6,
         "function_total": 6,
-        "branch_pct": 64.58,
-        "branch_covered": 31,
-        "branch_total": 48
+        "branch_pct": 87.5,
+        "branch_covered": 28,
+        "branch_total": 32
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2614,9 +2614,9 @@
         "function_pct": 90.91,
         "function_covered": 40,
         "function_total": 44,
-        "branch_pct": 45.29,
-        "branch_covered": 197,
-        "branch_total": 435
+        "branch_pct": 71.9,
+        "branch_covered": 174,
+        "branch_total": 242
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2658,9 +2658,9 @@
         "function_pct": 93.33,
         "function_covered": 14,
         "function_total": 15,
-        "branch_pct": 50.45,
-        "branch_covered": 112,
-        "branch_total": 222
+        "branch_pct": 82.44,
+        "branch_covered": 108,
+        "branch_total": 131
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2690,9 +2690,9 @@
         "function_pct": 96.55,
         "function_covered": 28,
         "function_total": 29,
-        "branch_pct": 54.78,
-        "branch_covered": 86,
-        "branch_total": 157
+        "branch_pct": 81.55,
+        "branch_covered": 84,
+        "branch_total": 103
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2722,9 +2722,9 @@
         "function_pct": 100.0,
         "function_covered": 14,
         "function_total": 14,
-        "branch_pct": 47.53,
-        "branch_covered": 241,
-        "branch_total": 507
+        "branch_pct": 84.87,
+        "branch_covered": 202,
+        "branch_total": 238
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2754,9 +2754,9 @@
         "function_pct": 100.0,
         "function_covered": 4,
         "function_total": 4,
-        "branch_pct": 58.04,
-        "branch_covered": 65,
-        "branch_total": 112
+        "branch_pct": 97.92,
+        "branch_covered": 47,
+        "branch_total": 48
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2786,9 +2786,9 @@
         "function_pct": 100.0,
         "function_covered": 5,
         "function_total": 5,
-        "branch_pct": 42.19,
-        "branch_covered": 27,
-        "branch_total": 64
+        "branch_pct": 95.45,
+        "branch_covered": 21,
+        "branch_total": 22
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2830,9 +2830,9 @@
         "function_pct": 100.0,
         "function_covered": 5,
         "function_total": 5,
-        "branch_pct": 48.65,
+        "branch_pct": 78.26,
         "branch_covered": 18,
-        "branch_total": 37
+        "branch_total": 23
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2862,9 +2862,9 @@
         "function_pct": 99.02,
         "function_covered": 203,
         "function_total": 205,
-        "branch_pct": 51.84,
-        "branch_covered": 1467,
-        "branch_total": 2830
+        "branch_pct": 76.42,
+        "branch_covered": 1423,
+        "branch_total": 1862
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2888,15 +2888,15 @@
         "has_coverage": true,
         "report": "Svc/FrameAccumulator/coverage-ut/index.html",
         "summary": "Svc/FrameAccumulator/coverage-ut/summary.json",
-        "line_pct": 95.85,
-        "line_covered": 185,
-        "line_total": 193,
+        "line_pct": 95.81,
+        "line_covered": 183,
+        "line_total": 191,
         "function_pct": 100.0,
         "function_covered": 11,
         "function_total": 11,
-        "branch_pct": 47.4,
-        "branch_covered": 146,
-        "branch_total": 308
+        "branch_pct": 90.48,
+        "branch_covered": 114,
+        "branch_total": 126
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2926,9 +2926,9 @@
         "function_pct": 100.0,
         "function_covered": 12,
         "function_total": 12,
-        "branch_pct": 50.29,
-        "branch_covered": 174,
-        "branch_total": 346
+        "branch_pct": 85.64,
+        "branch_covered": 155,
+        "branch_total": 181
       },
       "integration-linux": {
         "has_coverage": false,
@@ -2948,9 +2948,9 @@
         "function_pct": 100.0,
         "function_covered": 10,
         "function_total": 10,
-        "branch_pct": 60.0,
-        "branch_covered": 90,
-        "branch_total": 150
+        "branch_pct": 88.66,
+        "branch_covered": 86,
+        "branch_total": 97
       },
       "integration-linux": {
         "has_coverage": true,
@@ -2992,9 +2992,9 @@
         "function_pct": 100.0,
         "function_covered": 4,
         "function_total": 4,
-        "branch_pct": 47.06,
-        "branch_covered": 16,
-        "branch_total": 34
+        "branch_pct": 82.35,
+        "branch_covered": 14,
+        "branch_total": 17
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3024,9 +3024,9 @@
         "function_pct": 83.33,
         "function_covered": 5,
         "function_total": 6,
-        "branch_pct": 37.8,
-        "branch_covered": 31,
-        "branch_total": 82
+        "branch_pct": 60.98,
+        "branch_covered": 25,
+        "branch_total": 41
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3056,9 +3056,9 @@
         "function_pct": 100.0,
         "function_covered": 4,
         "function_total": 4,
-        "branch_pct": 50.0,
+        "branch_pct": 100.0,
         "branch_covered": 2,
-        "branch_total": 4
+        "branch_total": 2
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3110,9 +3110,9 @@
         "function_pct": 100.0,
         "function_covered": 4,
         "function_total": 4,
-        "branch_pct": 52.5,
-        "branch_covered": 21,
-        "branch_total": 40
+        "branch_pct": 89.47,
+        "branch_covered": 17,
+        "branch_total": 19
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3154,9 +3154,9 @@
         "function_pct": 100.0,
         "function_covered": 4,
         "function_total": 4,
-        "branch_pct": 42.5,
-        "branch_covered": 17,
-        "branch_total": 40
+        "branch_pct": 53.57,
+        "branch_covered": 15,
+        "branch_total": 28
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3258,9 +3258,9 @@
         "function_pct": 100.0,
         "function_covered": 3,
         "function_total": 3,
-        "branch_pct": 50.0,
+        "branch_pct": 75.0,
         "branch_covered": 3,
-        "branch_total": 6
+        "branch_total": 4
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3290,9 +3290,9 @@
         "function_pct": 90.0,
         "function_covered": 18,
         "function_total": 20,
-        "branch_pct": 51.29,
-        "branch_covered": 359,
-        "branch_total": 700
+        "branch_pct": 89.66,
+        "branch_covered": 321,
+        "branch_total": 358
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3322,9 +3322,9 @@
         "function_pct": 100.0,
         "function_covered": 5,
         "function_total": 5,
-        "branch_pct": 62.5,
-        "branch_covered": 20,
-        "branch_total": 32
+        "branch_pct": 68.75,
+        "branch_covered": 11,
+        "branch_total": 16
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3388,9 +3388,9 @@
         "function_pct": 80.0,
         "function_covered": 8,
         "function_total": 10,
-        "branch_pct": 49.18,
-        "branch_covered": 60,
-        "branch_total": 122
+        "branch_pct": 71.05,
+        "branch_covered": 54,
+        "branch_total": 76
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3420,9 +3420,9 @@
         "function_pct": 100.0,
         "function_covered": 4,
         "function_total": 4,
-        "branch_pct": 55.0,
-        "branch_covered": 11,
-        "branch_total": 20
+        "branch_pct": 100.0,
+        "branch_covered": 2,
+        "branch_total": 2
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3524,9 +3524,9 @@
         "function_pct": 100.0,
         "function_covered": 8,
         "function_total": 8,
-        "branch_pct": 55.0,
-        "branch_covered": 33,
-        "branch_total": 60
+        "branch_pct": 76.19,
+        "branch_covered": 32,
+        "branch_total": 42
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3550,15 +3550,15 @@
         "has_coverage": true,
         "report": "Svc/TlmChan/coverage-ut/index.html",
         "summary": "Svc/TlmChan/coverage-ut/summary.json",
-        "line_pct": 82.4,
-        "line_covered": 103,
-        "line_total": 125,
+        "line_pct": 77.59,
+        "line_covered": 135,
+        "line_total": 174,
         "function_pct": 85.71,
         "function_covered": 6,
         "function_total": 7,
-        "branch_pct": 48.57,
-        "branch_covered": 68,
-        "branch_total": 140
+        "branch_pct": 63.03,
+        "branch_covered": 75,
+        "branch_total": 119
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3588,9 +3588,9 @@
         "function_pct": 100.0,
         "function_covered": 20,
         "function_total": 20,
-        "branch_pct": 54.46,
-        "branch_covered": 281,
-        "branch_total": 516
+        "branch_pct": 77.63,
+        "branch_covered": 236,
+        "branch_total": 304
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3632,9 +3632,9 @@
         "function_pct": 100.0,
         "function_covered": 12,
         "function_total": 12,
-        "branch_pct": 54.91,
-        "branch_covered": 123,
-        "branch_total": 224
+        "branch_pct": 86.96,
+        "branch_covered": 120,
+        "branch_total": 138
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3852,9 +3852,9 @@
         "function_pct": 26.44,
         "function_covered": 23,
         "function_total": 87,
-        "branch_pct": 14.53,
-        "branch_covered": 77,
-        "branch_total": 530
+        "branch_pct": 23.67,
+        "branch_covered": 71,
+        "branch_total": 300
       },
       "integration-linux": {
         "has_coverage": true,
@@ -3906,9 +3906,9 @@
         "function_pct": 95.83,
         "function_covered": 23,
         "function_total": 24,
-        "branch_pct": 58.45,
-        "branch_covered": 83,
-        "branch_total": 142
+        "branch_pct": 77.08,
+        "branch_covered": 37,
+        "branch_total": 48
       },
       "integration-linux": {
         "has_coverage": true,
