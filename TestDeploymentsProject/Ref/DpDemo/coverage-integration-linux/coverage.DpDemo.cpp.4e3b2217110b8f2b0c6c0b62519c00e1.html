@@ -26,7 +26,7 @@
     </tr>
     <tr>
       <th scope="row">Date:</th>
-      <td>2026-06-08 18:22:49</td>
+      <td>2026-06-09 00:37:25</td>
     </tr>
   </table>
 </div>
@@ -53,8 +53,8 @@
     <tr>
       <th scope="row">Branches:</th>
       <td>4</td>
-      <td>426</td>
-      <td class="coverage-low">0.9%</td>
+      <td>138</td>
+      <td class="coverage-low">2.9%</td>
     </tr>
   </table>
 </div>
@@ -75,7 +75,7 @@
     <tr><td><a href="#l99">Ref::DpDemo::SelectColor_cmdHandler(unsigned int, unsigned int, Ref::DpDemo_ColorEnum) (line 99)</a></td><td>not called</td><td>0.0%</td></tr>
     <tr><td><a href="#l167">Ref::DpDemo::cleanupAndSendDp() (line 167)</a></td><td>not called</td><td>0.0%</td></tr>
     <tr><td><a href="#l151">Ref::DpDemo::dpRecv_DpDemoContainer_handler(Ref::DpDemoComponentBase::DpContainer&amp;, Fw::Success::T) (line 151)</a></td><td>not called</td><td>0.0%</td></tr>
-    <tr><td><a href="#l27">Ref::DpDemo::run_handler(short, unsigned int) (line 27)</a></td><td>called 114 times</td><td>1.0%</td></tr>
+    <tr><td><a href="#l27">Ref::DpDemo::run_handler(short, unsigned int) (line 27)</a></td><td>called 115 times</td><td>1.0%</td></tr>
     <tr><td><a href="#l21">Ref::DpDemo::~DpDemo() (line 21)</a></td><td>called 1 time</td><td>100.0%</td></tr>
   </table>
 </details>
@@ -192,31 +192,28 @@
       <td class="lineno"><a id="l15" href="#l15">15</a></td>
       <td class="linebranch">
         <details class="linebranchDetails">
-          <summary class="linebranchSummary">2/4</summary>
+          <summary class="linebranchSummary">2/2</summary>
           <div class="linebranchContents">
             <div class="takenBranch">&check; Branch 2 taken 1 times.</div>
-            <div class="notTakenBranch">&cross; Branch 3 not taken.</div>
             <div class="takenBranch">&check; Branch 5 taken 1 times.</div>
-            <div class="notTakenBranch">&cross; Branch 6 not taken.</div>
           </div>
         </details>
       </td>
-      <td class="linecount partialCoveredLine">1</td>
-      <td class="src partialCoveredLine"><span class="n">DpDemo</span><span class="w"> </span><span class="nf">::DpDemo</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">compName</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">DpDemoComponentBase</span><span class="p">(</span><span class="n">compName</span><span class="p">)</span><span class="w"> </span><span class="p">{</span></td>
+      <td class="linecount coveredLine">1</td>
+      <td class="src coveredLine"><span class="n">DpDemo</span><span class="w"> </span><span class="nf">::DpDemo</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">compName</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">DpDemoComponentBase</span><span class="p">(</span><span class="n">compName</span><span class="p">)</span><span class="w"> </span><span class="p">{</span></td>
     </tr>
     <tr class="source-line">
       <td class="lineno"><a id="l16" href="#l16">16</a></td>
       <td class="linebranch">
         <details class="linebranchDetails">
-          <summary class="linebranchSummary">1/2</summary>
+          <summary class="linebranchSummary">1/1</summary>
           <div class="linebranchContents">
             <div class="takenBranch">&check; Branch 1 taken 1 times.</div>
-            <div class="notTakenBranch">&cross; Branch 2 not taken.</div>
           </div>
         </details>
       </td>
-      <td class="linecount partialCoveredLine">1</td>
-      <td class="src partialCoveredLine"><span class="w">    </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">selectedColor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DpDemo_ColorEnum</span><span class="o">::</span><span class="n">RED</span><span class="p">;</span></td>
+      <td class="linecount coveredLine">1</td>
+      <td class="src coveredLine"><span class="w">    </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">selectedColor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DpDemo_ColorEnum</span><span class="o">::</span><span class="n">RED</span><span class="p">;</span></td>
     </tr>
     <tr class="source-line">
       <td class="lineno"><a id="l17" href="#l17">17</a></td>
@@ -292,7 +289,7 @@
       <td class="lineno"><a id="l27" href="#l27">27</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">114</td>
+      <td class="linecount coveredLine">115</td>
       <td class="src coveredLine"><span class="kt">void</span><span class="w"> </span><span class="n">DpDemo</span><span class="w"> </span><span class="o">::</span><span class="n">run_handler</span><span class="p">(</span><span class="n">FwIndexType</span><span class="w"> </span><span class="n">portNum</span><span class="p">,</span><span class="w"> </span><span class="n">U32</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"> </span><span class="p">{</span></td>
     </tr>
     <tr class="source-line">
@@ -309,11 +306,11 @@
           <summary class="linebranchSummary">1/2</summary>
           <div class="linebranchContents">
             <div class="notTakenBranch">&cross; Branch 0 not taken.</div>
-            <div class="takenBranch">&check; Branch 1 taken 114 times.</div>
+            <div class="takenBranch">&check; Branch 1 taken 115 times.</div>
           </div>
         </details>
       </td>
-      <td class="linecount partialCoveredLine">114</td>
+      <td class="linecount partialCoveredLine">115</td>
       <td class="src partialCoveredLine"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">dpInProgress</span><span class="p">)</span><span class="w"> </span><span class="p">{</span></td>
     </tr>
     <tr class="source-line">
@@ -760,236 +757,9 @@
     <tr class="source-line">
       <td class="lineno"><a id="l93" href="#l93">93</a></td>
       <td class="linebranch">
-        <details class="linebranchDetails">
-          <summary class="linebranchSummary">0/222</summary>
-          <div class="linebranchContents">
-            <div class="notTakenBranch">&cross; Branch 1 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 2 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 4 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 5 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 7 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 8 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 10 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 11 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 13 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 14 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 16 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 17 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 19 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 20 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 22 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 23 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 25 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 26 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 28 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 29 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 31 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 32 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 34 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 35 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 37 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 38 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 40 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 41 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 43 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 44 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 46 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 47 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 49 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 50 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 52 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 53 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 55 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 56 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 57 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 58 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 59 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 60 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 61 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 62 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 64 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 65 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 67 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 68 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 70 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 71 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 73 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 74 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 76 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 77 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 79 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 80 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 82 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 83 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 85 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 86 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 88 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 89 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 91 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 92 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 94 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 95 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 97 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 98 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 100 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 101 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 103 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 104 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 106 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 107 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 109 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 110 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 112 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 113 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 115 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 116 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 118 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 119 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 121 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 122 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 124 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 125 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 127 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 128 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 130 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 131 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 133 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 134 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 136 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 137 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 139 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 140 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 142 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 143 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 145 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 146 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 148 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 149 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 151 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 152 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 154 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 155 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 157 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 158 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 160 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 161 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 163 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 164 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 166 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 167 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 169 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 170 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 172 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 173 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 175 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 176 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 178 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 179 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 182 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 183 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 184 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 185 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 186 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 187 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 189 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 190 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 191 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 192 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 193 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 194 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 196 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 197 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 198 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 199 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 201 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 202 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 203 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 204 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 206 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 207 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 208 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 209 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 210 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 211 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 213 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 214 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 215 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 216 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 217 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 218 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 220 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 221 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 222 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 223 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 224 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 225 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 227 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 228 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 229 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 230 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 232 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 233 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 234 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 235 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 237 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 238 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 239 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 240 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 242 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 243 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 244 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 245 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 247 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 248 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 249 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 250 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 252 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 253 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 254 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 255 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 257 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 258 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 259 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 260 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 262 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 263 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 264 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 265 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 267 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 268 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 269 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 270 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 272 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 273 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 274 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 275 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 277 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 278 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 279 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 280 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 281 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 282 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 284 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 285 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 286 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 287 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 288 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 289 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 291 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 292 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 293 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 294 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 295 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 296 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 298 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 299 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 300 not taken.</div>
-            <div class="notTakenBranch">&cross; Branch 301 not taken.</div>
-          </div>
-        </details>
       </td>
-      <td class="linecount partialCoveredLine">114</td>
-      <td class="src partialCoveredLine"><span class="p">}</span></td>
+      <td class="linecount coveredLine">115</td>
+      <td class="src coveredLine"><span class="p">}</span></td>
     </tr>
     <tr class="source-line">
       <td class="lineno"><a id="l94" href="#l94">94</a></td>
