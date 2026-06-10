@@ -9,7 +9,6 @@
 
 #include <Fw/FPrimeBasicTypes.hpp>
 
-#include "Fw/Types/SerIds.hpp"
 #include "Fw/Types/StringBase.hpp"
 
 namespace Fw {
@@ -17,7 +16,6 @@ namespace Fw {
 class ObjectName final : public StringBase {
   public:
     enum {
-        SERIALIZED_TYPE_ID = FW_TYPEID_OBJECT_NAME,
         STRING_SIZE = FW_OBJ_NAME_BUFFER_SIZE,
         SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(STRING_SIZE)
     };

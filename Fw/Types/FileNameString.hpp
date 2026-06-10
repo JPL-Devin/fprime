@@ -9,7 +9,6 @@
 
 #include <Fw/FPrimeBasicTypes.hpp>
 
-#include "Fw/Types/SerIds.hpp"
 #include "Fw/Types/StringBase.hpp"
 #include "config/FppConstantsAc.hpp"
 
@@ -18,7 +17,6 @@ namespace Fw {
 class FileNameString final : public StringBase {
   public:
     enum {
-        SERIALIZED_TYPE_ID = FW_TYPEID_FILE_NAME_STRING,
         STRING_SIZE = FileNameStringSize,
         SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(STRING_SIZE)
     };

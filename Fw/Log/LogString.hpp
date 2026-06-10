@@ -9,7 +9,6 @@
 
 #include <Fw/FPrimeBasicTypes.hpp>
 
-#include "Fw/Types/SerIds.hpp"
 #include "Fw/Types/StringBase.hpp"
 
 namespace Fw {
@@ -17,7 +16,6 @@ namespace Fw {
 class LogStringArg final : public StringBase {
   public:
     enum {
-        SERIALIZED_TYPE_ID = FW_TYPEID_LOG_STR,
         STRING_SIZE = FW_LOG_STRING_MAX_SIZE,
         SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(STRING_SIZE)
     };
