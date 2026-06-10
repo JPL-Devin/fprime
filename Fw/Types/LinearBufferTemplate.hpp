@@ -20,10 +20,7 @@ namespace Fw {
 //! buffer classes (CmdArgBuffer, LogBuffer, TlmBuffer, etc.) that share
 //! identical structure, eliminating boilerplate and reducing error potential.
 //!
-//! Usage:
-//! \code
-//!   using CmdArgBuffer = LinearBufferTemplate<FW_TYPEID_CMD_BUFF, FW_CMD_ARG_BUFFER_MAX_SIZE>;
-//! \endcode
+//! Example: using CmdArgBuffer = LinearBufferTemplate<FW_TYPEID_CMD_BUFF, FW_CMD_ARG_BUFFER_MAX_SIZE>;
 //!
 //! \tparam TypeId   Serialized type identifier (from SerIds.hpp or project-specific)
 //! \tparam MaxSize  Maximum buffer capacity in bytes
