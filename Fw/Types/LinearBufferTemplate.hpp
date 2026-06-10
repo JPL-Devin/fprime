@@ -31,8 +31,8 @@ template <int TypeId, FwSizeType MaxSize>
 class LinearBufferTemplate final : public LinearBufferBase {
   public:
     enum {
-        SERIALIZED_TYPE_ID = TypeId,                          //!< type id for serialization
-        SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(MaxSize),    //!< size when serialized: buffer + stored size
+        SERIALIZED_TYPE_ID = TypeId,                        //!< type id for serialization
+        SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(MaxSize),  //!< size when serialized: buffer + stored size
     };
 
     LinearBufferTemplate() = default;
@@ -58,9 +58,7 @@ class LinearBufferTemplate final : public LinearBufferBase {
         return *this;
     }
 
-    DEPRECATED(FwSizeType getBuffCapacity() const, "Use getCapacity() instead") {
-        return this->getCapacity();
-    }
+    DEPRECATED(FwSizeType getBuffCapacity() const, "Use getCapacity() instead") { return this->getCapacity(); }
 
     FwSizeType getCapacity() const override { return sizeof this->m_bufferData; }
 
