@@ -2,8 +2,8 @@
   "schema": 2,
   "ref": "coverage-test",
   "ref_type": "branch",
-  "commit": "f102c1bdace451674393b83b560f1c1d2aab215e",
-  "generated_at": "2026-06-09T00:38:04Z",
+  "commit": "b4e946ffc4c896ee7f67c9287d255bc0ab95562b",
+  "generated_at": "2026-06-10T01:32:34Z",
   "overall": {
     "ut": {
       "line_pct": 81.17,
@@ -19,13 +19,13 @@
     },
     "integration-linux": {
       "line_pct": 19.94,
-      "line_covered": 11871,
+      "line_covered": 11870,
       "line_total": 59529,
       "function_pct": 26.78,
       "function_covered": 2081,
       "function_total": 7770,
       "branch_pct": 11.04,
-      "branch_covered": 3923,
+      "branch_covered": 3924,
       "branch_total": 35528,
       "report": "coverage-integration-linux/coverage-all.html"
     }
@@ -854,8 +854,8 @@
         "function_pct": 74.47,
         "function_covered": 35,
         "function_total": 47,
-        "branch_pct": 57.14,
-        "branch_covered": 28,
+        "branch_pct": 55.1,
+        "branch_covered": 27,
         "branch_total": 49
       }
     },
@@ -876,8 +876,8 @@
         "function_pct": 76.47,
         "function_covered": 26,
         "function_total": 34,
-        "branch_pct": 63.41,
-        "branch_covered": 26,
+        "branch_pct": 60.98,
+        "branch_covered": 25,
         "branch_total": 41
       }
     },
@@ -902,14 +902,14 @@
         "has_coverage": true,
         "report": "Fw/DataStructures/coverage-integration-linux/index.html",
         "summary": "Fw/DataStructures/coverage-integration-linux/summary.json",
-        "line_pct": 46.0,
-        "line_covered": 328,
+        "line_pct": 46.14,
+        "line_covered": 329,
         "line_total": 713,
         "function_pct": 37.66,
         "function_covered": 212,
         "function_total": 563,
-        "branch_pct": 38.9,
-        "branch_covered": 135,
+        "branch_pct": 39.77,
+        "branch_covered": 138,
         "branch_total": 347
       }
     },
@@ -1310,14 +1310,14 @@
         "has_coverage": true,
         "report": "Fw/Time/coverage-integration-linux/index.html",
         "summary": "Fw/Time/coverage-integration-linux/summary.json",
-        "line_pct": 42.26,
-        "line_covered": 101,
+        "line_pct": 41.84,
+        "line_covered": 100,
         "line_total": 239,
         "function_pct": 45.0,
         "function_covered": 27,
         "function_total": 60,
-        "branch_pct": 33.64,
-        "branch_covered": 36,
+        "branch_pct": 32.71,
+        "branch_covered": 35,
         "branch_total": 107
       }
     },
@@ -1374,8 +1374,8 @@
         "has_coverage": true,
         "report": "Fw/Types/coverage-integration-linux/index.html",
         "summary": "Fw/Types/coverage-integration-linux/summary.json",
-        "line_pct": 32.19,
-        "line_covered": 471,
+        "line_pct": 32.13,
+        "line_covered": 470,
         "line_total": 1463,
         "function_pct": 35.53,
         "function_covered": 113,
@@ -1418,14 +1418,14 @@
         "has_coverage": true,
         "report": "Os/coverage-integration-linux/index.html",
         "summary": "Os/coverage-integration-linux/summary.json",
-        "line_pct": 44.88,
-        "line_covered": 1077,
+        "line_pct": 44.92,
+        "line_covered": 1078,
         "line_total": 2400,
         "function_pct": 48.35,
         "function_covered": 234,
         "function_total": 484,
-        "branch_pct": 32.16,
-        "branch_covered": 311,
+        "branch_pct": 32.47,
+        "branch_covered": 314,
         "branch_total": 967
       }
     },
@@ -1468,8 +1468,8 @@
         "function_pct": 92.59,
         "function_covered": 25,
         "function_total": 27,
-        "branch_pct": 60.0,
-        "branch_covered": 69,
+        "branch_pct": 60.87,
+        "branch_covered": 70,
         "branch_total": 115
       }
     },
@@ -1500,8 +1500,8 @@
         "function_pct": 100.0,
         "function_covered": 12,
         "function_total": 12,
-        "branch_pct": 67.86,
-        "branch_covered": 19,
+        "branch_pct": 71.43,
+        "branch_covered": 20,
         "branch_total": 28
       }
     },
@@ -2138,14 +2138,14 @@
         "has_coverage": true,
         "report": "Svc/CmdSequencer/coverage-integration-linux/index.html",
         "summary": "Svc/CmdSequencer/coverage-integration-linux/summary.json",
-        "line_pct": 39.58,
-        "line_covered": 321,
+        "line_pct": 39.46,
+        "line_covered": 320,
         "line_total": 811,
         "function_pct": 50.96,
         "function_covered": 53,
         "function_total": 104,
-        "branch_pct": 30.65,
-        "branch_covered": 152,
+        "branch_pct": 30.44,
+        "branch_covered": 151,
         "branch_total": 496
       }
     },
@@ -3570,8 +3570,8 @@
         "function_pct": 85.71,
         "function_covered": 6,
         "function_total": 7,
-        "branch_pct": 49.56,
-        "branch_covered": 56,
+        "branch_pct": 48.67,
+        "branch_covered": 55,
         "branch_total": 113
       }
     },

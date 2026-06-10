@@ -26,7 +26,7 @@
     </tr>
     <tr>
       <th scope="row">Date:</th>
-      <td>2026-06-09 00:31:31</td>
+      <td>2026-06-10 01:31:21</td>
     </tr>
   </table>
 </div>
@@ -71,9 +71,9 @@
       <th>Block coverage</th>
     </tr>
     <tr><td><a href="#l18">Svc::Ccsds::ApidManager::ApidManager(char const*) (line 18)</a></td><td>called 1 time</td><td>80.0%</td></tr>
-    <tr><td><a href="#l64">Svc::Ccsds::ApidManager::calculateNextSeqCount(unsigned short) const (line 64)</a></td><td>called 771 times</td><td>100.0%</td></tr>
-    <tr><td><a href="#l50">Svc::Ccsds::ApidManager::getAndIncrementSeqCount(ComCfg::Apid::T) (line 50)</a></td><td>called 771 times</td><td>65.0%</td></tr>
-    <tr><td><a href="#l42">Svc::Ccsds::ApidManager::getApidSeqCountIn_handler(short, ComCfg::Apid const&amp;, unsigned short) (line 42)</a></td><td>called 634 times</td><td>100.0%</td></tr>
+    <tr><td><a href="#l64">Svc::Ccsds::ApidManager::calculateNextSeqCount(unsigned short) const (line 64)</a></td><td>called 775 times</td><td>100.0%</td></tr>
+    <tr><td><a href="#l50">Svc::Ccsds::ApidManager::getAndIncrementSeqCount(ComCfg::Apid::T) (line 50)</a></td><td>called 775 times</td><td>65.0%</td></tr>
+    <tr><td><a href="#l42">Svc::Ccsds::ApidManager::getApidSeqCountIn_handler(short, ComCfg::Apid const&amp;, unsigned short) (line 42)</a></td><td>called 638 times</td><td>100.0%</td></tr>
     <tr><td><a href="#l24">Svc::Ccsds::ApidManager::validateApidSeqCountIn_handler(short, ComCfg::Apid const&amp;, unsigned short) (line 24)</a></td><td>called 137 times</td><td>32.0%</td></tr>
   </table>
 </details>
@@ -213,7 +213,7 @@
         <details class="linebranchDetails">
           <summary class="linebranchSummary">1/1</summary>
           <div class="linebranchContents">
-            <div class="takenBranch">&check; Branch 2 taken 1 times.</div>
+            <div class="takenBranch">&check; Branch 0 taken 1 times.</div>
           </div>
         </details>
       </td>
@@ -399,14 +399,14 @@
       <td class="lineno"><a id="l42" href="#l42">42</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">634</td>
+      <td class="linecount coveredLine">638</td>
       <td class="src coveredLine"><span class="n">U16</span><span class="w"> </span><span class="n">ApidManager</span><span class="w"> </span><span class="o">::</span><span class="n">getApidSeqCountIn_handler</span><span class="p">(</span><span class="n">FwIndexType</span><span class="w"> </span><span class="n">portNum</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">ComCfg</span><span class="o">::</span><span class="n">Apid</span><span class="o">&amp;</span><span class="w"> </span><span class="n">apid</span><span class="p">,</span><span class="w"> </span><span class="n">U16</span><span class="w"> </span><span class="n">unused</span><span class="p">)</span><span class="w"> </span><span class="p">{</span></td>
     </tr>
     <tr class="source-line">
       <td class="lineno"><a id="l43" href="#l43">43</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">634</td>
+      <td class="linecount coveredLine">638</td>
       <td class="src coveredLine"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">getAndIncrementSeqCount</span><span class="p">(</span><span class="n">apid</span><span class="p">);</span></td>
     </tr>
     <tr class="source-line">
@@ -455,14 +455,14 @@
       <td class="lineno"><a id="l50" href="#l50">50</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">771</td>
+      <td class="linecount coveredLine">775</td>
       <td class="src coveredLine"><span class="n">U16</span><span class="w"> </span><span class="n">ApidManager</span><span class="w"> </span><span class="o">::</span><span class="n">getAndIncrementSeqCount</span><span class="p">(</span><span class="n">ComCfg</span><span class="o">::</span><span class="n">Apid</span><span class="o">::</span><span class="n">T</span><span class="w"> </span><span class="n">apid</span><span class="p">)</span><span class="w"> </span><span class="p">{</span></td>
     </tr>
     <tr class="source-line">
       <td class="lineno"><a id="l51" href="#l51">51</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">771</td>
+      <td class="linecount coveredLine">775</td>
       <td class="src coveredLine"><span class="w">    </span><span class="n">U16</span><span class="w"> </span><span class="n">seqCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span></td>
     </tr>
     <tr class="source-line">
@@ -478,11 +478,11 @@
         <details class="linebranchDetails">
           <summary class="linebranchSummary">1/1</summary>
           <div class="linebranchContents">
-            <div class="takenBranch">&check; Branch 1 taken 771 times.</div>
+            <div class="takenBranch">&check; Branch 0 taken 775 times.</div>
           </div>
         </details>
       </td>
-      <td class="linecount coveredLine">771</td>
+      <td class="linecount coveredLine">775</td>
       <td class="src coveredLine"><span class="w">    </span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">m_apidSequences</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">apid</span><span class="p">,</span><span class="w"> </span><span class="n">seqCount</span><span class="p">);</span></td>
     </tr>
     <tr class="source-line">
@@ -505,11 +505,11 @@
         <details class="linebranchDetails">
           <summary class="linebranchSummary">1/1</summary>
           <div class="linebranchContents">
-            <div class="takenBranch">&check; Branch 2 taken 771 times.</div>
+            <div class="takenBranch">&check; Branch 0 taken 775 times.</div>
           </div>
         </details>
       </td>
-      <td class="linecount coveredLine">771</td>
+      <td class="linecount coveredLine">775</td>
       <td class="src coveredLine"><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Fw</span><span class="o">::</span><span class="n">Success</span><span class="w"> </span><span class="n">insertStatus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m_apidSequences</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="n">apid</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">calculateNextSeqCount</span><span class="p">(</span><span class="n">seqCount</span><span class="p">));</span></td>
     </tr>
     <tr class="source-line">
@@ -518,12 +518,12 @@
         <details class="linebranchDetails">
           <summary class="linebranchSummary">1/2</summary>
           <div class="linebranchContents">
-            <div class="notTakenBranch">&cross; Branch 1 not taken.</div>
-            <div class="takenBranch">&check; Branch 2 taken 771 times.</div>
+            <div class="notTakenBranch">&cross; Branch 0 not taken.</div>
+            <div class="takenBranch">&check; Branch 1 taken 775 times.</div>
           </div>
         </details>
       </td>
-      <td class="linecount partialCoveredLine">771</td>
+      <td class="linecount partialCoveredLine">775</td>
       <td class="src partialCoveredLine"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">insertStatus</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">Fw</span><span class="o">::</span><span class="n">Success</span><span class="o">::</span><span class="n">SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span></td>
     </tr>
     <tr class="source-line">
@@ -551,14 +551,14 @@
       <td class="lineno"><a id="l61" href="#l61">61</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">771</td>
+      <td class="linecount coveredLine">775</td>
       <td class="src coveredLine"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">seqCount</span><span class="p">;</span></td>
     </tr>
     <tr class="source-line">
       <td class="lineno"><a id="l62" href="#l62">62</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">771</td>
+      <td class="linecount coveredLine">775</td>
       <td class="src coveredLine"><span class="p">}</span></td>
     </tr>
     <tr class="source-line">
@@ -572,14 +572,14 @@
       <td class="lineno"><a id="l64" href="#l64">64</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">771</td>
+      <td class="linecount coveredLine">775</td>
       <td class="src coveredLine"><span class="n">U16</span><span class="w"> </span><span class="n">ApidManager</span><span class="o">::</span><span class="n">calculateNextSeqCount</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">U16</span><span class="w"> </span><span class="n">seqCount</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span></td>
     </tr>
     <tr class="source-line">
       <td class="lineno"><a id="l65" href="#l65">65</a></td>
       <td class="linebranch">
       </td>
-      <td class="linecount coveredLine">771</td>
+      <td class="linecount coveredLine">775</td>
       <td class="src coveredLine"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">U16</span><span class="o">&gt;</span><span class="p">((</span><span class="n">seqCount</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">SpacePacketSubfields</span><span class="o">::</span><span class="n">SeqCountWidth</span><span class="p">));</span></td>
     </tr>
     <tr class="source-line">
