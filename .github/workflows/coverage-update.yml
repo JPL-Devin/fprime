@@ -65,10 +65,30 @@ jobs:
           working-directory: ${{ github.workspace }}
           modules-jsonl: ${{ steps.cov.outputs.modules-jsonl }}
 
-  integration-coverage-update:
-    name: "Integration Coverage [push]"
+  # --- Integration coverage: matrix of deployments + aggregate ---
+  integration-collect:
+    name: "Integration Collect [${{ matrix.deployment }}]"
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - deployment: Ref
+            project-dir: TestDeploymentsProject
+            build-cache: TestDeploymentsProject/build-fprime-automatic-native
+            test-dir: TestDeploymentsProject/Ref/test/int
+            binary: "build-artifacts/*/Ref/bin/Ref"
+            gds-args: "--dictionary build-artifacts/*/Ref/dict/RefTopologyDictionary.json"
+            pytest-args-suffix: "TestDeploymentsProject/Ref/test/int/int_config.json"
+          # Add more deployments here as they gain integration tests:
+          # - deployment: AnotherDeploy
+          #   project-dir: AnotherProject
+          #   build-cache: AnotherProject/build-fprime-automatic-native
+          #   test-dir: AnotherProject/AnotherDeploy/test/int
+          #   binary: "build-artifacts/*/AnotherDeploy/bin/AnotherDeploy"
+          #   gds-args: "--dictionary build-artifacts/*/AnotherDeploy/dict/..."
+          #   pytest-args-suffix: "AnotherProject/AnotherDeploy/test/int/int_config.json"
     steps:
       - name: "Checkout F' Repository"
         uses: actions/checkout@v4
@@ -79,29 +99,65 @@ jobs:
         uses: JPL-Devin/fprime-actions/setup@devin/1780361490-integration-coverage
         with:
           location: ${{ github.workspace }}
-      - name: "Build Ref with coverage"
+      - name: "Build ${{ matrix.deployment }} with coverage"
         uses: JPL-Devin/fprime-actions/build@devin/1780361490-integration-coverage
         with:
-          working-directory: "TestDeploymentsProject"
+          working-directory: ${{ matrix.project-dir }}
           generate-args: >-
             -DCMAKE_CXX_FLAGS="--coverage"
             -DCMAKE_C_FLAGS="--coverage"
             -DCMAKE_EXE_LINKER_FLAGS="--coverage"
-      - name: "Integration Tests"
+      - name: "Integration Tests [${{ matrix.deployment }}]"
         uses: JPL-Devin/fprime-actions/run-integration-tests@devin/1780361490-integration-coverage
         with:
-          gds-working-directory: "TestDeploymentsProject"
-          test-working-directory: "TestDeploymentsProject/Ref/test/int"
-          binary: "build-artifacts/*/Ref/bin/Ref"
-          gds-args: "--dictionary build-artifacts/*/Ref/dict/RefTopologyDictionary.json"
-          pytest-args: "--deployment-config ${{ github.workspace }}/TestDeploymentsProject/Ref/test/int/int_config.json"
-      - name: "Integration Coverage (common)"
-        id: intcov
-        uses: JPL-Devin/fprime-actions/coverage-integration-common@devin/1780361490-integration-coverage
+          gds-working-directory: ${{ matrix.project-dir }}
+          test-working-directory: ${{ matrix.test-dir }}
+          binary: ${{ matrix.binary }}
+          gds-args: ${{ matrix.gds-args }}
+          pytest-args: "--deployment-config ${{ github.workspace }}/${{ matrix.pytest-args-suffix }}"
+      - name: "Collect tracefile"
+        uses: JPL-Devin/fprime-actions/coverage-integration-collect@devin/1780361490-integration-coverage
         with:
           working-directory: ${{ github.workspace }}
-          build-cache: TestDeploymentsProject/build-fprime-automatic-native
-      - name: "Integration Coverage update"
+          build-cache: ${{ matrix.build-cache }}
+          deployment-name: ${{ matrix.deployment }}
+      - name: "Upload tracefile"
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-trace-${{ matrix.deployment }}
+          path: integration-trace-${{ matrix.deployment }}.json
+          retention-days: 1
+
+  integration-aggregate:
+    name: "Integration Aggregate + Publish"
+    needs: integration-collect
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: "Checkout F' Repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+      - name: "Setup F' Tools"
+        uses: JPL-Devin/fprime-actions/setup@devin/1780361490-integration-coverage
+        with:
+          location: ${{ github.workspace }}
+      - name: "Download all tracefiles"
+        uses: actions/download-artifact@v4
+        with:
+          path: traces
+          pattern: integration-trace-*
+          merge-multiple: true
+      - name: "List tracefiles"
+        run: ls -lh traces/
+      - name: "Aggregate integration coverage"
+        id: intcov
+        uses: JPL-Devin/fprime-actions/coverage-integration-aggregate@devin/1780361490-integration-coverage
+        with:
+          working-directory: ${{ github.workspace }}
+          tracefile-pattern: "traces/integration-trace-*.json"
+      - name: "Coverage update"
         uses: JPL-Devin/fprime-actions/coverage-update@devin/1780361490-integration-coverage
         with:
           working-directory: ${{ github.workspace }}
