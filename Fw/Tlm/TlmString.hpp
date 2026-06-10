@@ -15,10 +15,7 @@ namespace Fw {
 
 class TlmString final : public StringBase {
   public:
-    enum {
-        STRING_SIZE = FW_TLM_STRING_MAX_SIZE,
-        SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(STRING_SIZE)
-    };
+    enum { STRING_SIZE = FW_TLM_STRING_MAX_SIZE, SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(STRING_SIZE) };
 
     TlmString() : StringBase() { *this = ""; }
 

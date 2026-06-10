@@ -16,10 +16,7 @@ namespace Fw {
 
 class FileNameString final : public StringBase {
   public:
-    enum {
-        STRING_SIZE = FileNameStringSize,
-        SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(STRING_SIZE)
-    };
+    enum { STRING_SIZE = FileNameStringSize, SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(STRING_SIZE) };
 
     FileNameString() : StringBase() { *this = ""; }
 

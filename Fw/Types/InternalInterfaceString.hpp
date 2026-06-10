@@ -16,10 +16,7 @@ namespace Fw {
 
 class InternalInterfaceString final : public StringBase {
   public:
-    enum {
-        STRING_SIZE = FW_INTERNAL_INTERFACE_STRING_MAX_SIZE,
-        SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(STRING_SIZE)
-    };
+    enum { STRING_SIZE = FW_INTERNAL_INTERFACE_STRING_MAX_SIZE, SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(STRING_SIZE) };
 
     InternalInterfaceString() : StringBase() { *this = ""; }
 

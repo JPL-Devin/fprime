@@ -15,10 +15,7 @@ namespace Fw {
 
 class TextLogString final : public StringBase {
   public:
-    enum {
-        STRING_SIZE = FW_LOG_TEXT_BUFFER_SIZE,
-        SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(STRING_SIZE)
-    };
+    enum { STRING_SIZE = FW_LOG_TEXT_BUFFER_SIZE, SERIALIZED_SIZE = STATIC_SERIALIZED_SIZE(STRING_SIZE) };
 
     TextLogString() : StringBase() { *this = ""; }
 
