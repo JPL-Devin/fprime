@@ -12,6 +12,7 @@ include(utilities)
 include(options)
 include(sanitizers) # Enable sanitizers if they are requested
 include(required)
+include(project_interface)
 include(config_assembler)
 include(fprime-util)
 
@@ -41,6 +42,18 @@ set(FPRIME_BUILD_LOCATIONS "${FPRIME_FRAMEWORK_PATH}" ${FPRIME_LIBRARY_LOCATIONS
     "${CMAKE_BINARY_DIR}/F-Prime" "${CMAKE_BINARY_DIR}" CACHE INTERNAL "List of root locations for F Prime modules" FORCE)
 list(REMOVE_DUPLICATES FPRIME_BUILD_LOCATIONS)
 resolve_path_variables(FPRIME_BUILD_LOCATIONS)
+
+# Populate the unified project interface target with initial build locations
+set(FPRIME_SOURCE_BUILD_LOCATIONS "${FPRIME_FRAMEWORK_PATH}" ${FPRIME_LIBRARY_LOCATIONS} "${FPRIME_PROJECT_ROOT}")
+set(FPRIME_BINARY_BUILD_LOCATIONS "${CMAKE_BINARY_DIR}/F-Prime" "${CMAKE_BINARY_DIR}")
+foreach(LOC IN LISTS FPRIME_SOURCE_BUILD_LOCATIONS)
+    append_list_property("${LOC}" TARGET "${FPRIME_PROJECT_INTERFACE_TARGET}" PROPERTY FPRIME_SOURCE_LOCATIONS)
+    target_include_directories("${FPRIME_PROJECT_INTERFACE_TARGET}" INTERFACE "${LOC}")
+endforeach()
+foreach(LOC IN LISTS FPRIME_BINARY_BUILD_LOCATIONS)
+    append_list_property("${LOC}" TARGET "${FPRIME_PROJECT_INTERFACE_TARGET}" PROPERTY FPRIME_BINARY_LOCATIONS)
+    target_include_directories("${FPRIME_PROJECT_INTERFACE_TARGET}" INTERFACE "${LOC}")
+endforeach()
 
 # Message describing the fprime setup
 fprime_cmake_status("[FPRIME] Module locations: ${FPRIME_BUILD_LOCATIONS}")
@@ -73,13 +86,8 @@ include(settings)
 # function as expected. This will also include the internal build-cache directories.
 ####
 function(fprime_setup_global_includes)
-    # Setup the global include directories that exist outside of the build cache
-    include_directories("${FPRIME_FRAMEWORK_PATH}")
-    include_directories("${FPRIME_PROJECT_ROOT}")
-
-    # Setup the include directories that exist within the build-cache
-    include_directories("${CMAKE_BINARY_DIR}")
-    include_directories("${CMAKE_BINARY_DIR}/F-Prime")
+    # Bridge the unified interface target include directories into the directory-scoped include path
+    include_directories("$<TARGET_PROPERTY:${FPRIME_PROJECT_INTERFACE_TARGET},INTERFACE_INCLUDE_DIRECTORIES>")
 endfunction(fprime_setup_global_includes)
 
 ####

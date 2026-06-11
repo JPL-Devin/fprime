@@ -20,11 +20,7 @@ include(fprime-util)
 set(FPRIME_TARGET_LIST "" CACHE INTERNAL "FPRIME_TARGET_LIST: custom fprime targets" FORCE)
 set(FPRIME_UT_TARGET_LIST "" CACHE INTERNAL "FPRIME_UT_TARGET_LIST: custom fprime targets" FORCE)
 set(FPRIME_AUTOCODER_TARGET_LIST "" CACHE INTERNAL "FPRIME_AUTOCODER_TARGET_LIST: custom fprime targets" FORCE)
-set(FPRIME_GLOBAL_INTERFACE_TARGET "_fprime_global_interface_target" CACHE INTERNAL "FPRIME_GLOBAL_INTERFACE_TARGETS: global interface targets" FORCE)
-# Create a singleton global interface target
-if (NOT TARGET "${FPRIME_GLOBAL_INTERFACE_TARGET}")
-    add_library("${FPRIME_GLOBAL_INTERFACE_TARGET}" INTERFACE)
-endif()
+
 
 ####
 # Macro `skip_on_sub_build`:
@@ -469,16 +465,19 @@ function(fprime_add_config_build_target)
 
     # The new module should include the root configuration directory
     fprime_target_include_directories("${INTERNAL_MODULE_NAME}" PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/..")
+    # Propagate config include directories to the unified interface target so they are available
+    # when reading INTERFACE_INCLUDE_DIRECTORIES directly (which is not transitive)
+    target_include_directories("${FPRIME_PROJECT_INTERFACE_TARGET}" INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/..")
     # The configuration target should depend on the new module
     if (INTERNAL_BASE_CONFIG)
-        target_link_libraries("${FPRIME__INTERNAL_CONFIG_TARGET_NAME}" INTERFACE "${INTERNAL_MODULE_NAME}")
+        target_link_libraries("${FPRIME_PROJECT_INTERFACE_TARGET}" INTERFACE "${INTERNAL_MODULE_NAME}")
     endif()
     # Set up the new module to be marked as FPRIME_CONFIGURATION
     append_list_property("${INTERNAL_MODULE_NAME}" GLOBAL PROPERTY "FPRIME_CONFIG_MODULES")
     set_property(TARGET "${INTERNAL_MODULE_NAME}" PROPERTY FPRIME_CONFIGURATION TRUE)
     # Targets likely do not exist yet, so just aggregate the complete list of chosen implementations
     # for processing later
-    append_list_property("${INTERNAL_CHOOSES_IMPLEMENTATIONS}" TARGET "${FPRIME__INTERNAL_CONFIG_TARGET_NAME}" PROPERTY FPRIME_CHOSEN_IMPLEMENTATIONS)
+    append_list_property("${INTERNAL_CHOOSES_IMPLEMENTATIONS}" TARGET "${FPRIME_PROJECT_INTERFACE_TARGET}" PROPERTY FPRIME_CHOSEN_IMPLEMENTATIONS)
 
     # Static libraries must be position independent when building shared libraries
     get_target_property(CONFIG_LIBRARY_TYPE "${INTERNAL_MODULE_NAME}" TYPE)
@@ -751,14 +750,18 @@ macro(register_fprime_project)
 
     # Add to the build locations property
     append_list_property("${CMAKE_CURRENT_SOURCE_DIR}" GLOBAL PROPERTY FPRIME_PROJECT_LOCATIONS)
-    # Add source and binaries to the interface includes of our singular global interface target
-    target_include_directories("${FPRIME_GLOBAL_INTERFACE_TARGET}" INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
-    target_include_directories("${FPRIME_GLOBAL_INTERFACE_TARGET}" INTERFACE "${CMAKE_CURRENT_BINARY_DIR}")
+
+    # Store source and binary locations as properties on the unified interface target
+    append_list_property("${CMAKE_CURRENT_SOURCE_DIR}" TARGET "${FPRIME_PROJECT_INTERFACE_TARGET}" PROPERTY FPRIME_SOURCE_LOCATIONS)
+    append_list_property("${CMAKE_CURRENT_BINARY_DIR}" TARGET "${FPRIME_PROJECT_INTERFACE_TARGET}" PROPERTY FPRIME_BINARY_LOCATIONS)
+    # Add source and binaries to the interface includes of the unified interface target
+    target_include_directories("${FPRIME_PROJECT_INTERFACE_TARGET}" INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_include_directories("${FPRIME_PROJECT_INTERFACE_TARGET}" INTERFACE "${CMAKE_CURRENT_BINARY_DIR}")
 
     # Backwards compatibility: update the build locations variable as well
     set(FPRIME_BUILD_LOCATIONS "${CMAKE_CURRENT_SOURCE_DIR};${FPRIME_BUILD_LOCATIONS}" CACHE INTERNAL "FPRIME_BUILD_LOCATIONS: list of source directories containing fprime modules" FORCE)
     # Backwards compatibility: bridge the interface target include directories back into the include_directories directive
-    include_directories("$<TARGET_PROPERTY:${FPRIME_GLOBAL_INTERFACE_TARGET},INTERFACE_INCLUDE_DIRECTORIES>")
+    include_directories("$<TARGET_PROPERTY:${FPRIME_PROJECT_INTERFACE_TARGET},INTERFACE_INCLUDE_DIRECTORIES>")
 
     # Update the CMAKE_MODULE_PATH for this particular project
     get_property(FPRIME_PROJECT_LOCATIONS GLOBAL PROPERTY FPRIME_PROJECT_LOCATIONS)
