@@ -545,7 +545,8 @@ TEST(PriorityMemQueueConfig, ManyPriorities) {
             data[i] = static_cast<U8>(p * 10 + i);
         }
         status = queue.send(data, maxMsgSize, p, Os::QueueInterface::BlockingType::NONBLOCKING);
-        printf("Priority %d: Sent %zu bytes (max=%zu) - status=%d\n", p, maxMsgSize, maxMsgSize, status);
+        printf("Priority %d: Sent %zu bytes (max=%zu) - status=%d\n", p, static_cast<size_t>(maxMsgSize),
+               static_cast<size_t>(maxMsgSize), status);
         ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
 
         // Verify m_nonEmptyMask bit is set for this priority
@@ -562,8 +563,8 @@ TEST(PriorityMemQueueConfig, ManyPriorities) {
         FwSizeType maxMsgSize = testPriorityConfigs[p].maxMsgSize;
         FwSizeType oversizeLen = maxMsgSize + 1;
         status = queue.send(data, oversizeLen, p, Os::QueueInterface::BlockingType::NONBLOCKING);
-        printf("Priority %d: Sent %zu bytes (max=%zu) - status=%d (expected SIZE_MISMATCH=4)\n", p, oversizeLen,
-               maxMsgSize, status);
+        printf("Priority %d: Sent %zu bytes (max=%zu) - status=%d (expected SIZE_MISMATCH=4)\n", p,
+               static_cast<size_t>(oversizeLen), static_cast<size_t>(maxMsgSize), status);
         ASSERT_EQ(Os::QueueInterface::Status::SIZE_MISMATCH, status);
     }
 
@@ -577,8 +578,8 @@ TEST(PriorityMemQueueConfig, ManyPriorities) {
         FwQueuePriorityType priority;
         status = queue.receive(recvData, 64, Os::QueueInterface::BlockingType::NONBLOCKING, actualSize, priority);
         FwSizeType expectedSize = testPriorityConfigs[expectedP].maxMsgSize;
-        printf("Received: priority=%d (expected=%d), size=%zu (expected=%zu)\n", priority, expectedP, actualSize,
-               expectedSize);
+        printf("Received: priority=%d (expected=%d), size=%zu (expected=%zu)\n", priority, expectedP,
+               static_cast<size_t>(actualSize), static_cast<size_t>(expectedSize));
         ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
         ASSERT_EQ(expectedP, priority);
         ASSERT_EQ(expectedSize, actualSize);
@@ -608,7 +609,7 @@ TEST(PriorityMemQueueConfig, ManyPriorities) {
 
     for (FwQueuePriorityType p = 0; p < NUM_QUEUE_CONFIGS; ++p) {
         FwSizeType numMsgs = testPriorityConfigs[p].numMsgs;
-        printf("Testing priority %d: depth=%zu\n", p, numMsgs);
+        printf("Testing priority %d: depth=%zu\n", p, static_cast<size_t>(numMsgs));
 
         // Fill this priority queue to capacity
         U8 data[10];
@@ -622,7 +623,7 @@ TEST(PriorityMemQueueConfig, ManyPriorities) {
             ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status)
                 << "Failed to send message " << i << " of " << numMsgs << " to priority " << static_cast<int>(p);
         }
-        printf("Priority %d: Successfully sent %zu messages\n", p, numMsgs);
+        printf("Priority %d: Successfully sent %zu messages\n", p, static_cast<size_t>(numMsgs));
 
         // Try to send one more - should fail with FULL
         status = queue.send(data, maxMsgSize, p, Os::QueueInterface::BlockingType::NONBLOCKING);
@@ -640,7 +641,7 @@ TEST(PriorityMemQueueConfig, ManyPriorities) {
                 << "Failed to receive message " << i << " from priority " << static_cast<int>(p);
             ASSERT_EQ(p, priority) << "Received wrong priority";
         }
-        printf("Priority %d: Successfully received %zu messages\n", p, numMsgs);
+        printf("Priority %d: Successfully received %zu messages\n", p, static_cast<size_t>(numMsgs));
 
         // Try to receive one more - should fail with EMPTY
         status = queue.receive(recvData, 64, Os::QueueInterface::BlockingType::NONBLOCKING, actualSize, priority);
@@ -751,13 +752,15 @@ TEST(PriorityMemQueueConfig, ZeroQueues) {
         maxSizeData[i] = static_cast<U8>(i);
     }
     status = queue.send(maxSizeData, maxMsgSize, 0, Os::QueueInterface::BlockingType::NONBLOCKING);
-    printf("Sent %zu bytes (max=%zu) - status=%d (expected OP_OK=0)\n", maxMsgSize, maxMsgSize, status);
+    printf("Sent %zu bytes (max=%zu) - status=%d (expected OP_OK=0)\n", static_cast<size_t>(maxMsgSize),
+           static_cast<size_t>(maxMsgSize), status);
     ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
 
     // Should fail with oversized message
     U8 oversizeData[65];
     status = queue.send(oversizeData, maxMsgSize + 1, 0, Os::QueueInterface::BlockingType::NONBLOCKING);
-    printf("Sent %zu bytes (max=%zu) - status=%d (expected SIZE_MISMATCH=4)\n", maxMsgSize + 1, maxMsgSize, status);
+    printf("Sent %zu bytes (max=%zu) - status=%d (expected SIZE_MISMATCH=4)\n", static_cast<size_t>(maxMsgSize + 1),
+           static_cast<size_t>(maxMsgSize), status);
     ASSERT_EQ(Os::QueueInterface::Status::SIZE_MISMATCH, status);
 
     // Read the message that was sent earlier
@@ -781,7 +784,7 @@ TEST(PriorityMemQueueConfig, ZeroQueues) {
         status = queue.send(testData, maxMsgSize, 0, Os::QueueInterface::BlockingType::NONBLOCKING);
         ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status) << "Failed to send message " << i << " of " << queueDepth;
     }
-    printf("Successfully sent %zu messages to capacity\n", queueDepth);
+    printf("Successfully sent %zu messages to capacity\n", static_cast<size_t>(queueDepth));
 
     // Try to send one more - should fail with FULL
     status = queue.send(testData, maxMsgSize, 0, Os::QueueInterface::BlockingType::NONBLOCKING);
@@ -795,7 +798,7 @@ TEST(PriorityMemQueueConfig, ZeroQueues) {
         ASSERT_EQ(maxMsgSize, actualSize);
         ASSERT_EQ(0, priority);
     }
-    printf("Successfully received %zu messages\n", queueDepth);
+    printf("Successfully received %zu messages\n", static_cast<size_t>(queueDepth));
 
     // Try to receive one more - should fail with EMPTY
     status = queue.receive(recvData, 64, Os::QueueInterface::BlockingType::NONBLOCKING, actualSize, priority);
@@ -874,14 +877,16 @@ TEST(PriorityMemQueueConfig, RequiredPrioritySizingFallback) {
 
     // Should receive priority 2 message first (higher priority)
     status = queue->receive(recvData, 64, Os::QueueInterface::BlockingType::NONBLOCKING, actualSize, priority);
-    printf("Received message 1: size=%zu, priority=%d (expected priority=2)\n", actualSize, priority);
+    printf("Received message 1: size=%zu, priority=%d (expected priority=2)\n", static_cast<size_t>(actualSize),
+           priority);
     ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
     ASSERT_EQ(2, priority);
     ASSERT_EQ(32, actualSize);
 
     // Should receive priority 0 message (fallback from priority 1 request)
     status = queue->receive(recvData, 64, Os::QueueInterface::BlockingType::NONBLOCKING, actualSize, priority);
-    printf("Received message 2: size=%zu, priority=%d (expected priority=0)\n", actualSize, priority);
+    printf("Received message 2: size=%zu, priority=%d (expected priority=0)\n", static_cast<size_t>(actualSize),
+           priority);
     ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
     ASSERT_EQ(0, priority);  // Should be priority 0 (fell back from priority 1)
     ASSERT_EQ(48, actualSize);
@@ -1486,7 +1491,7 @@ TEST(PriorityMemQueueOrdering, FIFOWithinPriority) {
         }
         status = queue.send(sendData[i], 16, 1, Os::QueueInterface::BlockingType::NONBLOCKING);
         ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
-        printf("Sent message %zu with pattern starting with %u\n", i, sendData[i][0]);
+        printf("Sent message %zu with pattern starting with %u\n", static_cast<size_t>(i), sendData[i][0]);
     }
 
     // Receive all messages and verify FIFO order
@@ -1505,8 +1510,8 @@ TEST(PriorityMemQueueOrdering, FIFOWithinPriority) {
         for (FwSizeType j = 0; j < 16; ++j) {
             ASSERT_EQ(sendData[i][j], recvData[j]) << "FIFO violation: message " << i << " byte " << j;
         }
-        printf("Received message %zu with pattern starting with %u (expected %u) - FIFO verified\n", i, recvData[0],
-               sendData[i][0]);
+        printf("Received message %zu with pattern starting with %u (expected %u) - FIFO verified\n",
+               static_cast<size_t>(i), recvData[0], sendData[i][0]);
     }
 
     queue.teardown();
@@ -1556,13 +1561,14 @@ TEST(PriorityMemQueueEdgeCases, SizeMismatchBoundaries) {
 
         // Test exact max size (should succeed)
         status = queue.send(buffer, maxSize, p, Os::QueueInterface::BlockingType::NONBLOCKING);
-        printf("Priority %d: Send %zu bytes (max=%zu) - status=%d (expected OP_OK=0)\n", p, maxSize, maxSize, status);
+        printf("Priority %d: Send %zu bytes (max=%zu) - status=%d (expected OP_OK=0)\n", p,
+               static_cast<size_t>(maxSize), static_cast<size_t>(maxSize), status);
         ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
 
         // Test max size + 1 (should fail with SIZE_MISMATCH)
         status = queue.send(buffer, maxSize + 1, p, Os::QueueInterface::BlockingType::NONBLOCKING);
-        printf("Priority %d: Send %zu bytes (max=%zu) - status=%d (expected SIZE_MISMATCH=4)\n", p, maxSize + 1,
-               maxSize, status);
+        printf("Priority %d: Send %zu bytes (max=%zu) - status=%d (expected SIZE_MISMATCH=4)\n", p,
+               static_cast<size_t>(maxSize + 1), static_cast<size_t>(maxSize), status);
         ASSERT_EQ(Os::QueueInterface::Status::SIZE_MISMATCH, status);
 
         delete[] buffer;
@@ -1608,11 +1614,11 @@ TEST(PriorityMemQueueEdgeCases, SemaphoreCountTracking) {
         status = queue.send(testData, 32, 0, Os::QueueInterface::BlockingType::NONBLOCKING);
         ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
     }
-    printf("Sent %zu messages\n", queueDepth);
+    printf("Sent %zu messages\n", static_cast<size_t>(queueDepth));
 
     // Verify messages available matches queue depth
     FwSizeType available = queue.getMessagesAvailable();
-    printf("Messages available: %zu (expected %zu)\n", available, queueDepth);
+    printf("Messages available: %zu (expected %zu)\n", static_cast<size_t>(available), static_cast<size_t>(queueDepth));
     ASSERT_EQ(queueDepth, available);
 
     // Receive all messages
@@ -1623,11 +1629,11 @@ TEST(PriorityMemQueueEdgeCases, SemaphoreCountTracking) {
         status = queue.receive(recvData, 64, Os::QueueInterface::BlockingType::NONBLOCKING, actualSize, priority);
         ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
     }
-    printf("Received %zu messages\n", queueDepth);
+    printf("Received %zu messages\n", static_cast<size_t>(queueDepth));
 
     // Verify queue is empty
     available = queue.getMessagesAvailable();
-    printf("Messages available after drain: %zu (expected 0)\n", available);
+    printf("Messages available after drain: %zu (expected 0)\n", static_cast<size_t>(available));
     ASSERT_EQ(0, available);
 
     // Try to receive from empty queue (should get EMPTY, not block)
@@ -1668,11 +1674,11 @@ TEST(PriorityMemQueueEdgeCases, TeardownWithPendingMessages) {
     }
 
     FwSizeType available = queue.getMessagesAvailable();
-    printf("Sent %zu messages, %zu still pending\n", numMessages, available);
+    printf("Sent %zu messages, %zu still pending\n", static_cast<size_t>(numMessages), static_cast<size_t>(available));
     ASSERT_EQ(numMessages, available);
 
     // Teardown without receiving - should not crash or assert
-    printf("--- Tearing down with %zu messages still in queue ---\n", available);
+    printf("--- Tearing down with %zu messages still in queue ---\n", static_cast<size_t>(available));
     queue.teardown();
 
     printf("Teardown completed successfully with pending messages\n");

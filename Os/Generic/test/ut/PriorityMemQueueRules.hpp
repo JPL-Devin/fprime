@@ -101,7 +101,8 @@ struct Send : public STest::Rule<Ref::Test::PriorityMemQueue::Tester> {
                                                          ? Os::QueueInterface::BlockingType::NONBLOCKING
                                                          : Os::QueueInterface::BlockingType::BLOCKING;
 
-        printf("[PriorityMemQueue] Send: priority=%u, size=%zu, blockType=%s\n", msg.priority, msg.size,
+        printf("[PriorityMemQueue] Send: priority=%u, size=%zu, blockType=%s\n", msg.priority,
+               static_cast<size_t>(msg.size),
                (blockType == Os::QueueInterface::BlockingType::NONBLOCKING) ? "NONBLOCKING" : "BLOCKING");
         Os::QueueInterface::Status status = state.send(msg, blockType);
         ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
@@ -146,7 +147,7 @@ struct Receive : public STest::Rule<Ref::Test::PriorityMemQueue::Tester> {
                (blockType == Os::QueueInterface::BlockingType::NONBLOCKING) ? "NONBLOCKING" : "BLOCKING");
         Os::QueueInterface::Status status = state.receive(msg, blockType);
         ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
-        printf("[PriorityMemQueue] Receive: priority=%u, size=%zu\n", msg.priority, msg.size);
+        printf("[PriorityMemQueue] Receive: priority=%u, size=%zu\n", msg.priority, static_cast<size_t>(msg.size));
         state.verify();
     }
 };
@@ -295,7 +296,7 @@ struct SendFull : public STest::Rule<Ref::Test::PriorityMemQueue::Tester> {
         }
 
         printf("[PriorityMemQueue] SendFull: Attempting send to full queue, priority=%u, size=%zu\n", msg.priority,
-               msg.size);
+               static_cast<size_t>(msg.size));
         // Try to send to a full queue with non-blocking
         Os::QueueInterface::Status status = state.send(msg, Os::QueueInterface::BlockingType::NONBLOCKING);
         ASSERT_EQ(Os::QueueInterface::Status::FULL, status);
@@ -373,7 +374,8 @@ struct PriorityOrder : public STest::Rule<Ref::Test::PriorityMemQueue::Tester> {
             msgs[i].priority = testPriorities[i];
             msgs[i].id = i;
 
-            printf("[PriorityMemQueue] PriorityOrder: Sending priority=%u, size=%zu\n", msgs[i].priority, msgs[i].size);
+            printf("[PriorityMemQueue] PriorityOrder: Sending priority=%u, size=%zu\n", msgs[i].priority,
+                   static_cast<size_t>(msgs[i].size));
             Os::QueueInterface::Status status = state.send(msgs[i], Os::QueueInterface::BlockingType::NONBLOCKING);
             ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
         }
