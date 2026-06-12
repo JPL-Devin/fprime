@@ -60,6 +60,26 @@ void example_function(int value) {
 }
 ```
 
+## Unreachable Hints
+
+The framework provides two macros for hinting to the compiler that a code path is unreachable:
+
+- **`FW_UNREACHABLE()`** — A general-purpose macro that expands to `__builtin_unreachable()` on
+  GCC and Clang, or to a no-op on compilers that do not support it. Users may pre-define
+  `FW_UNREACHABLE` before including `Assert.hpp` to override the auto-detection.
+
+- **`FW_ASSERT_UNREACHABLE()`** — Used internally by the `FW_ASSERT` macros after the call to
+  `Fw::SwAssert()`. This hint is only active when `FW_ASSERTIONS_ALWAYS_ABORT` is set to `1`,
+  because `SwAssert()` can legally return when that option is disabled (the default). Using
+  `__builtin_unreachable()` after a call that may return would be undefined behavior, so this
+  macro expands to a no-op unless always-abort mode is enabled.
+
+When `FW_ASSERTIONS_ALWAYS_ABORT` is enabled and the compiler supports `__builtin_unreachable()`,
+the unreachable hint allows the compiler to optimize assert-failure paths (e.g., eliminating
+dead code after an assert, removing redundant checks) and improves static analysis accuracy.
+
+## Configuration
+
 The assert can be configured in the following ways:
 
   - FW\_ASSERT\_LEVEL Sets the level or reporting for the asserts.

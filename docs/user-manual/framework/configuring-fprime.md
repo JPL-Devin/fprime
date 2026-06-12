@@ -226,6 +226,7 @@ can be configured.
 |                        | FW_FILEID_ASSERT                 | Asserts turned on, hash value used in place of __FILE__ on message |                    |
 |                        | FW_FILENAME_ASSERT               | Asserts turned on, __FILE__ macro is used in the assert message    |                    |
 | FW_ASSERT_TEXT_SIZE    | The buffer size used to store the assert message  |                                                   | 120                |
+| FW_ASSERTIONS_ALWAYS_ABORT | When set to 1, asserts always abort (never return). Enables `FW_ASSERT_NORETURN` on `SwAssert` and activates `FW_ASSERT_UNREACHABLE()` hints after assert calls for improved optimization and static analysis. | | 0 (off) |
 
 Setting assert level `FW_FILEID_ASSERT`  saves a lot of code space since no file name is stored. The make system
 supplies this to the compiler by hashing the file name. The original filename can be recovered by running
