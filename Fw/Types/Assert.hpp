@@ -19,8 +19,6 @@
 #ifndef FW_UNREACHABLE
 #if defined(__GNUC__)
 #define FW_UNREACHABLE() __builtin_unreachable()
-#elif defined(_MSC_VER)
-#define FW_UNREACHABLE() __assume(0)
 #else
 #define FW_UNREACHABLE() ((void)0)
 #endif
