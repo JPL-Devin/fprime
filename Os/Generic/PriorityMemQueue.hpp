@@ -46,10 +46,17 @@ struct PriorityMemQueueHandle : public QueueHandle {
     std::atomic<U32> m_priorityMask;       // Bit mask of enabled priorities
     std::atomic<U32> m_nonEmptyMask;       // Bit mask of priorities with messages (optimization)
     std::atomic<U32>* m_highWaterMarks;    // Pointer to array of per-priority high water marks
+    bool m_configAcquired;                 // Whether this queue claimed a configuration slot during create()
+    FwSizeType m_configIndex;              // Index of the claimed slot in s_configs/s_configsUsed
 
     //! \brief Constructor to initialize members
     PriorityMemQueueHandle()
-        : m_atomicQueues(nullptr), m_maxPriority(0), m_notEmptySem(nullptr), m_highWaterMarks(nullptr) {}
+        : m_atomicQueues(nullptr),
+          m_maxPriority(0),
+          m_notEmptySem(nullptr),
+          m_highWaterMarks(nullptr),
+          m_configAcquired(false),
+          m_configIndex(0) {}
 
     //! \brief Initialize the handle
     void init();

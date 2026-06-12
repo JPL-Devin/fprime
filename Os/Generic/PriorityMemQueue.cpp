@@ -359,6 +359,14 @@ QueueInterface::Status PriorityMemQueue::create(FwEnumStoreType id,
     // Find a matching configuration if one exists
     QueueConfig* queueConfig = findMatchingConfig(id);
 
+    // Remember which configuration slot (if any) was claimed so it can be released at
+    // teardown without re-reading the caller-owned s_configs array, which may not
+    // outlive this queue object.
+    this->m_handle.m_configAcquired = (queueConfig != nullptr);
+    if (queueConfig != nullptr) {
+        this->m_handle.m_configIndex = static_cast<FwSizeType>(queueConfig - s_configs);
+    }
+
     // Calculate maxPriority needed
     FwQueuePriorityType maxPriority = Os::Generic::Queue::DEFAULT_PRIORITY;
     if (queueConfig != nullptr) {
@@ -517,14 +525,16 @@ void PriorityMemQueue::teardownInternal() {
     FW_ASSERT(s_configs != nullptr || s_configsUsed == nullptr, this->m_handle.m_id);
     FW_ASSERT(s_configsUsed != nullptr || s_configs == nullptr, this->m_handle.m_id);
 
-    if (s_configs != nullptr && s_configsUsed != nullptr) {
-        for (FwSizeType i = 0; i < s_numConfigs; ++i) {
-            if (s_configs[i].instanceId == this->m_handle.m_id && s_configsUsed[i].load()) {
-                s_configsUsed[i].store(false);
-                break;
-            }
-        }
+    // Release the configuration slot claimed during create() using the index captured
+    // then. Only the internally-allocated s_configsUsed array is touched here; the
+    // caller-owned s_configs array is never dereferenced during teardown because it may
+    // already be out of scope (which would be a stack-use-after-scope). Clearing the
+    // flag also makes teardown idempotent across an explicit teardown() plus the
+    // destructor.
+    if (this->m_handle.m_configAcquired && s_configsUsed != nullptr && this->m_handle.m_configIndex < s_numConfigs) {
+        s_configsUsed[this->m_handle.m_configIndex].store(false);
     }
+    this->m_handle.m_configAcquired = false;
 }
 
 //! \brief Resolve priority to a valid AtomicQueue, fallback to DEFAULT if needed
