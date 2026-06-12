@@ -52,7 +52,6 @@ bitfield
 bitmaps
 bitshifts
 bitwidth
-bitmask
 bitmasks
 bocchino
 boolt
@@ -712,7 +711,6 @@ sourcing
 spdx
 spi
 spidev
-spinlock
 spinlocks
 spsc
 sqa
