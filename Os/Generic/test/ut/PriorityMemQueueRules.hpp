@@ -88,10 +88,12 @@ struct Send : public STest::Rule<Ref::Test::PriorityMemQueue::Tester> {
     void action(Ref::Test::PriorityMemQueue::Tester& state) {
         QueueMessage msg = state.generateRandomMessage();
 
-        // Ensure we only send to enabled priorities to avoid deadlock
-        // (disabled priorities can hold messages but won't be scanned by receive)
-        while (!state.isPriorityEnabled(msg.priority)) {
-            msg.randomize();  // Regenerate until we get an enabled priority
+        // Only send to an enabled priority that still has space. Disabled priorities can hold
+        // messages but won't be scanned by receive, and a (possibly blocking) send to an
+        // already-full priority would block forever with no concurrent receiver. The Send
+        // precondition guarantees at least one enabled priority has space.
+        while (!state.isPriorityEnabled(msg.priority) || state.m_shadow.isPriorityFull(msg.priority)) {
+            msg.randomize();  // Regenerate until we get an enabled priority with space
         }
 
         // Choose a random blocking type
@@ -125,7 +127,10 @@ struct Receive : public STest::Rule<Ref::Test::PriorityMemQueue::Tester> {
 
     //! Precondition
     bool precondition(const Ref::Test::PriorityMemQueue::Tester& state) {
-        return state.isCreated() && !state.isEmpty();
+        // Only attempt a receive when a message is actually reachable (held by an enabled
+        // priority). A blocking receive on messages stuck in disabled priorities would block
+        // forever, and a non-blocking one would return EMPTY (shadow/actual desync).
+        return state.isCreated() && state.hasReceivable();
     }
 
     //! Action
@@ -234,10 +239,20 @@ struct FillQueue : public STest::Rule<Ref::Test::PriorityMemQueue::Tester> {
     //! Action
     void action(Ref::Test::PriorityMemQueue::Tester& state) {
         printf("[PriorityMemQueue] FillQueue: Filling queue to capacity\n");
-        // Fill the queue until it's full
+        // Fill the queue until it's full. The queue is "full" only when every enabled
+        // priority is full, so each send must target a priority that still has space;
+        // otherwise sending to an already-full priority would return FULL.
         U32 count = 0;
         while (!state.isFull()) {
             QueueMessage msg = state.generateRandomMessage();
+            // Direct this message at a priority that still has room so the send succeeds.
+            for (FwQueuePriorityType p = 0; p < 3; ++p) {
+                if (state.m_shadow.priorityEnabled[p] && state.m_shadow.priorityDepth[p] > 0 &&
+                    !state.m_shadow.isPriorityFull(p)) {
+                    msg.priority = p;
+                    break;
+                }
+            }
             Os::QueueInterface::Status status = state.send(msg, Os::QueueInterface::BlockingType::NONBLOCKING);
             ASSERT_EQ(Os::QueueInterface::Status::OP_OK, status);
             count++;
@@ -271,6 +286,13 @@ struct SendFull : public STest::Rule<Ref::Test::PriorityMemQueue::Tester> {
     //! Action
     void action(Ref::Test::PriorityMemQueue::Tester& state) {
         QueueMessage msg = state.generateRandomMessage();
+
+        // Only target enabled priorities, which are the ones FillQueue/Send fill to capacity.
+        // Sending to a disabled priority would land in an empty queue and succeed, which is
+        // not what this rule exercises (matches the guard used by the Send rule).
+        while (!state.isPriorityEnabled(msg.priority)) {
+            msg.randomize();  // Regenerate until we get an enabled priority
+        }
 
         printf("[PriorityMemQueue] SendFull: Attempting send to full queue, priority=%u, size=%zu\n", msg.priority,
                msg.size);

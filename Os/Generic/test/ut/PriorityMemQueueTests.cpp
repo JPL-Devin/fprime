@@ -199,24 +199,47 @@ class Tester {
             return Os::QueueInterface::Status::OP_OK;
         }
 
+        // Count messages that are receivable, i.e. held by an enabled priority. The real queue
+        // only scans enabled priorities, so messages in disabled priorities are unreachable
+        // until their priority is re-enabled.
+        U32 receivableCount() const {
+            U32 count = 0;
+            for (U32 i = 0; i < messageCount; ++i) {
+                if (priorityEnabled[messages[i].priority]) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        bool hasReceivable() const { return receivableCount() > 0; }
+
         Os::QueueInterface::Status receive(QueueMessage& msg) {
             if (!created) {
                 return Os::QueueInterface::Status::UNINITIALIZED;
             }
 
-            if (isEmpty()) {
-                return Os::QueueInterface::Status::EMPTY;
-            }
-
-            // Find the highest priority message (higher number = higher priority)
+            // Find the oldest message of the highest enabled priority (higher number = higher
+            // priority), matching the real queue which scans enabled priorities high-to-low and
+            // dequeues FIFO within a priority. Messages in disabled priorities are skipped.
+            bool found = false;
             U32 highestPriorityIndex = 0;
-            FwQueuePriorityType highestPriority = 0;  // Start from lowest priority
+            FwQueuePriorityType highestPriority = 0;
 
             for (U32 i = 0; i < messageCount; ++i) {
-                if (priorityEnabled[messages[i].priority] && messages[i].priority > highestPriority) {
-                    highestPriority = messages[i].priority;
+                FwQueuePriorityType p = messages[i].priority;
+                if (!priorityEnabled[p]) {
+                    continue;
+                }
+                if (!found || p > highestPriority) {
+                    found = true;
+                    highestPriority = p;
                     highestPriorityIndex = i;
                 }
+            }
+
+            if (!found) {
+                return Os::QueueInterface::Status::EMPTY;
             }
 
             // Copy the message
@@ -363,6 +386,9 @@ class Tester {
 
     // Check if the queue is empty
     bool isEmpty() const { return m_shadow.isEmpty(); }
+
+    // Check if the queue has a message that can actually be received (held by an enabled priority)
+    bool hasReceivable() const { return m_shadow.hasReceivable(); }
 
     // Check if the queue is full
     bool isFull() const { return m_shadow.isFull(); }
