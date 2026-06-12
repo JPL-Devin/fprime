@@ -61,7 +61,7 @@ set(EXPECTED_FULL_DEPENDENCIES
     TestLibrary_TestComponent
     UnixPlatformTypes
     Utils_Hash
-    __fprime_config
+    _fprime_project_interface
     default_config
 )
 

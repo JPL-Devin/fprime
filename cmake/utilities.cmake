@@ -248,7 +248,6 @@ function(linker_only OUTPUT_VAR TOKEN)
 endfunction()
 
 
-
 ####
 # Function `get_nearest_build_root`:
 #
@@ -259,9 +258,19 @@ endfunction()
 ####
 function(get_nearest_build_root DIRECTORY_PATH)
     get_filename_component(DIRECTORY_PATH "${DIRECTORY_PATH}" ABSOLUTE)
+    # Read build locations from the unified project interface target
+    get_target_property(SOURCE_LOCS "${FPRIME_PROJECT_INTERFACE_TARGET}" FPRIME_SOURCE_LOCATIONS)
+    get_target_property(BINARY_LOCS "${FPRIME_PROJECT_INTERFACE_TARGET}" FPRIME_BINARY_LOCATIONS)
+    if (NOT SOURCE_LOCS)
+        set(SOURCE_LOCS "")
+    endif()
+    if (NOT BINARY_LOCS)
+        set(BINARY_LOCS "")
+    endif()
+    set(ALL_BUILD_LOCATIONS ${SOURCE_LOCS} ${BINARY_LOCS})
     set(FOUND_BUILD_ROOT "${DIRECTORY_PATH}")
     set(LAST_REL "${DIRECTORY_PATH}")
-    foreach(FPRIME_BUILD_LOC ${FPRIME_BUILD_LOCATIONS} ${CMAKE_BINARY_DIR}/F-Prime ${CMAKE_BINARY_DIR})
+    foreach(FPRIME_BUILD_LOC IN LISTS ALL_BUILD_LOCATIONS)
         get_filename_component(FPRIME_BUILD_LOC "${FPRIME_BUILD_LOC}" ABSOLUTE)
         file(RELATIVE_PATH TEMP_MODULE ${FPRIME_BUILD_LOC} ${DIRECTORY_PATH})
         string(LENGTH "${LAST_REL}" LEN1)

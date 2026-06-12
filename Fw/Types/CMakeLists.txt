@@ -17,7 +17,7 @@ register_fprime_module(
   AUTOCODER_INPUTS
     "${CMAKE_CURRENT_LIST_DIR}/Types.fpp"
   DEPENDS
-    __fprime_config # Only module that should ever list __fprime_config in DEPENDS. Use Fw_Types instead.
+    _fprime_project_interface # Only module that should ever list _fprime_project_interface in DEPENDS. Use Fw_Types instead.
   REQUIRES_IMPLEMENTATIONS
     Fw_StringFormat
     Fw_StringScan
