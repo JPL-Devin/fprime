@@ -36,8 +36,12 @@ endif()
 # Capture the resolved install destination before overriding CMAKE_INSTALL_PREFIX.
 # FPRIME_INSTALL_DEST_DIR is the default DESTDIR used by fprime_install.cmake when
 # the user has not set DESTDIR in the environment.
-set(FPRIME_INSTALL_DEST_DIR "${CMAKE_INSTALL_PREFIX}" CACHE INTERNAL
-    "Default install destination used as DESTDIR when not set by the user" FORCE)
+# On reconfigure CMAKE_INSTALL_PREFIX is already "/" from the previous configure,
+# so skip the capture to preserve the previously resolved value.
+if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/")
+    set(FPRIME_INSTALL_DEST_DIR "${CMAKE_INSTALL_PREFIX}" CACHE INTERNAL
+        "Default install destination used as DESTDIR when not set by the user" FORCE)
+endif()
 set(CMAKE_INSTALL_PREFIX "/" CACHE PATH "Install prefix (DESTDIR controls actual location)" FORCE)
 
 
