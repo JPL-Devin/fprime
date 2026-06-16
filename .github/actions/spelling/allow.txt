@@ -12,6 +12,7 @@ conftests
 ctypes
 ddos
 deinit
+DESTDIR
 dma
 execp
 execv
