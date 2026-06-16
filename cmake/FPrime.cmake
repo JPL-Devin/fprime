@@ -44,7 +44,7 @@ resolve_path_variables(FPRIME_BUILD_LOCATIONS)
 
 # Message describing the fprime setup
 fprime_cmake_status("[FPRIME] Module locations: ${FPRIME_BUILD_LOCATIONS}")
-fprime_cmake_status("[FPRIME] Installation directory: ${CMAKE_INSTALL_PREFIX}")
+fprime_cmake_status("[FPRIME] Installation directory: ${FPRIME_INSTALL_DEST_DIR}")
 include(platform/platform) # Now that module locations are known, load platform settings
 fprime_validate_platform()
 

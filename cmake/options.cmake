@@ -33,6 +33,13 @@ if (FPRIME_LOADED_VIA_FIND_PACKAGE AND NOT DEFINED FPRIME_SETTINGS_FILE
     set(CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/build-artifacts" CACHE PATH "Install dir" FORCE)
 endif()
 
+# Capture the resolved install destination before overriding CMAKE_INSTALL_PREFIX.
+# FPRIME_INSTALL_DEST_DIR is the default DESTDIR used by fprime_install.cmake when
+# the user has not set DESTDIR in the environment.
+set(FPRIME_INSTALL_DEST_DIR "${CMAKE_INSTALL_PREFIX}" CACHE INTERNAL
+    "Default install destination used as DESTDIR when not set by the user" FORCE)
+set(CMAKE_INSTALL_PREFIX "/" CACHE PATH "Install prefix (DESTDIR controls actual location)" FORCE)
+
 
 ####
 # `CMAKE_TOOLCHAIN_FILE:`
