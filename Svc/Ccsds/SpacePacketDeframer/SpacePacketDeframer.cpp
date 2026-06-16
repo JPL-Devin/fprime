@@ -86,9 +86,10 @@ void SpacePacketDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data,
     (void)this->validateApidSeqCount_out(0, apid, receivedSequenceCount);
     contextCopy.set_sequenceCount(receivedSequenceCount);
 
-    // Set data buffer to be of the encapsulated data: HEADER (6 bytes) | PACKET DATA
+    // APID is carried in the SP primary header (already extracted into contextCopy).
+    // Forward the SP user data field downstream as the payload.
     data.setData(data.getData() + SpacePacketHeader::SERIALIZED_SIZE);
-    data.setSize(pkt_length);
+    data.setSize(static_cast<Fw::Buffer::SizeType>(pkt_length));
 
     this->dataOut_out(0, data, contextCopy);
 }

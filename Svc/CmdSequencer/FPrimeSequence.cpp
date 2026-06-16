@@ -281,8 +281,13 @@ Fw::SerializeStatus CmdSequencerComponentImpl::FPrimeSequence ::deserializeRecor
         // Not enough data left
         status = Fw::FW_DESERIALIZE_SIZE_MISMATCH;
     }
-    if (status == Fw::FW_SERIALIZE_OK and
-        recordSize + sizeof(FwPacketDescriptorType) > Fw::ComBuffer::SERIALIZED_SIZE) {
+    // recordSize on disk includes the descriptor + command bytes; the command bytes
+    // alone must fit in a ComBuffer's storage capacity.
+    if (status == Fw::FW_SERIALIZE_OK and recordSize < sizeof(FwPacketDescriptorType)) {
+        // Record is too small to contain a packet descriptor
+        status = Fw::FW_DESERIALIZE_SIZE_MISMATCH;
+    }
+    if (status == Fw::FW_SERIALIZE_OK and recordSize - sizeof(FwPacketDescriptorType) > FW_COM_BUFFER_MAX_SIZE) {
         // Record size is too big for com buffer
         status = Fw::FW_DESERIALIZE_SIZE_MISMATCH;
     }
@@ -293,8 +298,21 @@ Fw::SerializeStatus CmdSequencerComponentImpl::FPrimeSequence ::copyCommand(Fw::
                                                                             const U32 recordSize) {
     Fw::LinearBufferBase& buffer = this->m_buffer;
     comBuffer.resetSer();
-    FwSizeType size = recordSize;
-    Fw::SerializeStatus status = comBuffer.setBuffLen(recordSize);
+    // The sequence file format prefixes each command record's body with a packet descriptor.
+    // The descriptor is read and discarded; only the command bytes are copied into comBuffer.
+    // The lower-bound check on recordSize ensures we don't consume bytes from the next record
+    // when the file is malformed.
+    if (recordSize < sizeof(FwPacketDescriptorType)) {
+        return Fw::FW_DESERIALIZE_SIZE_MISMATCH;
+    }
+    FwPacketDescriptorType descriptor;
+    Fw::SerializeStatus status = buffer.deserializeTo(descriptor);
+    if (status != Fw::FW_SERIALIZE_OK) {
+        return status;
+    }
+    const U32 commandSize = recordSize - static_cast<U32>(sizeof(FwPacketDescriptorType));
+    FwSizeType size = commandSize;
+    status = comBuffer.setBuffLen(commandSize);
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, status);
     status = buffer.deserializeTo(comBuffer.getBuffAddr(), size, Fw::Serialization::OMIT_LENGTH);
     return status;

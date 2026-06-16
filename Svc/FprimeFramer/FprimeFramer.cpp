@@ -27,11 +27,12 @@ void FprimeFramer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, const 
     FprimeProtocol::FrameHeader header;
     FprimeProtocol::FrameTrailer trailer;
 
-    // Full size of the frame will be size of header + data + trailer
+    // Full size of the frame will be size of header + payload + trailer
     FwSizeType frameSize =
         FprimeProtocol::FrameHeader::SERIALIZED_SIZE + data.getSize() + FprimeProtocol::FrameTrailer::SERIALIZED_SIZE;
-    FW_ASSERT(data.getSize() <= std::numeric_limits<FprimeProtocol::TokenType>::max(),
-              static_cast<FwAssertArgType>(frameSize));
+    // lengthField counts the packetDescriptor + payload, so guard that sum against the token width
+    FW_ASSERT(data.getSize() <= std::numeric_limits<FprimeProtocol::TokenType>::max() - sizeof(FwPacketDescriptorType),
+              static_cast<FwAssertArgType>(data.getSize()));
     FW_ASSERT(frameSize <= std::numeric_limits<Fw::Buffer::SizeType>::max(), static_cast<FwAssertArgType>(frameSize));
 
     // Allocate frame buffer
@@ -39,9 +40,10 @@ void FprimeFramer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, const 
     auto frameSerializer = frameBuffer.getSerializer();
     Fw::SerializeStatus status;
 
-    // Serialize the header
-    // 0xDEADBEEF is already set as the default value for the header startWord field in the FPP type definition
-    header.set_lengthField(static_cast<FprimeProtocol::TokenType>(data.getSize()));
+    // Serialize the header (startWord default is 0xDEADBEEF, packetDescriptor from context APID).
+    // lengthField counts the packetDescriptor + payload to preserve the historical on-wire length semantics
+    header.set_lengthField(static_cast<FprimeProtocol::TokenType>(data.getSize() + sizeof(FwPacketDescriptorType)));
+    header.set_packetDescriptor(static_cast<FwPacketDescriptorType>(context.get_apid()));
     status = frameSerializer.serializeFrom(header);
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, status);
 

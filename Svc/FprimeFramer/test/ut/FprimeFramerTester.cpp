@@ -51,6 +51,7 @@ void FprimeFramerTester ::testNominalFraming() {
     U8 bufferData[100];
     Fw::Buffer buffer(bufferData, sizeof(bufferData));
     ComCfg::FrameContext context;
+    context.set_apid(ComCfg::Apid::FW_PACKET_TELEM);
 
     // Fill the buffer with some data
     for (U32 i = 0; i < sizeof(bufferData); ++i) {
@@ -63,16 +64,18 @@ void FprimeFramerTester ::testNominalFraming() {
     ASSERT_from_dataReturnOut_SIZE(1);  // Original data buffer ownership returned
 
     Fw::Buffer outputBuffer = this->fromPortHistory_dataOut->at(0).data;
-    // Check the size of the output buffer
-    ASSERT_EQ(outputBuffer.getSize(), sizeof(bufferData) + FprimeProtocol::FrameHeader::SERIALIZED_SIZE +
+    // Frame layout: header (startWord + lengthField + packetDescriptor) + payload + trailer.
+    ASSERT_EQ(outputBuffer.getSize(), FprimeProtocol::FrameHeader::SERIALIZED_SIZE + sizeof(bufferData) +
                                           FprimeProtocol::FrameTrailer::SERIALIZED_SIZE);
     // Check header
     FprimeProtocol::FrameHeader defaultHeader;
     FprimeProtocol::FrameHeader outputHeader;
     outputBuffer.getDeserializer().deserializeTo(outputHeader);
     ASSERT_EQ(outputHeader.get_startWord(), defaultHeader.get_startWord());
-    ASSERT_EQ(outputHeader.get_lengthField(), sizeof(bufferData));
-    // Check data
+    // lengthField counts the packetDescriptor + payload
+    ASSERT_EQ(outputHeader.get_lengthField(), sizeof(bufferData) + sizeof(FwPacketDescriptorType));
+    ASSERT_EQ(outputHeader.get_packetDescriptor(), static_cast<FwPacketDescriptorType>(ComCfg::Apid::FW_PACKET_TELEM));
+    // Check data starts immediately after the header
     for (U32 i = 0; i < sizeof(bufferData); ++i) {
         ASSERT_EQ(outputBuffer.getData()[i + FprimeProtocol::FrameHeader::SERIALIZED_SIZE], bufferData[i]);
     }
@@ -114,7 +117,8 @@ void FprimeFramerTester::testOversizedAllocatorBufferIsTrimmed() {
     ASSERT_from_dataReturnOut_SIZE(1);
 
     Fw::Buffer outputBuffer = this->fromPortHistory_dataOut->at(0).data;
-    FwSizeType expectedSize = sizeof(bufferData) + FprimeProtocol::FrameHeader::SERIALIZED_SIZE +
+    // Frame layout: header (startWord + lengthField + packetDescriptor) + payload + trailer.
+    FwSizeType expectedSize = FprimeProtocol::FrameHeader::SERIALIZED_SIZE + sizeof(bufferData) +
                               FprimeProtocol::FrameTrailer::SERIALIZED_SIZE;
     ASSERT_EQ(outputBuffer.getSize(), expectedSize);
 }
