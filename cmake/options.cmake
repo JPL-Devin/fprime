@@ -19,7 +19,8 @@
 include_guard()
 # Remap changed settings
 if (DEFINED FPRIME_INSTALL_DEST)
-    set(CMAKE_INSTALL_PREFIX ${FPRIME_INSTALL_DEST} CACHE PATH "Install dir" FORCE)
+    set(FPRIME_INSTALL_DIRECTORY ${FPRIME_INSTALL_DEST} CACHE INTERNAL
+        "Install destination used as default DESTDIR" FORCE)
 endif()
 include("settings/ini")
 # Skip ini processing when fprime was loaded via find_package() and no settings file was explicitly provided.
@@ -27,20 +28,17 @@ include("settings/ini")
 if (NOT FPRIME_LOADED_VIA_FIND_PACKAGE OR DEFINED FPRIME_SETTINGS_FILE)
     ini_to_cache()
 endif()
-# When ini processing is skipped and no install destination was set, default to build-artifacts under the project
+# When ini processing is skipped and no install destination was set, set CMAKE_INSTALL_PREFIX to /
 if (FPRIME_LOADED_VIA_FIND_PACKAGE AND NOT DEFINED FPRIME_SETTINGS_FILE
         AND NOT DEFINED FPRIME_INSTALL_DEST AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/build-artifacts" CACHE PATH "Install dir" FORCE)
+    set(CMAKE_INSTALL_PREFIX "/" CACHE PATH "Install prefix" FORCE)
 endif()
 
-# Capture the resolved install destination before overriding CMAKE_INSTALL_PREFIX.
-# FPRIME_INSTALL_DEST_DIR is the default DESTDIR used by fprime_install.cmake when
-# the user has not set DESTDIR in the environment.
-# On reconfigure CMAKE_INSTALL_PREFIX is already "/" from the previous configure,
-# so skip the capture to preserve the previously resolved value.
-if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/")
-    set(FPRIME_INSTALL_DEST_DIR "${CMAKE_INSTALL_PREFIX}" CACHE INTERNAL
-        "Default install destination used as DESTDIR when not set by the user" FORCE)
+# FPRIME_INSTALL_DIRECTORY is the default DESTDIR used by fprime_install.cmake
+# when the user has not set DESTDIR in the environment.
+if(NOT DEFINED FPRIME_INSTALL_DIRECTORY)
+    set(FPRIME_INSTALL_DIRECTORY "${PROJECT_SOURCE_DIR}/build-artifacts" CACHE INTERNAL
+        "Install destination used as default DESTDIR" FORCE)
 endif()
 set(CMAKE_INSTALL_PREFIX "/" CACHE PATH "Install prefix (DESTDIR controls actual location)" FORCE)
 
