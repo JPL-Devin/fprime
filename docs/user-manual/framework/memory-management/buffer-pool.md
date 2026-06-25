@@ -30,6 +30,9 @@ In the case that allocation fails, the `Fw::Buffer` return from the `Fw::BufferG
 This must be checked using the `Fw::Buffer::isValid()` method.
 Developers must check that the size is not smaller than requested before proceeding to use the memory.
 
+> [!NOTE]
+> On a successful allocation, `BufferManager` trims the returned buffer so that its reported size (`Fw::Buffer::getSize()`) is exactly the requested size, even when the buffer is drawn from a larger bin. This trimming behavior is part of the `BufferManager` contract (see requirement `FPRIME-BM-007` in the [BufferManager SDD](../../../../Svc/BufferManager/docs/sdd.md)), so users can rely on the reported size matching their request: it equals the requested size on success and `0` on a failed allocation.
+
 **Example Component Definition**
 
 ```python
