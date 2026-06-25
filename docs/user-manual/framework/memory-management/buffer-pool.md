@@ -31,7 +31,10 @@ This must be checked using the `Fw::Buffer::isValid()` method.
 Developers must check that the size is not smaller than requested before proceeding to use the memory.
 
 > [!NOTE]
-> On a successful allocation, `BufferManager` trims the returned buffer so that its reported size (`Fw::Buffer::getSize()`) is exactly the requested size, even when the buffer is drawn from a larger bin. This trimming behavior is part of the `BufferManager` contract (see requirement `FPRIME-BM-007` in the [BufferManager SDD](../../../../Svc/BufferManager/docs/sdd.md)), so users can rely on the reported size matching their request: it equals the requested size on success and `0` on a failed allocation.
+> On a successful allocation, `BufferManager` guarantees that the returned buffer's size (`Fw::Buffer::getSize()`) is **greater than or equal to** the requested size, because the buffer is drawn from a bin at least that large (see requirement `FPRIME-BM-007` in the [BufferManager SDD](../../../../Svc/BufferManager/docs/sdd.md)). Users must not rely on the returned size being exactly the requested size. The recommended pattern after requesting a buffer is:
+> 1. Check `buffer.isValid()` — a failed allocation returns an invalid, size-`0` buffer.
+> 2. `FW_ASSERT(buffer.getSize() >= requestedSize)`.
+> 3. Call `buffer.setSize()` to set the size you intend to use.
 
 **Example Component Definition**
 

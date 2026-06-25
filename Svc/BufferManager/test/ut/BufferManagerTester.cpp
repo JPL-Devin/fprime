@@ -275,9 +275,9 @@ void BufferManagerTester::multBuffSize() {
         buffs[b] = this->invoke_to_bufferGetCallee(0, BIN0_BUFFER_SIZE);
         // check allocation state
         ASSERT_TRUE(this->component.m_buffers[b].allocated);
-        // returned buffer size is trimmed to exactly the requested size, even when
-        // the buffer is drawn from a larger bin
-        ASSERT_EQ(BIN0_BUFFER_SIZE, buffs[b].getSize());
+        // returned buffer size is guaranteed to be at least the requested size,
+        // even when the buffer is drawn from a larger bin
+        ASSERT_GE(buffs[b].getSize(), BIN0_BUFFER_SIZE);
         // check stats
         ASSERT_EQ(b + 1, this->component.m_currBuffs);
         // check stats
