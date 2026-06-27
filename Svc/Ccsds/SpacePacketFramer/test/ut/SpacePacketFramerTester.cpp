@@ -67,7 +67,7 @@ void SpacePacketFramerTester::testNominalFraming() {
     }
     const auto apid = apidOption.value();
     // Choose a random 14-bit sequence count
-    U16 seqCount = static_cast<U8>(STest::Random::lowerUpper(0, 0x3FFF));
+    U16 seqCount = static_cast<U16>(STest::Random::lowerUpper(0, 0x3FFF));
     // Choose a random secondary header flag
     bool hasSecHdr = static_cast<bool>(STest::Random::lowerUpper(0, 1));
     ComCfg::FrameContext context;
