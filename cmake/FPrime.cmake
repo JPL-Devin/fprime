@@ -63,6 +63,48 @@ include(sub-build/sub-build)
 include(settings)
 
 ####
+# Function `fprime_check_uninitialized_submodules`:
+#
+# Checks for uninitialized git submodules in the project root directory. Parses the .gitmodules file
+# (if present) and warns about any submodule whose directory exists but is empty, which indicates the
+# submodule has not been initialized. This does not attempt to correct the problem.
+####
+function(fprime_check_uninitialized_submodules)
+    # Check both project root and framework path for .gitmodules
+    set(_GITMODULES_PATHS "${FPRIME_PROJECT_ROOT}/.gitmodules")
+    if (NOT FPRIME_PROJECT_ROOT STREQUAL FPRIME_FRAMEWORK_PATH)
+        list(APPEND _GITMODULES_PATHS "${FPRIME_FRAMEWORK_PATH}/.gitmodules")
+    endif()
+
+    foreach(_GITMODULES_FILE IN LISTS _GITMODULES_PATHS)
+        if (NOT EXISTS "${_GITMODULES_FILE}")
+            continue()
+        endif()
+        get_filename_component(_GITMODULES_DIR "${_GITMODULES_FILE}" DIRECTORY)
+        file(READ "${_GITMODULES_FILE}" _GITMODULES_CONTENT)
+        # Extract submodule paths from .gitmodules
+        string(REGEX MATCHALL "path[ \t]*=[ \t]*[^\n]+" _PATH_LINES "${_GITMODULES_CONTENT}")
+        foreach(_PATH_LINE IN LISTS _PATH_LINES)
+            string(REGEX REPLACE "path[ \t]*=[ \t]*" "" _SUBMODULE_PATH "${_PATH_LINE}")
+            string(STRIP "${_SUBMODULE_PATH}" _SUBMODULE_PATH)
+            set(_FULL_SUBMODULE_PATH "${_GITMODULES_DIR}/${_SUBMODULE_PATH}")
+            if (IS_DIRECTORY "${_FULL_SUBMODULE_PATH}")
+                file(GLOB _SUBMODULE_CONTENTS "${_FULL_SUBMODULE_PATH}/*")
+                if (NOT _SUBMODULE_CONTENTS)
+                    message(WARNING "[FPRIME] Git submodule '${_SUBMODULE_PATH}' appears uninitialized "
+                        "(directory is empty): ${_FULL_SUBMODULE_PATH}\n"
+                        "  Run 'git submodule update --init --recursive' to initialize submodules.")
+                endif()
+            elseif (NOT EXISTS "${_FULL_SUBMODULE_PATH}")
+                message(WARNING "[FPRIME] Git submodule '${_SUBMODULE_PATH}' directory does not exist: "
+                    "${_FULL_SUBMODULE_PATH}\n"
+                    "  Run 'git submodule update --init --recursive' to initialize submodules.")
+            endif()
+        endforeach()
+    endforeach()
+endfunction(fprime_check_uninitialized_submodules)
+
+####
 # Function `fprime_detect_libraries`:
 #
 # This function detects libraries using the FPRIME_LIBRARY_LOCATIONS variable. For each library path, the following is
@@ -76,6 +118,21 @@ macro(fprime_detect_libraries)
     foreach (LIBRARY_DIRECTORY IN LISTS FPRIME_LIBRARY_LOCATIONS)
         get_filename_component(LIBRARY_NAME "${LIBRARY_DIRECTORY}" NAME)
         get_fprime_library_option_string(LIBRARY_OPTION "${LIBRARY_NAME}")
+        # Check if the library directory exists but is empty (likely uninitialized submodule)
+        if (IS_DIRECTORY "${LIBRARY_DIRECTORY}")
+            file(GLOB _LIB_DIR_CONTENTS "${LIBRARY_DIRECTORY}/*")
+            if (NOT _LIB_DIR_CONTENTS)
+                message(WARNING "[LIBRARY] ${LIBRARY_DIRECTORY} exists but is empty. "
+                    "This may indicate an uninitialized submodule or missing library content.\n"
+                    "  Run 'git submodule update --init --recursive' to initialize submodules.")
+                continue()
+            endif()
+        elseif (NOT EXISTS "${LIBRARY_DIRECTORY}")
+            message(WARNING "[LIBRARY] ${LIBRARY_DIRECTORY} does not exist. "
+                "This may indicate an uninitialized submodule or incorrect FPRIME_LIBRARY_LOCATIONS path.\n"
+                "  Run 'git submodule update --init --recursive' to initialize submodules.")
+            continue()
+        endif()
         # Detect manifest file:
         #  1. library.cmake (preferred)
         #  2. <library>.cmake (old standard)
@@ -142,6 +199,7 @@ macro(fprime_initialize_build_system)
     get_property(_FPRIME_BUILD_SYSTEM_LOADED GLOBAL PROPERTY FPRIME_BUILD_SYSTEM_LOADED)
     if (NOT _FPRIME_BUILD_SYSTEM_LOADED)
         cmake_minimum_required(VERSION 3.18)
+        fprime_check_uninitialized_submodules()
         fprime_detect_libraries()
         fprime_setup_standard_targets()
         fprime_setup_override_targets()
