@@ -286,8 +286,8 @@ Fw::SerializeStatus CmdSequencerComponentImpl::FPrimeSequence ::deserializeRecor
         // Record is too small to contain the command packet descriptor
         status = Fw::FW_DESERIALIZE_SIZE_MISMATCH;
     }
-    if (status == Fw::FW_SERIALIZE_OK and recordSize > Fw::ComBuffer::SERIALIZED_SIZE) {
-        // Record size is too big for com buffer
+    if (status == Fw::FW_SERIALIZE_OK and recordSize - sizeof(FwPacketDescriptorType) > FW_COM_BUFFER_MAX_SIZE) {
+        // Record data (minus the stripped descriptor) is too big for com buffer
         status = Fw::FW_DESERIALIZE_SIZE_MISMATCH;
     }
     return status;
