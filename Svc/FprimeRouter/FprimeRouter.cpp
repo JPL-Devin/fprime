@@ -38,7 +38,7 @@ void FprimeRouter ::dataIn_handler(FwIndexType portNum, Fw::Buffer& packetBuffer
             if (status == Fw::FW_SERIALIZE_OK) {
                 // Send the com buffer - critical functionality so it is considered an error not to
                 // have the port connected. This is why we don't check isConnected() before sending.
-                this->commandOut_out(0, com, 0);
+                this->commandOut_out(0, com, packetType, 0);
             } else {
                 this->log_WARNING_HI_SerializationError(status);
             }
@@ -53,7 +53,7 @@ void FprimeRouter ::dataIn_handler(FwIndexType portNum, Fw::Buffer& packetBuffer
             // Ownership is passed to the receiver and will come back on fileBufferReturnIn,
             // at which point we return it to the deframer via dataReturnOut.
             if (this->isConnected_fileOut_OutputPort(0)) {
-                this->fileOut_out(0, packetBuffer);
+                this->fileOut_out(0, packetBuffer, packetType);
             } else {
                 // Port not connected, return the buffer immediately with an empty context
                 ComCfg::FrameContext emptyContext;

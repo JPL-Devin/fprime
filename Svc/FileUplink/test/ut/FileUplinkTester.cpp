@@ -449,7 +449,7 @@ void FileUplinkTester ::sendFilePacket(const Fw::FilePacket& filePacket) {
     status = filePacket.toBuffer(offsetBuffer);
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, status);
 
-    this->invoke_to_bufferSendIn(0, buffer);
+    this->invoke_to_bufferSendIn(0, buffer, ComCfg::Apid::FW_PACKET_FILE);
     this->component.doDispatch();
 
     ASSERT_from_bufferSendOut_SIZE(1);

@@ -114,7 +114,7 @@ void CommandDispatcherTester::runNominalDispatch() {
     ASSERT_EQ(buff.serializeFrom(testOpCode), Fw::FW_SERIALIZE_OK);
     ASSERT_EQ(buff.serializeFrom(testCmdArg), Fw::FW_SERIALIZE_OK);
 
-    this->invoke_to_seqCmdBuff(0, buff, testContext);
+    this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, testContext);
     ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
 
     REQUIREMENT("CD-002");
@@ -177,7 +177,7 @@ void CommandDispatcherTester::runNopCommands() {
               Fw::FW_SERIALIZE_OK);
 
     this->clearEvents();
-    this->invoke_to_seqCmdBuff(0, buff, 12);
+    this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, 12);
     ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
 
     // verify dispatch event
@@ -206,7 +206,7 @@ void CommandDispatcherTester::runNopCommands() {
     Fw::CmdStringArg argString("BOO!");
     ASSERT_EQ(buff.serializeFrom(argString), Fw::FW_SERIALIZE_OK);
 
-    this->invoke_to_seqCmdBuff(0, buff, 13);
+    this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, 13);
     ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
 
     // verify dispatch event
@@ -239,7 +239,7 @@ void CommandDispatcherTester::runNopCommands() {
     ASSERT_EQ(buff.serializeFrom(static_cast<U8>(4)), Fw::FW_SERIALIZE_OK);
 
     this->clearEvents();
-    this->invoke_to_seqCmdBuff(0, buff, 14);
+    this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, 14);
     ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
 
     // verify dispatch event
@@ -322,7 +322,7 @@ void CommandDispatcherTester::runInvalidOpcodeDispatch() {
     ASSERT_EQ(buff.serializeFrom(testCmdArg), Fw::FW_SERIALIZE_OK);
 
     this->clearEvents();
-    this->invoke_to_seqCmdBuff(0, buff, testContext);
+    this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, testContext);
     ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
 
     // verify dispatch event
@@ -368,7 +368,7 @@ void CommandDispatcherTester::runFailedCommand() {
     ASSERT_EQ(buff.serializeFrom(testOpCode), Fw::FW_SERIALIZE_OK);
     ASSERT_EQ(buff.serializeFrom(testCmdArg), Fw::FW_SERIALIZE_OK);
 
-    this->invoke_to_seqCmdBuff(0, buff, testContext);
+    this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, testContext);
     ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
 
     // verify dispatch event
@@ -419,7 +419,7 @@ void CommandDispatcherTester::runFailedCommand() {
     ASSERT_EQ(buff.serializeFrom(testOpCode), Fw::FW_SERIALIZE_OK);
     ASSERT_EQ(buff.serializeFrom(testCmdArg), Fw::FW_SERIALIZE_OK);
 
-    this->invoke_to_seqCmdBuff(0, buff, testContext);
+    this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, testContext);
     ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
 
     // verify dispatch event
@@ -469,7 +469,7 @@ void CommandDispatcherTester::runFailedCommand() {
     ASSERT_EQ(buff.serializeFrom(testOpCode), Fw::FW_SERIALIZE_OK);
     ASSERT_EQ(buff.serializeFrom(testCmdArg), Fw::FW_SERIALIZE_OK);
 
-    this->invoke_to_seqCmdBuff(0, buff, testContext);
+    this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, testContext);
     ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
 
     // verify dispatch event
@@ -530,7 +530,7 @@ void CommandDispatcherTester::runInvalidCommand() {
     ASSERT_EQ(buff.serializeFrom(testOpCode), Fw::FW_SERIALIZE_OK);
     ASSERT_EQ(buff.serializeFrom(testCmdArg), Fw::FW_SERIALIZE_OK);
 
-    this->invoke_to_seqCmdBuff(0, buff, testContext);
+    this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, testContext);
     ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
 
     // verify dispatch event
@@ -578,7 +578,7 @@ void CommandDispatcherTester::runOverflowCommands() {
         ASSERT_EQ(buff.serializeFrom(testOpCode), Fw::FW_SERIALIZE_OK);
         ASSERT_EQ(buff.serializeFrom(testCmdArg), Fw::FW_SERIALIZE_OK);
 
-        this->invoke_to_seqCmdBuff(0, buff, testContext);
+        this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, testContext);
         ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
 
         if (disp < CMD_DISPATCHER_SEQUENCER_TABLE_SIZE) {
@@ -639,7 +639,7 @@ void CommandDispatcherTester::runClearCommandTracking() {
     ASSERT_EQ(buff.serializeFrom(testOpCode), Fw::FW_SERIALIZE_OK);
     ASSERT_EQ(buff.serializeFrom(testCmdArg), Fw::FW_SERIALIZE_OK);
 
-    this->invoke_to_seqCmdBuff(0, buff, testContext);
+    this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, testContext);
     ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
 
     // verify dispatch event
@@ -671,7 +671,7 @@ void CommandDispatcherTester::runClearCommandTracking() {
     ASSERT_EQ(buff.serializeFrom(static_cast<FwOpcodeType>(CommandDispatcherImpl::OPCODE_CMD_CLEAR_TRACKING)),
               Fw::FW_SERIALIZE_OK);
 
-    this->invoke_to_seqCmdBuff(0, buff, testContext);
+    this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, testContext);
     // send buffer to command dispatcher
     ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
 
@@ -726,7 +726,7 @@ void CommandDispatcherTester::runCommandQueueOverflow() {
         ASSERT_EQ(buff.serializeFrom(static_cast<FwOpcodeType>(CommandDispatcherImpl::OPCODE_CMD_NO_OP)),
                   Fw::FW_SERIALIZE_OK);
 
-        this->invoke_to_seqCmdBuff(0, buff, 12);
+        this->invoke_to_seqCmdBuff(0, buff, ComCfg::Apid::FW_PACKET_COMMAND, 12);
         ASSERT_EQ(Fw::QueuedComponentBase::MSG_DISPATCH_OK, this->m_impl.doDispatch());
     }
     this->dispatchCurrentMessages(this->m_impl);

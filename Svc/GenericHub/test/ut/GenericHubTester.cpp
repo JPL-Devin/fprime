@@ -151,14 +151,21 @@ void GenericHubTester ::send_random_buffer(U32 port) {
 void GenericHubTester ::test_command_dispatch() {
     Fw::ComBuffer buffer;
     clearFromPortHistory();
-    random_fill(buffer, FW_TLM_BUFFER_MAX_SIZE);
+    // Command buffers carry the packet descriptor at the head of the payload; the hub
+    // re-derives the APID from it on the receiving side
+    ASSERT_EQ(buffer.serializeFrom(static_cast<FwPacketDescriptorType>(ComCfg::Apid::FW_PACKET_COMMAND)),
+              Fw::FW_SERIALIZE_OK);
+    U32 random_size = STest::Pick::lowerUpper(0, FW_TLM_BUFFER_MAX_SIZE - sizeof(FwPacketDescriptorType));
+    for (U32 i = 0; i < random_size; i++) {
+        buffer.serializeFrom(static_cast<U8>(STest::Pick::any()));
+    }
 
-    invoke_to_cmdDispIn(0, buffer, 279);
+    invoke_to_cmdDispIn(0, buffer, ComCfg::Apid::FW_PACKET_COMMAND, 279);
 
     // **must** return buffer
     ASSERT_from_fromBufferDriverReturn_SIZE(1);
     ASSERT_from_cmdDispOut_SIZE(1);
-    ASSERT_from_cmdDispOut(0, buffer, 279);
+    ASSERT_from_cmdDispOut(0, buffer, ComCfg::Apid::FW_PACKET_COMMAND, 279);
     clearFromPortHistory();
 }
 

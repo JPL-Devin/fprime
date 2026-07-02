@@ -226,8 +226,11 @@ void TlmChanTester::runProcGuard() {
 // Handlers for typed from ports
 // ----------------------------------------------------------------------
 
-void TlmChanTester ::from_PktSend_handler(const FwIndexType portNum, Fw::ComBuffer& data, U32 context) {
-    this->pushFromPortEntry_PktSend(data, context);
+void TlmChanTester ::from_PktSend_handler(const FwIndexType portNum,
+                                          Fw::ComBuffer& data,
+                                          const ComCfg::Apid& packetType,
+                                          U32 context) {
+    this->pushFromPortEntry_PktSend(data, packetType, context);
     this->m_bufferRecv = true;
     this->m_rcvdBuffer[this->m_numBuffs] = data;
     this->m_numBuffs++;
@@ -268,6 +271,7 @@ void TlmChanTester::checkBuff(FwChanIdType chanNum, FwChanIdType totalChan, FwCh
 
     for (FwChanIdType packet = 0; packet < this->m_numBuffs; packet++) {
         this->m_rcvdBuffer[packet].resetDeser();
+        // first piece should be tlm packet descriptor
         FwPacketDescriptorType desc;
         stat = this->m_rcvdBuffer[packet].deserializeTo(desc);
         ASSERT_EQ(Fw::FW_SERIALIZE_OK, stat);

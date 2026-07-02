@@ -373,7 +373,8 @@ void TlmPacketizer ::Run_handler(const FwIndexType portNum, U32 context) {
                     PktSendCounters& pktEntryFlags = this->m_packetFlags[section][pkt];
                     FwIndexType outIndex = this->sectionGroupToPort(section, entryGroup);
 
-                    this->PktSend_out(outIndex, sendBuffer.buffer, pktEntryFlags.prevSentCounter);
+                    this->PktSend_out(outIndex, sendBuffer.buffer, ComCfg::Apid::FW_PACKET_PACKETIZED_TLM,
+                                      pktEntryFlags.prevSentCounter);
 
                     pktEntryFlags.prevSentCounter = 0;
                     pktEntryFlags.updateFlag = UpdateFlag::PAST;
