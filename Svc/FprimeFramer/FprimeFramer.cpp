@@ -30,7 +30,8 @@ void FprimeFramer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, const 
     // Full size of the frame will be size of header + data + trailer
     FwSizeType frameSize =
         FprimeProtocol::FrameHeader::SERIALIZED_SIZE + data.getSize() + FprimeProtocol::FrameTrailer::SERIALIZED_SIZE;
-    FW_ASSERT(data.getSize() <= std::numeric_limits<FprimeProtocol::TokenType>::max(),
+    // The length field accounts for the apid field in addition to the payload, so guard the sum
+    FW_ASSERT(data.getSize() <= std::numeric_limits<FprimeProtocol::TokenType>::max() - sizeof(FwPacketDescriptorType),
               static_cast<FwAssertArgType>(frameSize));
     FW_ASSERT(frameSize <= std::numeric_limits<Fw::Buffer::SizeType>::max(), static_cast<FwAssertArgType>(frameSize));
 
