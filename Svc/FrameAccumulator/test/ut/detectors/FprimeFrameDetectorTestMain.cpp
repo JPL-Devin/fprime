@@ -29,24 +29,30 @@ bool build_fprime_header(U8* out_bytes, Svc::FprimeProtocol::TokenType length_fi
 //! \note The frame is generated with random data of random size
 //! \return The size of the generated frame
 FwSizeType generate_random_fprime_frame(Types::CircularBuffer& circular_buffer) {
-    constexpr FwSizeType FRAME_HEADER_SIZE = 8;
-    constexpr FwSizeType FRAME_FOOTER_SIZE = 4;
-    // Generate random packet size (2-1024 bytes; the length field must at least account for the
-    // 2-byte apid field, which is part of the frame header)
-    // 1024 is max length as per FrameAccumulator/FrameDetector/FprimeFrameDetector @ LengthToken::MaximumLength
-    U32 packet_size = STest::Random::lowerUpper(2, 1024);
+    constexpr FwSizeType FRAME_HEADER_SIZE = Svc::FprimeProtocol::FrameHeader::SERIALIZED_SIZE;
+    constexpr FwSizeType FRAME_FOOTER_SIZE = Svc::FprimeProtocol::FrameTrailer::SERIALIZED_SIZE;
+    constexpr FwSizeType APID_SIZE = sizeof(FwPacketDescriptorType);
+    // Generate random payload size (1-1022 bytes; lengthField = apid + payload must not exceed
+    // 1024, the max length per FrameAccumulator/FrameDetector/FprimeFrameDetector @ LengthToken::MaximumLength)
+    U32 packet_size = STest::Random::lowerUpper(1, 1024 - APID_SIZE);
+    // The length field accounts for the apid field (part of the header) and the payload
+    U32 length_field = packet_size + APID_SIZE;
 
     U8 packet_data[packet_size];
     // Generate random packet_data of random size
     for (FwSizeType i = 0; i < packet_size; i++) {
         packet_data[i] = static_cast<U8>(STest::Random::lowerUpper(0, 255));
     }
-    // Frame header                      |  Start Word 4 bytes  |   Length (4 bytes)   |
-    U8 frame_header[FRAME_HEADER_SIZE] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x00, 0x00, 0x00};
-    // Serialize actual packet size into header
+    // Frame header                      |  Start Word 4 bytes  |   Length (4 bytes)   | APID (2 bytes)
+    U8 frame_header[FRAME_HEADER_SIZE] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    // Serialize length field into header
     for (FwSizeType i = 0; i < 4; i++) {
-        frame_header[i + 4] = static_cast<U8>(packet_size >> (8 * (3 - i)));
+        frame_header[i + 4] = static_cast<U8>(length_field >> (8 * (3 - i)));
     }
+    // Serialize a random apid into the header (any U16 value must be tolerated by the detector)
+    U32 apid = STest::Random::lowerUpper(0, 0xFFFF);
+    frame_header[8] = static_cast<U8>(apid >> 8);
+    frame_header[9] = static_cast<U8>(apid & 0xFF);
 
     // Calculate CRC on header + packet_data
     Utils::Hash crc_calculator;
