@@ -31,7 +31,7 @@ bool build_fprime_header(U8* out_bytes, Svc::FprimeProtocol::TokenType length_fi
 FwSizeType generate_random_fprime_frame(Types::CircularBuffer& circular_buffer) {
     constexpr FwSizeType FRAME_HEADER_SIZE = Svc::FprimeProtocol::FrameHeader::SERIALIZED_SIZE;
     constexpr FwSizeType FRAME_FOOTER_SIZE = Svc::FprimeProtocol::FrameTrailer::SERIALIZED_SIZE;
-    constexpr FwSizeType APID_SIZE = sizeof(FwPacketDescriptorType);
+    constexpr U32 APID_SIZE = sizeof(FwPacketDescriptorType);
     // Generate random payload size (1-1022 bytes; lengthField = apid + payload must not exceed
     // 1024, the max length per FrameAccumulator/FrameDetector/FprimeFrameDetector @ LengthToken::MaximumLength)
     U32 packet_size = STest::Random::lowerUpper(1, 1024 - APID_SIZE);
