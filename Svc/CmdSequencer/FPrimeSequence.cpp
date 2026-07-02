@@ -8,6 +8,7 @@
 // acknowledged.
 // ======================================================================
 
+#include "Fw/Com/ComPacket.hpp"
 #include "Fw/Types/Assert.hpp"
 #include "Svc/CmdSequencer/CmdSequencerImpl.hpp"
 
@@ -281,8 +282,11 @@ Fw::SerializeStatus CmdSequencerComponentImpl::FPrimeSequence ::deserializeRecor
         // Not enough data left
         status = Fw::FW_DESERIALIZE_SIZE_MISMATCH;
     }
-    if (status == Fw::FW_SERIALIZE_OK and
-        recordSize + sizeof(FwPacketDescriptorType) > Fw::ComBuffer::SERIALIZED_SIZE) {
+    if (status == Fw::FW_SERIALIZE_OK and recordSize < sizeof(FwPacketDescriptorType)) {
+        // Record is too small to contain the command packet descriptor
+        status = Fw::FW_DESERIALIZE_SIZE_MISMATCH;
+    }
+    if (status == Fw::FW_SERIALIZE_OK and recordSize > Fw::ComBuffer::SERIALIZED_SIZE) {
         // Record size is too big for com buffer
         status = Fw::FW_DESERIALIZE_SIZE_MISMATCH;
     }
@@ -293,8 +297,19 @@ Fw::SerializeStatus CmdSequencerComponentImpl::FPrimeSequence ::copyCommand(Fw::
                                                                             const U32 recordSize) {
     Fw::LinearBufferBase& buffer = this->m_buffer;
     comBuffer.resetSer();
-    FwSizeType size = recordSize;
-    Fw::SerializeStatus status = comBuffer.setBuffLen(recordSize);
+    // The F Prime sequence file format stores each command with a leading
+    // FW_PACKET_COMMAND packet descriptor. The descriptor is validated and
+    // stripped here: downstream consumers expect descriptor-free command packets
+    FwPacketDescriptorType descriptor = 0;
+    Fw::SerializeStatus status = buffer.deserializeTo(descriptor);
+    if (status != Fw::FW_SERIALIZE_OK) {
+        return status;
+    }
+    if (descriptor != Fw::ComPacketType::FW_PACKET_COMMAND) {
+        return Fw::FW_DESERIALIZE_TYPE_MISMATCH;
+    }
+    FwSizeType size = recordSize - sizeof(FwPacketDescriptorType);
+    status = comBuffer.setBuffLen(size);
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, status);
     status = buffer.deserializeTo(comBuffer.getBuffAddr(), size, Fw::Serialization::OMIT_LENGTH);
     return status;

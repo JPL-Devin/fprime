@@ -12,7 +12,9 @@
 #include "config/ApidEnumAc.hpp"
 
 // Packet format:
-// | packet type (width = FwPacketDescriptorType) | packet type-specific data |
+// | packet type-specific data |
+// The packet type (APID) is not serialized into the packet data; it is carried
+// alongside the packet through port interfaces and protocol headers
 
 namespace Fw {
 
@@ -24,12 +26,11 @@ class ComPacket : public Serializable {
     ComPacket();
     virtual ~ComPacket();
 
+    //! Get the packet type (APID)
+    ComPacketType getPacketType() const;
+
   protected:
     ComPacketType m_type;
-    SerializeStatus serializeBase(
-        SerialBufferBase& buffer) const;  // called by derived classes to serialize common fields
-    SerializeStatus deserializeBase(
-        SerialBufferBase& buffer);  // called by derived classes to deserialize common fields
 };
 
 } /* namespace Fw */

@@ -46,6 +46,12 @@ class FprimeDeframerTester : public FprimeDeframerGTestBase {
     //! Test receiving a nominal frame that contains a valid packet (with APID)
     void testNominalFrameApid();
 
+    //! Test a frame with an out-of-range APID (maps to FW_PACKET_UNKNOWN)
+    void testOutOfRangeApid();
+
+    //! Test a frame whose lengthField does not account for the apid field
+    void testLengthTooSmall();
+
     //! Test receiving a truncated frame
     void testTruncatedFrame();
 

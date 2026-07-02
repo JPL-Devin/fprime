@@ -51,6 +51,7 @@ void FprimeFramerTester ::testNominalFraming() {
     U8 bufferData[100];
     Fw::Buffer buffer(bufferData, sizeof(bufferData));
     ComCfg::FrameContext context;
+    context.set_apid(ComCfg::Apid::FW_PACKET_FILE);
 
     // Fill the buffer with some data
     for (U32 i = 0; i < sizeof(bufferData); ++i) {
@@ -71,7 +72,9 @@ void FprimeFramerTester ::testNominalFraming() {
     FprimeProtocol::FrameHeader outputHeader;
     outputBuffer.getDeserializer().deserializeTo(outputHeader);
     ASSERT_EQ(outputHeader.get_startWord(), defaultHeader.get_startWord());
-    ASSERT_EQ(outputHeader.get_lengthField(), sizeof(bufferData));
+    // The length field accounts for the apid field and the payload
+    ASSERT_EQ(outputHeader.get_lengthField(), sizeof(bufferData) + sizeof(FwPacketDescriptorType));
+    ASSERT_EQ(outputHeader.get_apid(), ComCfg::Apid::FW_PACKET_FILE);
     // Check data
     for (U32 i = 0; i < sizeof(bufferData); ++i) {
         ASSERT_EQ(outputBuffer.getData()[i + FprimeProtocol::FrameHeader::SERIALIZED_SIZE], bufferData[i]);

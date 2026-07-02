@@ -9,6 +9,15 @@ module Fw {
                    ref fwBuffer: Fw.Buffer
                  )
 
+  @ Port for sending a buffer along with its APID (packet type)
+  @ Ownership of the buffer is passed to the receiver
+  port BufferWithApid(
+                       @ The buffer
+                       ref fwBuffer: Fw.Buffer
+                       @ APID (packet type) of the data
+                       apid: ComCfg.Apid
+                     )
+
   @ Port for getting a buffer
   @ Returns the buffer
   port BufferGet(

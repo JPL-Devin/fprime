@@ -31,9 +31,10 @@ bool build_fprime_header(U8* out_bytes, Svc::FprimeProtocol::TokenType length_fi
 FwSizeType generate_random_fprime_frame(Types::CircularBuffer& circular_buffer) {
     constexpr FwSizeType FRAME_HEADER_SIZE = 8;
     constexpr FwSizeType FRAME_FOOTER_SIZE = 4;
-    // Generate random packet size (1-1024 bytes; because 0 would trigger undefined behavior warnings)
+    // Generate random packet size (2-1024 bytes; the length field must at least account for the
+    // 2-byte apid field, which is part of the frame header)
     // 1024 is max length as per FrameAccumulator/FrameDetector/FprimeFrameDetector @ LengthToken::MaximumLength
-    U32 packet_size = STest::Random::lowerUpper(1, 1024);
+    U32 packet_size = STest::Random::lowerUpper(2, 1024);
 
     U8 packet_data[packet_size];
     // Generate random packet_data of random size

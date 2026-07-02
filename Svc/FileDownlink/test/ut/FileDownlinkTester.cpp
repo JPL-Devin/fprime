@@ -290,7 +290,10 @@ void FileDownlinkTester ::sendFilePort() {
 // Handlers for from ports
 // ----------------------------------------------------------------------
 
-void FileDownlinkTester ::from_bufferSendOut_handler(const FwIndexType portNum, Fw::Buffer& buffer) {
+void FileDownlinkTester ::from_bufferSendOut_handler(const FwIndexType portNum,
+                                                     Fw::Buffer& buffer,
+                                                     const ComCfg::Apid& apid) {
+    ASSERT_EQ(apid, ComCfg::Apid::FW_PACKET_FILE);
     ASSERT_LT(buffers_index, FW_NUM_ARRAY_ELEMENTS(this->buffers));
     // Copy buffer before recycling
     U8* data = new U8[buffer.getSize()];
@@ -299,7 +302,7 @@ void FileDownlinkTester ::from_bufferSendOut_handler(const FwIndexType portNum, 
     ::memcpy(data, buffer.getData(), buffer.getSize());
     Fw::Buffer buffer_new = buffer;
     buffer_new.setData(data);
-    pushFromPortEntry_bufferSendOut(buffer_new);
+    pushFromPortEntry_bufferSendOut(buffer_new, apid);
     invoke_to_bufferReturn(0, buffer);
 }
 
@@ -465,9 +468,7 @@ void FileDownlinkTester ::validatePacketHistory(const History<FromPortEntry_buff
 }
 
 void FileDownlinkTester ::validateFilePacket(const Fw::Buffer& buffer, Fw::FilePacket& filePacket) {
-    // buffer contains the FW_PACKET_FILE descriptor - we remove it before deserializing into the filePacket
-    Fw::Buffer packetDataBuffer(buffer.getData() + sizeof(FwPacketDescriptorType),
-                                buffer.getSize() - sizeof(FwPacketDescriptorType));
+    Fw::Buffer packetDataBuffer(buffer.getData(), buffer.getSize());
     const Fw::SerializeStatus status = filePacket.fromBuffer(packetDataBuffer);
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, status);
 }

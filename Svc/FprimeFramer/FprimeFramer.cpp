@@ -41,7 +41,9 @@ void FprimeFramer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, const 
 
     // Serialize the header
     // 0xDEADBEEF is already set as the default value for the header startWord field in the FPP type definition
-    header.set_lengthField(static_cast<FprimeProtocol::TokenType>(data.getSize()));
+    // The length field accounts for the apid field and the payload
+    header.set_lengthField(static_cast<FprimeProtocol::TokenType>(data.getSize() + sizeof(FwPacketDescriptorType)));
+    header.set_apid(context.get_apid());
     status = frameSerializer.serializeFrom(header);
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, status);
 

@@ -31,8 +31,9 @@ EventManagerTester::~EventManagerTester() {
 
 void EventManagerTester::from_PktSend_handler(const FwIndexType portNum,  //!< The port number
                                               Fw::ComBuffer& data,        //!< Buffer containing packet data
-                                              U32 context                 //!< context; not used
+                                              const ComCfg::Apid& apid    //!< APID (packet type) of the data
 ) {
+    EXPECT_EQ(apid, ComCfg::Apid::FW_PACKET_LOG);
     this->m_sentPacket = data;
     this->m_receivedPacket = true;
 }
@@ -106,12 +107,7 @@ void EventManagerTester::runWithFilters(Fw::LogSeverity filter) {
     // should have received packet
     ASSERT_TRUE(this->m_receivedPacket);
     // verify contents
-    // first piece should be log packet descriptor
-    FwPacketDescriptorType desc;
-    stat = this->m_sentPacket.deserializeTo(desc);
-    ASSERT_EQ(Fw::FW_SERIALIZE_OK, stat);
-    ASSERT_EQ(desc, static_cast<FwPacketDescriptorType>(Fw::ComPacketType::FW_PACKET_LOG));
-    // next piece should be event ID
+    // first piece should be event ID
     FwEventIdType sentId;
     stat = this->m_sentPacket.deserializeTo(sentId);
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, stat);
@@ -376,12 +372,7 @@ void EventManagerTester::runEventFatal() {
     // should have received packet
     ASSERT_TRUE(this->m_receivedPacket);
     // verify contents
-    // first piece should be log packet descriptor
-    FwPacketDescriptorType desc;
-    stat = this->m_sentPacket.deserializeTo(desc);
-    ASSERT_EQ(Fw::FW_SERIALIZE_OK, stat);
-    ASSERT_EQ(desc, static_cast<FwPacketDescriptorType>(Fw::ComPacketType::FW_PACKET_LOG));
-    // next piece should be event ID
+    // first piece should be event ID
     FwEventIdType sentId;
     stat = this->m_sentPacket.deserializeTo(sentId);
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, stat);
@@ -423,11 +414,7 @@ void EventManagerTester::runEventFatal() {
     // should have received packet
     ASSERT_TRUE(this->m_receivedPacket);
     // verify contents
-    // first piece should be log packet descriptor
-    stat = this->m_sentPacket.deserializeTo(desc);
-    ASSERT_EQ(Fw::FW_SERIALIZE_OK, stat);
-    ASSERT_EQ(desc, static_cast<FwPacketDescriptorType>(Fw::ComPacketType::FW_PACKET_LOG));
-    // next piece should be event ID
+    // first piece should be event ID
     stat = this->m_sentPacket.deserializeTo(sentId);
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, stat);
     ASSERT_EQ(sentId, id);
@@ -470,12 +457,7 @@ void EventManagerTester::writeEvent(FwEventIdType id, Fw::LogSeverity severity, 
     // should have received packet
     ASSERT_TRUE(this->m_receivedPacket);
     // verify contents
-    // first piece should be log packet descriptor
-    FwPacketDescriptorType desc;
-    stat = this->m_sentPacket.deserializeTo(desc);
-    ASSERT_EQ(Fw::FW_SERIALIZE_OK, stat);
-    ASSERT_EQ(desc, static_cast<FwPacketDescriptorType>(Fw::ComPacketType::FW_PACKET_LOG));
-    // next piece should be event ID
+    // first piece should be event ID
     FwEventIdType sentId;
     stat = this->m_sentPacket.deserializeTo(sentId);
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, stat);
@@ -506,7 +488,7 @@ void EventManagerTester::readEvent(FwEventIdType id, Fw::LogSeverity severity, U
     // next is LogPacket
     Fw::ComBuffer comBuff;
     // size is specific to this test
-    readSize = sizeof(FwPacketDescriptorType) + sizeof(FwEventIdType) + Fw::Time::SERIALIZED_SIZE + sizeof(U32);
+    readSize = sizeof(FwEventIdType) + Fw::Time::SERIALIZED_SIZE + sizeof(U32);
     ASSERT_EQ(file.read(comBuff.getBuffAddr(), readSize, Os::File::WaitType::WAIT), Os::File::OP_OK);
     comBuff.setBuffLen(readSize);
 
