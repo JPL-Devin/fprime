@@ -71,14 +71,14 @@ void FprimeDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, cons
     constexpr FwSizeType headerTrailerOverhead =
         FprimeProtocol::FrameHeader::SERIALIZED_SIZE + FprimeProtocol::FrameTrailer::SERIALIZED_SIZE;
     // Guard: reject frames whose declared length would overflow FwSizeType when added to the fixed overhead
-    if (lengthField > std::numeric_limits<FwSizeType>::max() - headerTrailerOverhead) {
+    const FwSizeType lengthFieldSize = static_cast<FwSizeType>(lengthField);
+    if (lengthFieldSize > std::numeric_limits<FwSizeType>::max() - headerTrailerOverhead) {
         this->log_WARNING_HI_InvalidLengthReceived();
         this->dataReturnOut_out(0, data, context);  // drop the frame
         return;
     }
     // We expect the frame size to be size of header (which accounts for the apid field) + payload + trailer
-    const FwSizeType expectedFrameSize =
-        (static_cast<FwSizeType>(lengthField) - sizeof(FwPacketDescriptorType)) + headerTrailerOverhead;
+    const FwSizeType expectedFrameSize = (lengthFieldSize - sizeof(FwPacketDescriptorType)) + headerTrailerOverhead;
     // Reject packets whose data does not match the header
     if (data.getSize() != expectedFrameSize) {
         this->log_WARNING_HI_InvalidLengthReceived();
