@@ -86,18 +86,23 @@ class ComQueue final : public ComQueueComponentBase {
 
     /**
      * Storage for a queued Fw::ComBuffer along with its APID (packet type).
+     *
+     * Queue entries are stored and retrieved as raw bytes through Types::Queue (see the
+     * reinterpret_cast sites in ComQueue.cpp). This byte-copy is safe here because entries are
+     * always copied back into a properly constructed and aligned entry object of the same type
+     * before any member is accessed, within the same process and program invocation.
      */
     struct ComQueueEntry {
-        Fw::ComBuffer comBuffer;  //!< The queued com buffer
-        ComCfg::Apid::T apid;     //!< APID (packet type) of the queued data
+        Fw::ComBuffer comBuffer;                                     //!< The queued com buffer
+        ComCfg::Apid::T apid = ComCfg::Apid::INVALID_UNINITIALIZED;  //!< APID (packet type) of the queued data
     };
 
     /**
      * Storage for a queued Fw::Buffer along with its APID (packet type).
      */
     struct BufferQueueEntry {
-        Fw::Buffer buffer;     //!< The queued buffer
-        ComCfg::Apid::T apid;  //!< APID (packet type) of the queued data
+        Fw::Buffer buffer;                                           //!< The queued buffer
+        ComCfg::Apid::T apid = ComCfg::Apid::INVALID_UNINITIALIZED;  //!< APID (packet type) of the queued data
     };
 
     /**

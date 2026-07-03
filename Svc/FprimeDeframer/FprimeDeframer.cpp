@@ -11,6 +11,8 @@
 #include "Svc/FprimeProtocol/FrameHeaderSerializableAc.hpp"
 #include "Svc/FprimeProtocol/FrameTrailerSerializableAc.hpp"
 
+#include <limits>
+
 namespace Svc {
 
 // ----------------------------------------------------------------------
@@ -63,10 +65,20 @@ void FprimeDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, cons
         this->dataReturnOut_out(0, data, context);  // drop the frame
         return;
     }
+    static_assert(FprimeProtocol::FrameHeader::SERIALIZED_SIZE <=
+                      std::numeric_limits<FwSizeType>::max() - FprimeProtocol::FrameTrailer::SERIALIZED_SIZE,
+                  "FrameHeader::SERIALIZED_SIZE + FrameTrailer::SERIALIZED_SIZE overflows FwSizeType");
+    constexpr FwSizeType headerTrailerOverhead =
+        FprimeProtocol::FrameHeader::SERIALIZED_SIZE + FprimeProtocol::FrameTrailer::SERIALIZED_SIZE;
+    // Guard: reject frames whose declared length would overflow FwSizeType when added to the fixed overhead
+    if (lengthField > std::numeric_limits<FwSizeType>::max() - headerTrailerOverhead) {
+        this->log_WARNING_HI_InvalidLengthReceived();
+        this->dataReturnOut_out(0, data, context);  // drop the frame
+        return;
+    }
     // We expect the frame size to be size of header (which accounts for the apid field) + payload + trailer
-    const FwSizeType expectedFrameSize = FprimeProtocol::FrameHeader::SERIALIZED_SIZE +
-                                         (lengthField - sizeof(FwPacketDescriptorType)) +
-                                         FprimeProtocol::FrameTrailer::SERIALIZED_SIZE;
+    const FwSizeType expectedFrameSize =
+        (static_cast<FwSizeType>(lengthField) - sizeof(FwPacketDescriptorType)) + headerTrailerOverhead;
     // Reject packets whose data does not match the header
     if (data.getSize() != expectedFrameSize) {
         this->log_WARNING_HI_InvalidLengthReceived();

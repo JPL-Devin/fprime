@@ -50,7 +50,9 @@ void FprimeDeframerTester ::testNominalFrame() {
 
 void FprimeDeframerTester ::testNominalFrameApid() {
     // Nominal frame with no payload: lengthField only accounts for the apid field (= 2).
-    // The APID is a random in-range (valid) value and must be reported in the context
+    // The APID is a random value below INVALID_UNINITIALIZED. The deframer intentionally
+    // accepts any numerically in-range value (not just defined enum constants) and reports
+    // it in the context; the assertion below relies on FPP enums comparing numerically
     U8 randomByte = static_cast<U8>(STest::Random::lowerUpper(0, 255));
     //           |  F´ start word        |     Length (= 2)      | APID            | Checksum (4 bytes)    |
     U8 data[14] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x00, 0x00, 0x02, 0x00, randomByte, 0x00, 0x00, 0x00, 0x00};
