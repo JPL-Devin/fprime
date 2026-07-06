@@ -19,6 +19,41 @@ on:
         required: false
         type: boolean
         default: true
+      run_integration_tests:
+        description: "Run an additional job to build the deployment and run integration tests against it."
+        required: false
+        type: boolean
+        default: false
+      integration_gds_working_directory:
+        description: "Directory to start fprime-gds from (relative to repo root). Required when run_integration_tests is true."
+        required: false
+        type: string
+        default: ""
+      integration_test_working_directory:
+        description: "Directory to run pytest from (relative to repo root). Required when run_integration_tests is true."
+        required: false
+        type: string
+        default: ""
+      integration_binary:
+        description: "Path to the FSW binary to run (relative to integration_gds_working_directory). Required when run_integration_tests is true."
+        required: false
+        type: string
+        default: ""
+      integration_binary_args:
+        description: "Arguments passed to the FSW binary."
+        required: false
+        type: string
+        default: "-a 127.0.0.1 -p 50000"
+      integration_gds_args:
+        description: "Extra arguments passed to fprime-gds (e.g. --dictionary path)."
+        required: false
+        type: string
+        default: ""
+      integration_pytest_args:
+        description: "Extra arguments passed to pytest (e.g. test paths, --dictionary path)."
+        required: false
+        type: string
+        default: ""
       fprime_location:
         description: "Relative path from the external project root to its F´ submodule"
         required: false
@@ -138,4 +173,78 @@ jobs:
           fi
           fprime-util check -j8 ${VERBOSE_FLAG} ${TARGET_PLATFORM} --pass-through --output-on-failure
         shell: bash
+
+  runIntegration:
+    if: ${{ inputs.run_integration_tests }}
+    runs-on: ${{ inputs.runs_on }}
+    name: "Integration Tests"
+    env:
+      FPRIME_LOCATION: ${{ inputs.fprime_location }}
+      TARGET_PLATFORM: ${{ inputs.target_platform }}
+    steps:
+      - name: "Checkout target repository"
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          repository: ${{ inputs.target_repository }}
+          ref: ${{ inputs.target_ref }}
+      - name: "Overlay current F´ revision"
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          path: ${{ inputs.fprime_location }}
+      # Install the target project's requirements so its GDS plugins (e.g. custom framing)
+      # are available to fprime-gds; fall back to the F´ submodule requirements otherwise.
+      - name: "Install requirements.txt"
+        run: |
+          # Modern build tooling is required so local source packages (e.g. the
+          # project's GDS plugins) build with correct metadata; the runner's
+          # system pip/setuptools can otherwise produce a broken "UNKNOWN" wheel
+          # with no entry points, which silently drops custom framing plugins.
+          pip3 install --upgrade pip setuptools wheel
+          if [ -f "${{ inputs.build_location }}/requirements.txt" ]; then
+            (cd "${{ inputs.build_location }}" && pip3 install -r requirements.txt)
+          else
+            pip3 install -r ${FPRIME_LOCATION}/requirements.txt
+          fi
+        shell: bash
+      # Match the F´ Ref integration tests: run against the in-development GDS
+      # (this PR's branch or devel) so GDS regressions are caught here too.
+      - name: "Upgrade fprime-gds to devel or pr-xxxx"
+        uses: nasa/fprime-actions/upgrade-package@devel
+        with:
+          repository: nasa/fprime-gds
+      - name: "Generate build cache"
+        working-directory: ${{ inputs.build_location }}
+        run: |
+          if [ "${RUNNER_DEBUG:-0}" = "1" ]; then
+            VERBOSE_FLAG=--verbose
+          else
+            VERBOSE_FLAG=
+          fi
+          fprime-util generate ${VERBOSE_FLAG} ${TARGET_PLATFORM}
+        shell: bash
+      - name: "Build"
+        working-directory: ${{ inputs.build_location }}
+        run: |
+          if [ "${RUNNER_DEBUG:-0}" = "1" ]; then
+            VERBOSE_FLAG=--verbose
+          else
+            VERBOSE_FLAG=
+          fi
+          fprime-util build -j8 ${VERBOSE_FLAG} ${TARGET_PLATFORM}
+        shell: bash
+      - name: "Make FSW binary executable"
+        working-directory: ${{ inputs.integration_gds_working_directory }}
+        run: chmod +x ${{ inputs.integration_binary }}
+        shell: bash
+      - name: "Integration Tests"
+        uses: nasa/fprime-actions/run-integration-tests@devel
+        with:
+          gds-working-directory: ${{ inputs.integration_gds_working_directory }}
+          test-working-directory: ${{ inputs.integration_test_working_directory }}
+          binary: ${{ inputs.integration_binary }}
+          binary-args: ${{ inputs.integration_binary_args }}
+          gds-args: ${{ inputs.integration_gds_args }}
+          pytest-args: ${{ inputs.integration_pytest_args }}
 
