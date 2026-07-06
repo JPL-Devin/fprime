@@ -208,6 +208,12 @@ jobs:
             pip3 install -r ${FPRIME_LOCATION}/requirements.txt
           fi
         shell: bash
+      # Match the F´ Ref integration tests: run against the in-development GDS
+      # (this PR's branch or devel) so GDS regressions are caught here too.
+      - name: "Upgrade fprime-gds to devel or pr-xxxx"
+        uses: nasa/fprime-actions/upgrade-package@devel
+        with:
+          repository: nasa/fprime-gds
       - name: "Generate build cache"
         working-directory: ${{ inputs.build_location }}
         run: |
