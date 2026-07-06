@@ -197,6 +197,11 @@ jobs:
       # are available to fprime-gds; fall back to the F´ submodule requirements otherwise.
       - name: "Install requirements.txt"
         run: |
+          # Modern build tooling is required so local source packages (e.g. the
+          # project's GDS plugins) build with correct metadata; the runner's
+          # system pip/setuptools can otherwise produce a broken "UNKNOWN" wheel
+          # with no entry points, which silently drops custom framing plugins.
+          pip3 install --upgrade pip setuptools wheel
           if [ -f "${{ inputs.build_location }}/requirements.txt" ]; then
             (cd "${{ inputs.build_location }}" && pip3 install -r requirements.txt)
           else
