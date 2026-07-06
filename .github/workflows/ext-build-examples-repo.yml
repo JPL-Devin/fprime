@@ -35,7 +35,11 @@ jobs:
     name: ""
     uses: ./.github/workflows/reusable-project-builder.yml
     with: 
-      target_repository: nasa/fprime-examples
+      # FORK-DEMO OVERRIDE: point at JPL-Devin/fprime-examples PR #1 so the new
+      # DataProduct/test/int compression test is present. Revert to
+      # `nasa/fprime-examples` + `needs.get-branch.outputs.target-branch` before
+      # opening this upstream.
+      target_repository: JPL-Devin/fprime-examples
       build_location: FlightExamples
       run_unit_tests: true
       run_integration_tests: true
@@ -44,5 +48,5 @@ jobs:
       integration_binary: ../build-artifacts/*/ExamplesDeployment/bin/ExamplesDeployment
       integration_gds_args: "--dictionary ../build-artifacts/*/ExamplesDeployment/dict/ExamplesDeploymentTopologyDictionary.json"
       integration_pytest_args: "DataProduct/test/int ManagerWorker/Subtopology/test/int --dictionary build-artifacts/*/ExamplesDeployment/dict/ExamplesDeploymentTopologyDictionary.json --no-zmq"
-      target_ref: ${{ needs.get-branch.outputs.target-branch }}
+      target_ref: devin/1783371774-dp-compression-example
       fprime_location: ./FlightExamples/lib/fprime
