@@ -38,5 +38,11 @@ jobs:
       target_repository: nasa/fprime-examples
       build_location: FlightExamples
       run_unit_tests: true
+      run_integration_tests: true
+      integration_gds_working_directory: FlightExamples/ExamplesDeployment
+      integration_test_working_directory: FlightExamples
+      integration_binary: ../build-artifacts/*/ExamplesDeployment/bin/ExamplesDeployment
+      integration_gds_args: "--dictionary ../build-artifacts/*/ExamplesDeployment/dict/ExamplesDeploymentTopologyDictionary.json"
+      integration_pytest_args: "DataProduct/test/int ManagerWorker/Subtopology/test/int --dictionary build-artifacts/*/ExamplesDeployment/dict/ExamplesDeploymentTopologyDictionary.json --no-zmq"
       target_ref: ${{ needs.get-branch.outputs.target-branch }}
       fprime_location: ./FlightExamples/lib/fprime
