@@ -20,7 +20,7 @@ Both variants provide the standard **router + ComQueue + CCSDS framers/deframers
 | SVC-COMCCSDSSDLS-002 | The uplink path shall pass TC-deframed data through a `Svc.Ccsds.CcsdsSdlsDeframer`, which extracts the SA index and delegates decryption before Space Packet deframing. | Inspection |
 | SVC-COMCCSDSSDLS-003 | Decryption requests shall be routed by SA index through a `Svc.Ccsds.SdlsSaRouter` to downstream decryptor instances.                                    | Inspection |
 | SVC-COMCCSDSSDLS-004 | The decryptor choice shall be configurable via the subtopology configuration module, defaulting to `Svc.Ccsds.ClearTextDecryptor`.                       | Inspection |
-| SVC-COMCCSDSSDLS-005 | The default SA map shall route a configurable base SA index (`SdlsCfg.SaRouterBaseSa`) to port 0 (the default decryptor); remaining default entries route to ports left unconnected. | Inspection |
+| SVC-COMCCSDSSDLS-005 | The default SA map shall route SA 0 to the `PLAINTEXT_DECRYPTION` port (the default decryptor); remaining default entries route to ports left unconnected. | Inspection |
 | SVC-COMCCSDSSDLS-006 | The module shall provide a `FramingSubtopology` (external `Svc.ComInterface`) and a `Subtopology` (supplies `Svc::ComStub`) variant, mirroring ComCcsds. | Inspection |
 | SVC-COMCCSDSSDLS-007 | Instance properties (base ID, queue/stack sizes, priorities, buffer sizing) shall be configurable via a `ComCcsdsSdlsConfig` module.                     | Inspection |
 
@@ -68,7 +68,7 @@ The `decryptor` instance is defined in the configuration module (`ComCcsdsSdlsCo
 
 ### 2.4 Default SA Map
 
-The `SdlsSaRouter` default configuration is two deep: `{ SdlsCfg.SaRouterBaseSa -> port 0, SdlsCfg.SaRouterBaseSa + 1 -> port 1 }`, with `SdlsCfg.SaRouterBaseSa = 0`. The subtopology connects only port 0 (the default decryptor); port 1 is left unconnected, so its SA returns `UNKNOWN_PORT` unless a deployment connects an additional decryptor. The base SA is configurable by overriding the `SdlsSaRouter` configuration module.
+The `SdlsSaRouter` default configuration is two deep: `{ SA 0 -> SaRouterPorts.PLAINTEXT_DECRYPTION, SA 1 -> SaRouterPorts.UNCONNECTED }`. The subtopology connects only the `PLAINTEXT_DECRYPTION` port (the default decryptor); the `UNCONNECTED` port is left unconnected, so its SA returns `UNKNOWN_PORT` unless a deployment connects an additional decryptor. The SA mapping is configurable by overriding the `SdlsSaRouter` configuration module.
 
 ### 2.5 Required Inputs for Operation
 
