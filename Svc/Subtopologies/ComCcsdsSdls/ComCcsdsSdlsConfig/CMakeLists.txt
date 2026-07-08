@@ -1,0 +1,12 @@
+register_fprime_config(
+    EXCLUDE_FROM_ALL
+    SOURCES
+        "${CMAKE_CURRENT_LIST_DIR}/ComCcsdsSdlsSubtopologyConfig.cpp"
+    HEADERS
+        "${CMAKE_CURRENT_LIST_DIR}/ComCcsdsSdlsSubtopologyConfig.hpp"
+    AUTOCODER_INPUTS
+        "${CMAKE_CURRENT_LIST_DIR}/ComCcsdsSdlsConfig.fpp"
+    DEPENDS
+        Fw_Types
+        Svc_Ccsds_ClearTextDecryptor
+)

@@ -19,13 +19,13 @@ namespace Ccsds {
 // ----------------------------------------------------------------------
 
 bool SdlsSaRouterTester::Route__KnownSa__precondition() const {
-    return true;
+    return this->m_decryptOutConnected;
 }
 
 void SdlsSaRouterTester::Route__KnownSa__action() {
     this->clearHistory();
 
-    const FwSizeType pick = this->pickConnectedEntry();
+    const FwSizeType pick = this->pickMapEntry();
     const U16 sa = this->m_mapSas[pick];
     const FwIndexType expectedPort = this->m_mapPorts[pick];
 
@@ -75,23 +75,15 @@ void SdlsSaRouterTester::Route__UnknownSa__action() {
 // ----------------------------------------------------------------------
 
 bool SdlsSaRouterTester::Route__UnknownPort__precondition() const {
-    return true;
+    // Requires the saDecryptOut ports to be left unconnected
+    return !this->m_decryptOutConnected;
 }
 
 void SdlsSaRouterTester::Route__UnknownPort__action() {
     this->clearHistory();
 
-    // Find an SA routed to the unconnected port
-    U16 sa = 0;
-    bool found = false;
-    for (FwSizeType i = 0; i < SdlsCfg::SaRouterMapEntryCount; i++) {
-        if (this->m_mapPorts[i] == UNCONNECTED_PORT) {
-            sa = this->m_mapSas[i];
-            found = true;
-            break;
-        }
-    }
-    ASSERT_TRUE(found);
+    // Any mapped SA routes to an unconnected port in this configuration
+    const U16 sa = this->m_mapSas[this->pickMapEntry()];
     U8 storage[TEST_BUFFER_SIZE];
     Fw::Buffer buffer(storage, sizeof storage);
     ComCfg::FrameContext context;

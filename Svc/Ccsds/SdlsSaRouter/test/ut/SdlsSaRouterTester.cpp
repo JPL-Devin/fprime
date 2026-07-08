@@ -15,10 +15,12 @@ namespace Ccsds {
 // Construction and destruction
 // ----------------------------------------------------------------------
 
-SdlsSaRouterTester ::SdlsSaRouterTester()
-    : SdlsSaRouterGTestBase("SdlsSaRouterTester", SdlsSaRouterTester::MAX_HISTORY_SIZE), component("SdlsSaRouter") {
+SdlsSaRouterTester ::SdlsSaRouterTester(bool connectDecryptOut)
+    : SdlsSaRouterGTestBase("SdlsSaRouterTester", SdlsSaRouterTester::MAX_HISTORY_SIZE),
+      component("SdlsSaRouter"),
+      m_decryptOutConnected(connectDecryptOut) {
     this->initComponents();
-    this->connectPortsCustom();
+    this->connectPortsCustom(connectDecryptOut);
 
     // Mirror the compile-time map for computing expected routing
     const SdlsCfg::SaMap saMap;
@@ -56,7 +58,7 @@ void SdlsSaRouterTester ::from_saDecryptReturnOut_handler(FwIndexType portNum,
 // Helper functions
 // ----------------------------------------------------------------------
 
-void SdlsSaRouterTester ::connectPortsCustom() {
+void SdlsSaRouterTester ::connectPortsCustom(bool connectDecryptOut) {
     // Connect typed input ports
     this->connect_to_decryptIn(0, this->component.get_decryptIn_InputPort(0));
     this->connect_to_decryptReturnIn(0, this->component.get_decryptReturnIn_InputPort(0));
@@ -65,11 +67,11 @@ void SdlsSaRouterTester ::connectPortsCustom() {
         this->connect_to_saDecryptIn(i, this->component.get_saDecryptIn_InputPort(i));
     }
 
-    // Connect typed output ports, leaving saDecryptOut[UNCONNECTED_PORT] unconnected
+    // Connect typed output ports, optionally leaving saDecryptOut unconnected
     this->component.set_bufferReturnOut_OutputPort(0, this->get_from_bufferReturnOut(0));
     this->component.set_decryptOut_OutputPort(0, this->get_from_decryptOut(0));
     for (FwIndexType i = 0; i < SdlsCfg::SaRouterPortCount; i++) {
-        if (i != UNCONNECTED_PORT) {
+        if (connectDecryptOut) {
             this->component.set_saDecryptOut_OutputPort(i, this->get_from_saDecryptOut(i));
         }
         this->component.set_saDecryptReturnOut_OutputPort(i, this->get_from_saDecryptReturnOut(i));
@@ -85,17 +87,8 @@ bool SdlsSaRouterTester ::isMappedSa(U16 sa) const {
     return false;
 }
 
-FwSizeType SdlsSaRouterTester ::pickConnectedEntry() const {
-    FwSizeType candidates[SdlsCfg::SaRouterMapEntryCount];
-    FwSizeType count = 0;
-    for (FwSizeType i = 0; i < SdlsCfg::SaRouterMapEntryCount; i++) {
-        if (this->m_mapPorts[i] != UNCONNECTED_PORT) {
-            candidates[count] = i;
-            count++;
-        }
-    }
-    FW_ASSERT(count > 0);
-    return candidates[STest::Pick::lowerUpper(0, static_cast<U32>(count - 1))];
+FwSizeType SdlsSaRouterTester ::pickMapEntry() const {
+    return STest::Pick::lowerUpper(0, static_cast<U32>(SdlsCfg::SaRouterMapEntryCount - 1));
 }
 
 U8* SdlsSaRouterTester ::getFreePoolBuffer() {

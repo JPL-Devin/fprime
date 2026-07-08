@@ -36,9 +36,11 @@ TEST(SdlsSaRouter, RouteErrors) {
     REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-006");
     SdlsSaRouterTester tester;
     SdlsSaRouterTester::Route__UnknownSa ruleUnknownSa;
-    SdlsSaRouterTester::Route__UnknownPort ruleUnknownPort;
     ruleUnknownSa.apply(tester);
-    ruleUnknownPort.apply(tester);
+    // UNKNOWN_PORT requires a tester with the saDecryptOut ports left unconnected
+    SdlsSaRouterTester unconnectedTester(false);
+    SdlsSaRouterTester::Route__UnknownPort ruleUnknownPort;
+    ruleUnknownPort.apply(unconnectedTester);
 }
 
 // Verify decrypted data flows upstream (saDecryptIn -> decryptOut) and its
