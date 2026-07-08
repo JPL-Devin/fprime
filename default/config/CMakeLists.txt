@@ -17,6 +17,7 @@ register_fprime_config(
         "${CMAKE_CURRENT_LIST_DIR}/OsCfg.fpp"
         "${CMAKE_CURRENT_LIST_DIR}/PlatformCfg.fpp"
         "${CMAKE_CURRENT_LIST_DIR}/PolyDbCfg.fpp"
+        "${CMAKE_CURRENT_LIST_DIR}/SdlsCfg.fpp"
         "${CMAKE_CURRENT_LIST_DIR}/VersionCfg.fpp"
     HEADERS
         "${CMAKE_CURRENT_LIST_DIR}/MemoryAllocation.hpp"
