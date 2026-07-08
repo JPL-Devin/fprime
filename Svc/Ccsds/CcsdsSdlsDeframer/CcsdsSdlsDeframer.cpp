@@ -25,13 +25,15 @@ CcsdsSdlsDeframer ::~CcsdsSdlsDeframer() {}
 void CcsdsSdlsDeframer ::bufferReturnIn_handler(FwIndexType portNum,
                                                 Fw::Buffer& data,
                                                 const ComCfg::FrameContext& context) {
-    // TODO
+    // The decryption helper has returned the original frame buffer: send it back upstream
+    this->dataReturnOut_out(0, data, context);
 }
 
 void CcsdsSdlsDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, const ComCfg::FrameContext& context) {
     if (data.getSize() < sizeof(U16)) {
         // The frame is not long enough to contain the security association index, so we cannot process it
         this->log_WARNING_HI_InsufficientLength();
+        this->dataReturnOut_out(0, data, context);  // Drop the frame
     } else {
         U16 saIndex = 0;
         Fw::SerializeStatus deserializeStatus = data.getDeserializer().deserializeTo(saIndex);
@@ -40,6 +42,10 @@ void CcsdsSdlsDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, c
         // Copy context and set the security association index to the value we just deserialized from the frame
         ComCfg::FrameContext newContext = context;
         newContext.set_saIndex(saIndex);
+
+        // Remove the security association index: the decryption helper receives only the iv/data
+        data.setData(data.getData() + sizeof(U16));
+        data.setSize(data.getSize() - static_cast<Fw::Buffer::SizeType>(sizeof(U16)));
 
         Svc::Ccsds::SdlsStatus decryptionStatus = this->decryptOut_out(0, saIndex, data, newContext);
         if (decryptionStatus != Svc::Ccsds::SdlsStatus::SUCCESS) {
