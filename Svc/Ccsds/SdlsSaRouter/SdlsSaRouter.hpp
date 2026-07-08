@@ -7,7 +7,10 @@
 #ifndef Svc_Ccsds_SdlsSaRouter_HPP
 #define Svc_Ccsds_SdlsSaRouter_HPP
 
+#include "Fw/DataStructures/ArrayMap.hpp"
 #include "Svc/Ccsds/SdlsSaRouter/SdlsSaRouterComponentAc.hpp"
+#include "Svc/Ccsds/Types/SaMapArrayAc.hpp"
+#include "config/FppConstantsAc.hpp"
 
 namespace Svc {
 
@@ -26,6 +29,9 @@ class SdlsSaRouter final : public SdlsSaRouterComponentBase {
     //! Destroy SdlsSaRouter object
     ~SdlsSaRouter();
 
+    //! Configure the SA-to-port routing map
+    void configure(const Svc::Ccsds::SaMap& saMap);
+
   private:
     // ----------------------------------------------------------------------
     // Handler implementations for typed input ports
@@ -36,28 +42,40 @@ class SdlsSaRouter final : public SdlsSaRouterComponentBase {
     //! Port to receive the security association index and iv/data buffer to decrypt
     Svc::Ccsds::SdlsStatus decryptIn_handler(FwIndexType portNum,  //!< The port number
                                              U16 securityAssociationIndex,
-                                             Fw::Buffer& data) override;
+                                             Fw::Buffer& data,
+                                             const ComCfg::FrameContext& context) override;
 
     //! Handler implementation for decryptReturnIn
     //!
     //! Port for receiving back ownership of buffers sent on decryptOut
     void decryptReturnIn_handler(FwIndexType portNum,  //!< The port number
-                                 Fw::Buffer& fwBuffer  //!< The buffer
-                                 ) override;
+                                 Fw::Buffer& data,
+                                 const ComCfg::FrameContext& context) override;
 
     //! Handler implementation for saBufferReturnIn
     //!
     //! Ports for receiving back iv/data buffers from downstream decryptors for deallocation
     void saBufferReturnIn_handler(FwIndexType portNum,  //!< The port number
-                                  Fw::Buffer& fwBuffer  //!< The buffer
-                                  ) override;
+                                  Fw::Buffer& data,
+                                  const ComCfg::FrameContext& context) override;
 
     //! Handler implementation for saDecryptIn
     //!
     //! Ports for receiving decrypted data (possibly newly allocated) from downstream decryptors
     void saDecryptIn_handler(FwIndexType portNum,  //!< The port number
-                             Fw::Buffer& fwBuffer  //!< The buffer
-                             ) override;
+                             Fw::Buffer& data,
+                             const ComCfg::FrameContext& context) override;
+
+  private:
+    // ----------------------------------------------------------------------
+    // Member variables
+    // ----------------------------------------------------------------------
+
+    //! Map from SA index to downstream port index
+    Fw::ArrayMap<U16, FwIndexType, SdlsCfg::SaRouterMapEntryCount> m_saMap;
+
+    //! Table of outstanding decrypted data buffers to their originating port index
+    Fw::ArrayMap<const U8*, FwIndexType, SdlsCfg::SaRouterMaxOutstandingBuffers> m_outstanding;
 };
 
 }  // namespace Ccsds

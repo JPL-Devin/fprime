@@ -16,3 +16,19 @@ register_fprime_library(
   AUTOCODER_INPUTS
     "${CMAKE_CURRENT_LIST_DIR}/SdlsSaRouter.fpp"
 )
+
+### Unit Tests ###
+register_fprime_ut(
+  SOURCES
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/SdlsSaRouterTestMain.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/SdlsSaRouterTester.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/TestState/TestState.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/Rules/Route.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/Rules/DataFlow.cpp"
+  AUTOCODER_INPUTS
+    "${CMAKE_CURRENT_LIST_DIR}/SdlsSaRouter.fpp"
+  DEPENDS
+    Svc_Ccsds_Types
+    STest
+  UT_AUTO_HELPERS
+)
