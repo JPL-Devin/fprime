@@ -200,11 +200,11 @@ module ComCcsdsSdls {
             sdlsDeframer.decryptReturnOut -> saRouter.decryptReturnIn
             saRouter.bufferReturnOut      -> sdlsDeframer.bufferReturnIn
 
-            # SdlsSaRouter <-> default decryptor (port 0, base SA)
-            saRouter.saDecryptOut[0]       -> decryptor.decryptIn
-            decryptor.decryptOut           -> saRouter.saDecryptIn[0]
-            saRouter.saDecryptReturnOut[0] -> decryptor.decryptReturnIn
-            decryptor.bufferReturnOut      -> saRouter.saBufferReturnIn[0]
+            # SdlsSaRouter <-> default decryptor
+            saRouter.saDecryptOut[SdlsCfg.SaRouterPorts.PLAINTEXT_DECRYPTION]       -> decryptor.decryptIn
+            decryptor.decryptOut                                                    -> saRouter.saDecryptIn[SdlsCfg.SaRouterPorts.PLAINTEXT_DECRYPTION]
+            saRouter.saDecryptReturnOut[SdlsCfg.SaRouterPorts.PLAINTEXT_DECRYPTION] -> decryptor.decryptReturnIn
+            decryptor.bufferReturnOut                                               -> saRouter.saBufferReturnIn[SdlsCfg.SaRouterPorts.PLAINTEXT_DECRYPTION]
         }
     } # end FramingSubtopology
 
