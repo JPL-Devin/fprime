@@ -41,13 +41,13 @@ All of the above are defined in the component-local configuration module `Svc/Cc
 
 | Name | Description | Validation |
 |------|-------------|------------|
-| SVC-Ccsds-SDLS-SA-ROUTER-001 | The SdlsSaRouter shall accept an SA index and iv/data buffer via the `Svc.Ccsds.CcsdsSdlsDecrypt` interface (guarded `decryptIn`). | Unit Test |
-| SVC-Ccsds-SDLS-SA-ROUTER-002 | The SdlsSaRouter shall map the incoming SA index to a downstream port index using a compile-time SA-to-port map: an FPP array of {U16 SA, FwIndexType port index} pairs (`SdlsCfg.SaMap`) defined in configuration. | Unit Test |
-| SVC-Ccsds-SDLS-SA-ROUTER-003 | The SdlsSaRouter shall forward the SA index and buffer out the mapped output port and shall return the downstream decryptor's `SdlsStatus` to its caller. | Unit Test |
-| SVC-Ccsds-SDLS-SA-ROUTER-004 | The SdlsSaRouter shall receive returned iv/data buffers from downstream decryptors and pass them upstream via its return output. | Unit Test |
-| SVC-Ccsds-SDLS-SA-ROUTER-005 | Upon receiving an SA index with no map entry, the SdlsSaRouter shall return `UNKNOWN_SA` without forwarding the buffer. | Unit Test |
-| SVC-Ccsds-SDLS-SA-ROUTER-006 | Upon a map entry referencing an out-of-range or unconnected port index, the SdlsSaRouter shall return `UNKNOWN_PORT` without forwarding the buffer. | Unit Test |
-| SVC-Ccsds-SDLS-SA-ROUTER-007 | The downstream port arrays shall share a single dimension set by a constant in the component configuration module; the SA-map array dimension shall be an independent config constant. | Inspection |
+| SVC-CCSDS-SDLS-SA-ROUTER-001 | The SdlsSaRouter shall accept an SA index and iv/data buffer via the `Svc.Ccsds.CcsdsSdlsDecrypt` interface (guarded `decryptIn`). | Unit Test |
+| SVC-CCSDS-SDLS-SA-ROUTER-002 | The SdlsSaRouter shall map the incoming SA index to a downstream port index using a compile-time SA-to-port map: an FPP array of {U16 SA, FwIndexType port index} pairs (`SdlsCfg.SaMap`) defined in configuration. | Unit Test |
+| SVC-CCSDS-SDLS-SA-ROUTER-003 | The SdlsSaRouter shall forward the SA index and buffer out the mapped output port and shall return the downstream decryptor's `SdlsStatus` to its caller. | Unit Test |
+| SVC-CCSDS-SDLS-SA-ROUTER-004 | The SdlsSaRouter shall receive returned iv/data buffers from downstream decryptors and pass them upstream via its return output. | Unit Test |
+| SVC-CCSDS-SDLS-SA-ROUTER-005 | Upon receiving an SA index with no map entry, the SdlsSaRouter shall return `UNKNOWN_SA` without forwarding the buffer. | Unit Test |
+| SVC-CCSDS-SDLS-SA-ROUTER-006 | Upon a map entry referencing an out-of-range or unconnected port index, the SdlsSaRouter shall return `UNKNOWN_PORT` without forwarding the buffer. | Unit Test |
+| SVC-CCSDS-SDLS-SA-ROUTER-007 | The downstream port arrays shall share a single dimension set by a constant in the component configuration module; the SA-map array dimension shall be an independent config constant. | Inspection |
 
 ## See Also
 

@@ -20,9 +20,9 @@ using Svc::Ccsds::SdlsSaRouterTester;
 // downstream status through to the caller.
 TEST(SdlsSaRouter, RouteKnownSa) {
     COMMENT("Route a known SA to the mapped downstream port and pass the status through.");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-001");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-002");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-003");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-001");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-002");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-003");
     SdlsSaRouterTester tester;
     SdlsSaRouterTester::Route__KnownSa rule;
     rule.apply(tester);
@@ -32,8 +32,8 @@ TEST(SdlsSaRouter, RouteKnownSa) {
 // for an SA mapped to an out-of-range port, without forwarding.
 TEST(SdlsSaRouter, RouteErrors) {
     COMMENT("Return UNKNOWN_SA for unmapped SAs and UNKNOWN_PORT for unconnected ports.");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-005");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-006");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-005");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-006");
     SdlsSaRouterTester tester;
     SdlsSaRouterTester::Route__UnknownSa ruleUnknownSa;
     SdlsSaRouterTester::Route__UnknownPort ruleUnknownPort;
@@ -46,7 +46,7 @@ TEST(SdlsSaRouter, RouteErrors) {
 // (decryptReturnIn -> saDecryptReturnOut).
 TEST(SdlsSaRouter, DecryptDataAndReturn) {
     COMMENT("Forward decrypted data upstream and route its ownership return to the originating port.");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-004");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-004");
     SdlsSaRouterTester tester;
     SdlsSaRouterTester::DataFlow__DecryptData ruleData;
     SdlsSaRouterTester::DataFlow__DecryptReturn ruleReturn;
@@ -58,7 +58,7 @@ TEST(SdlsSaRouter, DecryptDataAndReturn) {
 // (saBufferReturnIn -> bufferReturnOut).
 TEST(SdlsSaRouter, BufferReturn) {
     COMMENT("Pass iv/data buffers from downstream decryptors upstream for deallocation.");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-004");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-004");
     SdlsSaRouterTester tester;
     SdlsSaRouterTester::DataFlow__BufferReturn rule;
     rule.apply(tester);
@@ -67,12 +67,12 @@ TEST(SdlsSaRouter, BufferReturn) {
 // Randomized test: apply rules in a random sequence for a large number of iterations
 TEST(SdlsSaRouter, RandomizedTesting) {
     COMMENT("Apply all rules in a randomized order to exercise interleaved routing and data flow.");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-001");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-002");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-003");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-004");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-005");
-    REQUIREMENT("SVC-Ccsds-SDLS-SA-ROUTER-006");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-001");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-002");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-003");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-004");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-005");
+    REQUIREMENT("SVC-CCSDS-SDLS-SA-ROUTER-006");
     const U32 numRulesToApply = 10000;
     SdlsSaRouterTester tester;
     SdlsSaRouterTester::Route__KnownSa ruleKnownSa;
