@@ -23,25 +23,19 @@ query-filters:
         - cpp/jpl-c/use-of-assertions-non-boolean
         - cpp/jpl-c/use-of-assertions-side-effect
         - cpp/jpl-c/checking-parameter-values
+        - cpp/jpl-c/checking-return-values
   # Temporarily moved to jpl-standard-known-autocode-issues.yml (with build paths
   # excluded) until the autocoder emits boolean assertion expressions.
   # See https://github.com/nasa/fpp/issues/1030
   - exclude:
       id:
         - cpp/fprime/jpl-c/use-of-assertions-non-boolean
-  # Moved to jpl-standard-known-autocode-issues.yml (with build paths excluded).
-  # The autocoder emits FW_ASSERT conditions that call side-effect-free const
-  # query functions (e.g. isConnected_*_OutputPort(), getDeserializeSizeLeft());
-  # CodeQL's isPure() conservatively treats any function call as impure, so these
-  # are false positives on generated code. The query still guards hand-written
-  # sources in the known-auto-code run.
+  # The F Prime refinement cpp/fprime/jpl-c/checking-return-values whitelists the
+  # assignment/increment operators (operator=, operator+=, operator++, ...) whose
+  # chaining return value is idiomatically ignored, but it still flags the
+  # autocoder's unchecked Fw::StringBase::format() calls. It therefore runs in
+  # jpl-standard-known-autocode-issues.yml (with build paths excluded) until the
+  # autocoder is fixed. See https://github.com/nasa/fpp/issues/1031
   - exclude:
       id:
-        - cpp/fprime/jpl-c/use-of-assertions-side-effect
-  # Moved to jpl-standard-known-autocode-issues.yml (with build paths excluded).
-  # Generated event handlers ignore the Fw::FormatStatus returned by
-  # Fw::StringBase::format(), and generated code ignores the reference returned
-  # by operator=/operator+=/operator++. See https://github.com/nasa/fpp/issues/1031
-  - exclude:
-      id:
-        - cpp/jpl-c/checking-return-values
+        - cpp/fprime/jpl-c/checking-return-values
