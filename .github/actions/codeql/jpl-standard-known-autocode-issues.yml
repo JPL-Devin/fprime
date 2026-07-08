@@ -12,6 +12,10 @@ disable-default-queries: true
 paths-ignore:
   - "**/build-fprime-*/**"
 
+packs:
+  # Source of the query pack is https://github.com/github/codeql/tree/main/cpp/ql/src/JPL_C
+  - codeql/cpp-queries:JPL_C
+
 queries:
   - uses: ./.github/codeql/fprime-queries
 
@@ -22,3 +26,9 @@ query-filters:
         # The autocoder emits non-boolean FW_ASSERT expressions,
         # see https://github.com/nasa/fpp/issues/1030
         - cpp/fprime/jpl-c/use-of-assertions-non-boolean
+        # The autocoder emits FW_ASSERT conditions that call side-effect-free
+        # const query functions, which CodeQL's isPure() flags as side effects.
+        - cpp/fprime/jpl-c/use-of-assertions-side-effect
+        # The autocoder ignores the return value of Fw::StringBase::format()
+        # (and of operator=/+=/++), see https://github.com/nasa/fpp/issues/1031
+        - cpp/jpl-c/checking-return-values

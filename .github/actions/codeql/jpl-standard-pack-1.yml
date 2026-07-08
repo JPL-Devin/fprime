@@ -29,3 +29,19 @@ query-filters:
   - exclude:
       id:
         - cpp/fprime/jpl-c/use-of-assertions-non-boolean
+  # Moved to jpl-standard-known-autocode-issues.yml (with build paths excluded).
+  # The autocoder emits FW_ASSERT conditions that call side-effect-free const
+  # query functions (e.g. isConnected_*_OutputPort(), getDeserializeSizeLeft());
+  # CodeQL's isPure() conservatively treats any function call as impure, so these
+  # are false positives on generated code. The query still guards hand-written
+  # sources in the known-auto-code run.
+  - exclude:
+      id:
+        - cpp/fprime/jpl-c/use-of-assertions-side-effect
+  # Moved to jpl-standard-known-autocode-issues.yml (with build paths excluded).
+  # Generated event handlers ignore the Fw::FormatStatus returned by
+  # Fw::StringBase::format(), and generated code ignores the reference returned
+  # by operator=/operator+=/operator++. See https://github.com/nasa/fpp/issues/1031
+  - exclude:
+      id:
+        - cpp/jpl-c/checking-return-values
