@@ -10,11 +10,15 @@
 #
 ####
 
+add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/config/SdlsSaRouterConfig")
+
 register_fprime_library(
   SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/SdlsSaRouter.cpp"
   AUTOCODER_INPUTS
     "${CMAKE_CURRENT_LIST_DIR}/SdlsSaRouter.fpp"
+  DEPENDS
+    Svc_Ccsds_SdlsSaRouter_config_SdlsSaRouterConfig
 )
 
 ### Unit Tests ###
@@ -29,6 +33,7 @@ register_fprime_ut(
     "${CMAKE_CURRENT_LIST_DIR}/SdlsSaRouter.fpp"
   DEPENDS
     Svc_Ccsds_Types
+    Svc_Ccsds_SdlsSaRouter_config_SdlsSaRouterConfig
     STest
   UT_AUTO_HELPERS
 )

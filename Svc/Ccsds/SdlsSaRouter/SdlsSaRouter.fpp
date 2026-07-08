@@ -2,7 +2,7 @@ module Svc {
 module Ccsds {
     @ Routes SDLS decryption requests to downstream decryptor components by mapping
     @ the incoming security association (SA) index to a downstream port index using
-    @ an SA-to-port map (Svc.Ccsds.SaMap) provided at initialization
+    @ a compile-time SA-to-port map (SdlsCfg.SaMap)
     passive component SdlsSaRouter {
 
         # ----------------------------------------------------------------------

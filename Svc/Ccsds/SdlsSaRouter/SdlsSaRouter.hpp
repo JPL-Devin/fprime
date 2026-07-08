@@ -8,9 +8,9 @@
 #define Svc_Ccsds_SdlsSaRouter_HPP
 
 #include "Fw/DataStructures/ArrayMap.hpp"
+#include "SdlsSaRouterConfig/FppConstantsAc.hpp"
+#include "SdlsSaRouterConfig/SaMapArrayAc.hpp"
 #include "Svc/Ccsds/SdlsSaRouter/SdlsSaRouterComponentAc.hpp"
-#include "Svc/Ccsds/Types/SaMapArrayAc.hpp"
-#include "config/FppConstantsAc.hpp"
 
 namespace Svc {
 
@@ -28,9 +28,6 @@ class SdlsSaRouter final : public SdlsSaRouterComponentBase {
 
     //! Destroy SdlsSaRouter object
     ~SdlsSaRouter();
-
-    //! Configure the SA-to-port routing map
-    void configure(const Svc::Ccsds::SaMap& saMap);
 
   private:
     // ----------------------------------------------------------------------

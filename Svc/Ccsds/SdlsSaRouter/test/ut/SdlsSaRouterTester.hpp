@@ -31,11 +31,8 @@ class SdlsSaRouterTester : public SdlsSaRouterGTestBase {
     //! Size of each test buffer in the pool
     static const FwSizeType TEST_BUFFER_SIZE = 64;
 
-    //! Number of valid SA map entries used for testing
-    static const FwSizeType VALID_SA_COUNT = 3;
-
-    //! SA mapped to an out-of-range port index
-    static const U16 OUT_OF_RANGE_SA = 99;
+    //! Downstream port left unconnected to exercise the UNKNOWN_PORT return
+    static const FwIndexType UNCONNECTED_PORT = SdlsCfg::SaRouterPortCount - 1;
 
   public:
     // ----------------------------------------------------------------------
@@ -69,14 +66,24 @@ class SdlsSaRouterTester : public SdlsSaRouterGTestBase {
     // Helper functions
     // ----------------------------------------------------------------------
 
-    //! Connect ports
+    //! Connect ports (auto-generated; unused in favor of connectPortsCustom)
     void connectPorts();
+
+    //! Connect ports, leaving saDecryptOut[UNCONNECTED_PORT] unconnected
+    void connectPortsCustom();
 
     //! Initialize components
     void initComponents();
 
+  public:
     //! Return a pool buffer pointer not currently outstanding, or nullptr if all are in use
     U8* getFreePoolBuffer();
+
+    //! Return true if the SA appears in the configured map
+    bool isMappedSa(U16 sa) const;
+
+    //! Return the map index of a random entry routed to a connected port
+    FwSizeType pickConnectedEntry() const;
 
   public:
     // ----------------------------------------------------------------------
@@ -101,11 +108,11 @@ class SdlsSaRouterTester : public SdlsSaRouterGTestBase {
     //! Pool of buffers used as outstanding decrypted data
     U8 m_pool[SdlsCfg::SaRouterMaxOutstandingBuffers][TEST_BUFFER_SIZE];
 
-    //! SAs configured in the test routing map, paired with their expected ports
-    U16 m_validSas[VALID_SA_COUNT];
+    //! SAs from the compile-time routing map (SdlsCfg::SaMap defaults)
+    U16 m_mapSas[SdlsCfg::SaRouterMapEntryCount];
 
-    //! Expected downstream port for each valid SA
-    FwIndexType m_validPorts[VALID_SA_COUNT];
+    //! Expected downstream port for each map entry
+    FwIndexType m_mapPorts[SdlsCfg::SaRouterMapEntryCount];
 
   public:
     // ----------------------------------------------------------------------

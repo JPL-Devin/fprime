@@ -25,9 +25,9 @@ bool SdlsSaRouterTester::Route__KnownSa__precondition() const {
 void SdlsSaRouterTester::Route__KnownSa__action() {
     this->clearHistory();
 
-    const U32 pick = STest::Pick::lowerUpper(0, VALID_SA_COUNT - 1);
-    const U16 sa = this->m_validSas[pick];
-    const FwIndexType expectedPort = this->m_validPorts[pick];
+    const FwSizeType pick = this->pickConnectedEntry();
+    const U16 sa = this->m_mapSas[pick];
+    const FwIndexType expectedPort = this->m_mapPorts[pick];
 
     // Stage a random downstream status to verify pass-through
     this->m_downstreamStatus = (STest::Pick::lowerUpper(0, 1) == 0) ? Svc::Ccsds::SdlsStatus::SUCCESS
@@ -57,14 +57,9 @@ void SdlsSaRouterTester::Route__UnknownSa__action() {
 
     // Pick an SA outside the configured map
     U16 sa = 0;
-    bool known = true;
-    while (known) {
+    do {
         sa = static_cast<U16>(STest::Pick::lowerUpper(0, 0xFFFF));
-        known = (sa == OUT_OF_RANGE_SA);
-        for (FwSizeType i = 0; i < VALID_SA_COUNT; i++) {
-            known = known || (sa == this->m_validSas[i]);
-        }
-    }
+    } while (this->isMappedSa(sa));
     U8 storage[TEST_BUFFER_SIZE];
     Fw::Buffer buffer(storage, sizeof storage);
     ComCfg::FrameContext context;
@@ -86,11 +81,22 @@ bool SdlsSaRouterTester::Route__UnknownPort__precondition() const {
 void SdlsSaRouterTester::Route__UnknownPort__action() {
     this->clearHistory();
 
+    // Find an SA routed to the unconnected port
+    U16 sa = 0;
+    bool found = false;
+    for (FwSizeType i = 0; i < SdlsCfg::SaRouterMapEntryCount; i++) {
+        if (this->m_mapPorts[i] == UNCONNECTED_PORT) {
+            sa = this->m_mapSas[i];
+            found = true;
+            break;
+        }
+    }
+    ASSERT_TRUE(found);
     U8 storage[TEST_BUFFER_SIZE];
     Fw::Buffer buffer(storage, sizeof storage);
     ComCfg::FrameContext context;
 
-    const Svc::Ccsds::SdlsStatus status = this->invoke_to_decryptIn(0, OUT_OF_RANGE_SA, buffer, context);
+    const Svc::Ccsds::SdlsStatus status = this->invoke_to_decryptIn(0, sa, buffer, context);
 
     ASSERT_EQ(status, Svc::Ccsds::SdlsStatus::UNKNOWN_PORT);
     ASSERT_from_saDecryptOut_SIZE(0);

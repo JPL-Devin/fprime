@@ -34,10 +34,6 @@ module Ccsds {
         portIndex: FwIndexType          @< Port index
     }
 
-    @ Map from security association index to port index. Projects may define sparse or
-    @ non-linear SA ranges that map down to a compact, linear port array.
-    array SaMap = [SdlsCfg.SaRouterMapEntryCount] SaMapEntry
-
     # ------------------------------------------------
     # SpacePacket
     # ------------------------------------------------

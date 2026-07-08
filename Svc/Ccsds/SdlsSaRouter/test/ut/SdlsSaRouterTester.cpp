@@ -5,6 +5,7 @@
 // ======================================================================
 
 #include "Svc/Ccsds/SdlsSaRouter/test/ut/SdlsSaRouterTester.hpp"
+#include "STest/Pick/Pick.hpp"
 
 namespace Svc {
 
@@ -17,22 +18,14 @@ namespace Ccsds {
 SdlsSaRouterTester ::SdlsSaRouterTester()
     : SdlsSaRouterGTestBase("SdlsSaRouterTester", SdlsSaRouterTester::MAX_HISTORY_SIZE), component("SdlsSaRouter") {
     this->initComponents();
-    this->connectPorts();
+    this->connectPortsCustom();
 
-    // Non-linear, sparse SA-to-port test map with one out-of-range entry
-    this->m_validSas[0] = 10;
-    this->m_validPorts[0] = 0;
-    this->m_validSas[1] = 5;
-    this->m_validPorts[1] = 1;
-    this->m_validSas[2] = 42;
-    this->m_validPorts[2] = 2;
-
-    Svc::Ccsds::SaMap saMap;
-    for (FwSizeType i = 0; i < VALID_SA_COUNT; i++) {
-        saMap[i] = Svc::Ccsds::SaMapEntry(this->m_validSas[i], this->m_validPorts[i]);
+    // Mirror the compile-time map for computing expected routing
+    const SdlsCfg::SaMap saMap;
+    for (SdlsCfg::SaMap::SizeType i = 0; i < SdlsCfg::SaMap::SIZE; i++) {
+        this->m_mapSas[i] = saMap[i].get_securityAssociationIndex();
+        this->m_mapPorts[i] = saMap[i].get_portIndex();
     }
-    saMap[VALID_SA_COUNT] = Svc::Ccsds::SaMapEntry(OUT_OF_RANGE_SA, SdlsCfg::SaRouterPortCount);
-    this->component.configure(saMap);
 }
 
 SdlsSaRouterTester ::~SdlsSaRouterTester() {
@@ -62,6 +55,48 @@ void SdlsSaRouterTester ::from_saDecryptReturnOut_handler(FwIndexType portNum,
 // ----------------------------------------------------------------------
 // Helper functions
 // ----------------------------------------------------------------------
+
+void SdlsSaRouterTester ::connectPortsCustom() {
+    // Connect typed input ports
+    this->connect_to_decryptIn(0, this->component.get_decryptIn_InputPort(0));
+    this->connect_to_decryptReturnIn(0, this->component.get_decryptReturnIn_InputPort(0));
+    for (FwIndexType i = 0; i < SdlsCfg::SaRouterPortCount; i++) {
+        this->connect_to_saBufferReturnIn(i, this->component.get_saBufferReturnIn_InputPort(i));
+        this->connect_to_saDecryptIn(i, this->component.get_saDecryptIn_InputPort(i));
+    }
+
+    // Connect typed output ports, leaving saDecryptOut[UNCONNECTED_PORT] unconnected
+    this->component.set_bufferReturnOut_OutputPort(0, this->get_from_bufferReturnOut(0));
+    this->component.set_decryptOut_OutputPort(0, this->get_from_decryptOut(0));
+    for (FwIndexType i = 0; i < SdlsCfg::SaRouterPortCount; i++) {
+        if (i != UNCONNECTED_PORT) {
+            this->component.set_saDecryptOut_OutputPort(i, this->get_from_saDecryptOut(i));
+        }
+        this->component.set_saDecryptReturnOut_OutputPort(i, this->get_from_saDecryptReturnOut(i));
+    }
+}
+
+bool SdlsSaRouterTester ::isMappedSa(U16 sa) const {
+    for (FwSizeType i = 0; i < SdlsCfg::SaRouterMapEntryCount; i++) {
+        if (this->m_mapSas[i] == sa) {
+            return true;
+        }
+    }
+    return false;
+}
+
+FwSizeType SdlsSaRouterTester ::pickConnectedEntry() const {
+    FwSizeType candidates[SdlsCfg::SaRouterMapEntryCount];
+    FwSizeType count = 0;
+    for (FwSizeType i = 0; i < SdlsCfg::SaRouterMapEntryCount; i++) {
+        if (this->m_mapPorts[i] != UNCONNECTED_PORT) {
+            candidates[count] = i;
+            count++;
+        }
+    }
+    FW_ASSERT(count > 0);
+    return candidates[STest::Pick::lowerUpper(0, static_cast<U32>(count - 1))];
+}
 
 U8* SdlsSaRouterTester ::getFreePoolBuffer() {
     for (FwSizeType i = 0; i < SdlsCfg::SaRouterMaxOutstandingBuffers; i++) {

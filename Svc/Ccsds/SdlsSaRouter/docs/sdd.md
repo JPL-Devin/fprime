@@ -2,11 +2,11 @@
 
 The `Svc::Ccsds::SdlsSaRouter` component routes CCSDS SDLS (Space Data Link Security) decryption requests to downstream decryptor components based on the security association (SA) index. It implements the `Svc.Ccsds.CcsdsSdlsDecrypt` interface on the upstream side, and on the downstream side provides arrays of `CcsdsSdlsDecryptClient`-style ports (inlined, as FPP interfaces are not array-able at this time).
 
-The SA-to-port mapping is an FPP array of {`U16` SA, `FwIndexType` port index} pairs (`Svc.Ccsds.SaMap`, entry type `Svc.Ccsds.SaMapEntry`, both defined in `Svc/Ccsds/Types`). Its dimension is set by the `SdlsCfg.SaRouterMapEntryCount` configuration constant, so configuration sizes the map but does not define its shape. The map values are provided once at initialization via the `configure()` call. This permits more SAs than ports, sparse SAs, or project-defined non-linear SA ranges that all map down to a linear, compact array of outputs.
+The SA-to-port mapping is a compile-time FPP array of {`U16` SA, `FwIndexType` port index} pairs (`SdlsCfg.SaMap`, entry type `Svc.Ccsds.SaMapEntry` defined in `Svc/Ccsds/Types`). The map values and sizing constants are defined in a component-local configuration module (`Svc/Ccsds/SdlsSaRouter/config/SdlsSaRouterConfig/SdlsSaRouterCfg.fpp`, TlmPacketizer-style), which projects may override. This permits more SAs than ports, sparse SAs, or project-defined non-linear SA ranges that all map down to a linear, compact array of outputs.
 
 ## Functionality
 
-- Is configured at initialization with a `Svc.Ccsds.SaMap` via `configure()`, which loads an internal `Fw::ArrayMap` from SA index to port index.
+- Loads the compile-time `SdlsCfg.SaMap` into an internal `Fw::ArrayMap` from SA index to port index at construction.
 - Receives an SA index, iv/data buffer, and frame context on the guarded `decryptIn` port.
 - Looks up the SA index in the map; if found, forwards the request out the mapped `saDecryptOut` port and returns the downstream decryptor's `SdlsStatus` to the caller.
 - Returns `UNKNOWN_SA` if the SA index has no map entry, or `UNKNOWN_PORT` if the mapped port index is out of range or unconnected; the buffer is not forwarded in either case.
@@ -33,18 +33,21 @@ The SA-to-port mapping is an FPP array of {`U16` SA, `FwIndexType` port index} p
 | `SdlsCfg.SaRouterPortCount` | Dimension of the downstream port arrays. |
 | `SdlsCfg.SaRouterMapEntryCount` | Number of entries in the SA-to-port map (independent of port count). |
 | `SdlsCfg.SaRouterMaxOutstandingBuffers` | Capacity of the outstanding decrypted buffer bookkeeping table. |
+| `SdlsCfg.SaMap` | Compile-time array of {SA index, port index} pairs. |
+
+All of the above are defined in the component-local configuration module `Svc/Ccsds/SdlsSaRouter/config/SdlsSaRouterConfig`.
 
 ## Requirements
 
 | Name | Description | Validation |
 |------|-------------|------------|
 | SVC-Ccsds-SDLS-SA-ROUTER-001 | The SdlsSaRouter shall accept an SA index and iv/data buffer via the `Svc.Ccsds.CcsdsSdlsDecrypt` interface (guarded `decryptIn`). | Unit Test |
-| SVC-Ccsds-SDLS-SA-ROUTER-002 | The SdlsSaRouter shall map the incoming SA index to a downstream port index using a compile-time SA-to-port map: an FPP array of {U16 SA, FwIndexType port index} pairs (`Svc.Ccsds.SaMap`) provided at initialization. | Unit Test |
+| SVC-Ccsds-SDLS-SA-ROUTER-002 | The SdlsSaRouter shall map the incoming SA index to a downstream port index using a compile-time SA-to-port map: an FPP array of {U16 SA, FwIndexType port index} pairs (`SdlsCfg.SaMap`) defined in configuration. | Unit Test |
 | SVC-Ccsds-SDLS-SA-ROUTER-003 | The SdlsSaRouter shall forward the SA index and buffer out the mapped output port and shall return the downstream decryptor's `SdlsStatus` to its caller. | Unit Test |
 | SVC-Ccsds-SDLS-SA-ROUTER-004 | The SdlsSaRouter shall receive returned iv/data buffers from downstream decryptors and pass them upstream via its return output. | Unit Test |
 | SVC-Ccsds-SDLS-SA-ROUTER-005 | Upon receiving an SA index with no map entry, the SdlsSaRouter shall return `UNKNOWN_SA` without forwarding the buffer. | Unit Test |
 | SVC-Ccsds-SDLS-SA-ROUTER-006 | Upon a map entry referencing an out-of-range or unconnected port index, the SdlsSaRouter shall return `UNKNOWN_PORT` without forwarding the buffer. | Unit Test |
-| SVC-Ccsds-SDLS-SA-ROUTER-007 | The downstream port arrays shall share a single dimension set by a constant in `default/config/SdlsCfg.fpp`; the SA-map array dimension shall be an independent config constant. | Inspection |
+| SVC-Ccsds-SDLS-SA-ROUTER-007 | The downstream port arrays shall share a single dimension set by a constant in the component configuration module; the SA-map array dimension shall be an independent config constant. | Inspection |
 
 ## See Also
 
