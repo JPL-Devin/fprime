@@ -51,7 +51,6 @@ void CcsdsSdlsDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, c
         if (decryptionStatus != Svc::Ccsds::SdlsStatus::SUCCESS) {
             this->log_WARNING_HI_DecryptionFailed(decryptionStatus);
             this->errorNotify_out(0, Svc::Ccsds::FrameError::SDLS_DECRYPTION_FAILURE);
-            this->dataReturnOut_out(0, data, context);  // Drop the frame
         }
     }
 }

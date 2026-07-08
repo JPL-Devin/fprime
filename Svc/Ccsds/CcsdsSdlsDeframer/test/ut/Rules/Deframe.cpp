@@ -120,8 +120,8 @@ void CcsdsSdlsDeframerTester::Deframe__DecryptFailure__action() {
     ASSERT_from_errorNotify_SIZE(1);
     ASSERT_from_errorNotify(0, Svc::Ccsds::FrameError::SDLS_DECRYPTION_FAILURE);
 
-    // The failed frame buffer must still be returned via the return port
-    ASSERT_from_dataReturnOut_SIZE(1);
+    // The failing decryptor returns the buffer via bufferReturnIn: no direct return here
+    ASSERT_from_dataReturnOut_SIZE(0);
 
     this->m_decryptStatus = Svc::Ccsds::SdlsStatus::SUCCESS;
 }
