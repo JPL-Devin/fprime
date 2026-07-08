@@ -31,16 +31,14 @@ class SdlsSaRouterTester : public SdlsSaRouterGTestBase {
     //! Size of each test buffer in the pool
     static const FwSizeType TEST_BUFFER_SIZE = 64;
 
-    //! Downstream port left unconnected to exercise the UNKNOWN_PORT return
-    static const FwIndexType UNCONNECTED_PORT = SdlsCfg::SaRouterPortCount - 1;
-
   public:
     // ----------------------------------------------------------------------
     // Construction and destruction
     // ----------------------------------------------------------------------
 
-    //! Construct object SdlsSaRouterTester
-    SdlsSaRouterTester();
+    //! Construct object SdlsSaRouterTester; when connectDecryptOut is false the
+    //! saDecryptOut ports are left unconnected to exercise the UNKNOWN_PORT return
+    SdlsSaRouterTester(bool connectDecryptOut = true);
 
     //! Destroy object SdlsSaRouterTester
     ~SdlsSaRouterTester();
@@ -69,8 +67,8 @@ class SdlsSaRouterTester : public SdlsSaRouterGTestBase {
     //! Connect ports (auto-generated; unused in favor of connectPortsCustom)
     void connectPorts();
 
-    //! Connect ports, leaving saDecryptOut[UNCONNECTED_PORT] unconnected
-    void connectPortsCustom();
+    //! Connect ports, optionally leaving the saDecryptOut ports unconnected
+    void connectPortsCustom(bool connectDecryptOut);
 
     //! Initialize components
     void initComponents();
@@ -82,8 +80,8 @@ class SdlsSaRouterTester : public SdlsSaRouterGTestBase {
     //! Return true if the SA appears in the configured map
     bool isMappedSa(U16 sa) const;
 
-    //! Return the map index of a random entry routed to a connected port
-    FwSizeType pickConnectedEntry() const;
+    //! Return the map index of a random entry
+    FwSizeType pickMapEntry() const;
 
   public:
     // ----------------------------------------------------------------------
@@ -95,6 +93,9 @@ class SdlsSaRouterTester : public SdlsSaRouterGTestBase {
 
     //! Shadow state for rule-based testing
     SdlsSaRouterTestState shadow;
+
+    //! Whether the saDecryptOut ports are connected
+    bool m_decryptOutConnected = true;
 
     //! Status returned by the downstream decryptor stub (from_saDecryptOut)
     Svc::Ccsds::SdlsStatus m_downstreamStatus = Svc::Ccsds::SdlsStatus::SUCCESS;
