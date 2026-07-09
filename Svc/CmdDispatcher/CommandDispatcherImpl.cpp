@@ -68,7 +68,10 @@ void CommandDispatcherImpl::compCmdStat_handler(FwIndexType portNum,
     }
 }
 
-void CommandDispatcherImpl::seqCmdBuff_handler(FwIndexType portNum, Fw::ComBuffer& data, U32 context) {
+void CommandDispatcherImpl::seqCmdBuff_handler(FwIndexType portNum,
+                                               Fw::ComBuffer& data,
+                                               const ComCfg::Apid& packetType,
+                                               U32 context) {
     Fw::CmdPacket cmdPkt;
     Fw::SerializeStatus stat = cmdPkt.deserializeFrom(data);
 
@@ -159,7 +162,11 @@ void CommandDispatcherImpl::pingIn_handler(FwIndexType portNum, U32 key) {
     this->pingOut_out(0, key);
 }
 
-void CommandDispatcherImpl::seqCmdBuff_overflowHook(FwIndexType portNum, Fw::ComBuffer& data, U32 context) {
+void CommandDispatcherImpl::seqCmdBuff_overflowHook(FwIndexType portNum,
+                                                    Fw::ComBuffer& data,
+                                                    const ComCfg::Apid& packetType,
+                                                    U32 context) {
+    (void)packetType;
     // Extract command opcode
     Fw::CmdPacket cmdPkt;
     Fw::SerializeStatus stat = cmdPkt.deserializeFrom(data);

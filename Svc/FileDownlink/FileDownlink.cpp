@@ -386,7 +386,7 @@ void FileDownlink ::sendCancelPacket() {
     // Serialize the filePacket content into the buffer
     status = filePacket.toBuffer(offsetBuffer);
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK);
-    this->bufferSendOut_out(0, buffer);
+    this->bufferSendOut_out(0, buffer, ComCfg::Apid::FW_PACKET_FILE);
     this->m_packetsSent.packetSent();
 }
 
@@ -428,7 +428,7 @@ void FileDownlink ::sendFilePacket(const Fw::FilePacket& filePacket) {
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK);
     // set the buffer size to the packet size
     this->m_buffer.setSize(bufferSize);
-    this->bufferSendOut_out(0, this->m_buffer);
+    this->bufferSendOut_out(0, this->m_buffer, ComCfg::Apid::FW_PACKET_FILE);
     // restore buffer size to max
     this->m_buffer.setSize(FILEDOWNLINK_INTERNAL_BUFFER_SIZE);
     this->m_packetsSent.packetSent();

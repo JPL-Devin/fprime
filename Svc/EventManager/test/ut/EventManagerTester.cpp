@@ -29,11 +29,13 @@ EventManagerTester::~EventManagerTester() {
     this->m_impl.deinit();
 }
 
-void EventManagerTester::from_PktSend_handler(const FwIndexType portNum,  //!< The port number
-                                              Fw::ComBuffer& data,        //!< Buffer containing packet data
-                                              U32 context                 //!< context; not used
+void EventManagerTester::from_PktSend_handler(const FwIndexType portNum,       //!< The port number
+                                              Fw::ComBuffer& data,             //!< Buffer containing packet data
+                                              const ComCfg::Apid& packetType,  //!< Packet APID
+                                              U32 context                      //!< context; not used
 ) {
     this->m_sentPacket = data;
+    this->m_sentApid = packetType;
     this->m_receivedPacket = true;
 }
 

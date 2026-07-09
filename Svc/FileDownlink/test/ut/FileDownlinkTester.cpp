@@ -290,7 +290,9 @@ void FileDownlinkTester ::sendFilePort() {
 // Handlers for from ports
 // ----------------------------------------------------------------------
 
-void FileDownlinkTester ::from_bufferSendOut_handler(const FwIndexType portNum, Fw::Buffer& buffer) {
+void FileDownlinkTester ::from_bufferSendOut_handler(const FwIndexType portNum,
+                                                     Fw::Buffer& buffer,
+                                                     const ComCfg::Apid& packetType) {
     ASSERT_LT(buffers_index, FW_NUM_ARRAY_ELEMENTS(this->buffers));
     // Copy buffer before recycling
     U8* data = new U8[buffer.getSize()];
@@ -299,7 +301,7 @@ void FileDownlinkTester ::from_bufferSendOut_handler(const FwIndexType portNum, 
     ::memcpy(data, buffer.getData(), buffer.getSize());
     Fw::Buffer buffer_new = buffer;
     buffer_new.setData(data);
-    pushFromPortEntry_bufferSendOut(buffer_new);
+    pushFromPortEntry_bufferSendOut(buffer_new, packetType);
     invoke_to_bufferReturn(0, buffer);
 }
 
@@ -437,19 +439,19 @@ void FileDownlinkTester ::validatePacketHistory(const History<FromPortEntry_buff
     ASSERT_EQ(numPackets, size);
 
     {
-        const Fw::Buffer& buffer = historyIn.at(0).fwBuffer;
+        const Fw::Buffer& buffer = historyIn.at(0).data;
         validateStartPacket(buffer);
     }
 
     for (size_t i = 1; i < size - 1; ++i) {
-        const Fw::Buffer& buffer = historyIn.at(i).fwBuffer;
+        const Fw::Buffer& buffer = historyIn.at(i).data;
         Fw::FilePacket::DataPacket dataPacket;
         validateDataPacket(buffer, dataPacket, i, startOffset);
         historyOut.push_back(dataPacket);
     }
 
     const size_t index = size - 1;
-    const Fw::Buffer& buffer = historyIn.at(index).fwBuffer;
+    const Fw::Buffer& buffer = historyIn.at(index).data;
     switch (finalPacketType) {
         case Fw::FilePacket::T_END: {
             validateEndPacket(buffer, index, checksum);

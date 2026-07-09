@@ -59,7 +59,13 @@ void GenericHub::bufferOutReturn_handler(FwIndexType portNum, Fw::Buffer& fwBuff
     fromBufferDriverReturn_out(0, fwBuffer);
 }
 
-void GenericHub ::cmdDispIn_handler(FwIndexType portNum, Fw::ComBuffer& data, U32 context) {
+void GenericHub ::cmdDispIn_handler(FwIndexType portNum,
+                                    Fw::ComBuffer& data,
+                                    const ComCfg::Apid& packetType,
+                                    U32 context) {
+    // The APID is not transmitted: the payload carries the packet descriptor, and the
+    // receiving hub re-derives the APID from it. This keeps the hub wire format unchanged.
+    (void)packetType;
     Fw::SerializeStatus status;
     // Buffer to send and a buffer used to write to it
     U8 buffer[Fw::ComBuffer::SERIALIZED_SIZE];
@@ -214,10 +220,23 @@ void GenericHub::fromBufferDriver_handler(const FwIndexType portNum, Fw::Buffer&
                 status = incoming.deserializeSkip(rawSize - sizeof(U32));
                 FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
                 status = incoming.deserializeTo(context);
+                // Re-derive the APID from the packet descriptor at the head of the payload
+                ComCfg::Apid packetType = ComCfg::Apid::FW_PACKET_UNKNOWN;
+                if (status == Fw::FW_SERIALIZE_OK && (rawSize - sizeof(U32)) >= sizeof(FwPacketDescriptorType)) {
+                    Fw::ExternalSerializeBuffer peeker(rawData, sizeof(FwPacketDescriptorType));
+                    Fw::SerializeStatus peekStatus = peeker.setBuffLen(sizeof(FwPacketDescriptorType));
+                    FW_ASSERT(peekStatus == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(peekStatus));
+                    FwPacketDescriptorType descriptor = 0;
+                    peekStatus = peeker.deserializeTo(descriptor);
+                    FW_ASSERT(peekStatus == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(peekStatus));
+                    if (descriptor < ComCfg::Apid::INVALID_UNINITIALIZED) {
+                        packetType = static_cast<ComCfg::Apid::T>(descriptor);
+                    }
+                }
                 // Send it!
                 if ((status == Fw::FW_SERIALIZE_OK) && (port < this->getNum_cmdDispOut_OutputPorts()) &&
                     this->isConnected_cmdDispOut_OutputPort(static_cast<FwIndexType>(port))) {
-                    this->cmdDispOut_out(static_cast<FwIndexType>(port), wrapper, context);
+                    this->cmdDispOut_out(static_cast<FwIndexType>(port), wrapper, packetType, context);
                 }
             }
             // Deallocate the existing buffer
