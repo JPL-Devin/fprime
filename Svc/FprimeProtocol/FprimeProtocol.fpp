@@ -9,7 +9,7 @@ module FprimeProtocol {
     struct FrameHeader {
         startWord: TokenType,
         lengthField: TokenType,
-        apid: ComCfg.Apid,
+        apid: FwPacketDescriptorType,
     } default {
         startWord = 0xdeadbeef
     }

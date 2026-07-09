@@ -39,28 +39,20 @@ void FprimeDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, cons
     FprimeProtocol::FrameTrailer trailer;
 
     // ---------------- Validate Frame Header ----------------
-    // Deserialize the transmitted header field by field. The apid field is read as a raw
-    // FwPacketDescriptorType so that values outside the ComCfg::Apid enumeration are
-    // tolerated (they map to INVALID_UNINITIALIZED) instead of being rejected
+    // Deserialize the transmitted header into the header object
     auto deserializer = data.getDeserializer();
-    FprimeProtocol::TokenType startWord = 0;
-    FprimeProtocol::TokenType lengthField = 0;
-    FwPacketDescriptorType packetDescriptor = 0;
-    Fw::SerializeStatus status = deserializer.deserializeTo(startWord);
-    FW_ASSERT(status == Fw::SerializeStatus::FW_SERIALIZE_OK, status);
-    status = deserializer.deserializeTo(lengthField);
-    FW_ASSERT(status == Fw::SerializeStatus::FW_SERIALIZE_OK, status);
-    status = deserializer.deserializeTo(packetDescriptor);
+    FprimeProtocol::FrameHeader header;
+    Fw::SerializeStatus status = header.deserializeFrom(deserializer);
     FW_ASSERT(status == Fw::SerializeStatus::FW_SERIALIZE_OK, status);
     // Check that deserialized start_word token matches expected value (default start_word value in the FPP object)
     const FprimeProtocol::FrameHeader defaultValue;
-    if (startWord != defaultValue.get_startWord()) {
+    if (header.get_startWord() != defaultValue.get_startWord()) {
         this->log_WARNING_HI_InvalidStartWord();
         this->dataReturnOut_out(0, data, context);  // drop the frame
         return;
     }
     // The length field accounts for the apid field and the payload
-    if (lengthField < sizeof(FwPacketDescriptorType)) {
+    if (header.get_lengthField() < sizeof(FwPacketDescriptorType)) {
         this->log_WARNING_HI_InvalidLengthReceived();
         this->dataReturnOut_out(0, data, context);  // drop the frame
         return;
@@ -71,7 +63,7 @@ void FprimeDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, cons
     constexpr FwSizeType headerTrailerOverhead =
         FprimeProtocol::FrameHeader::SERIALIZED_SIZE + FprimeProtocol::FrameTrailer::SERIALIZED_SIZE;
     // Guard: reject frames whose declared length would overflow FwSizeType when added to the fixed overhead
-    const FwSizeType lengthFieldSize = static_cast<FwSizeType>(lengthField);
+    const FwSizeType lengthFieldSize = static_cast<FwSizeType>(header.get_lengthField());
     if (lengthFieldSize > std::numeric_limits<FwSizeType>::max() - headerTrailerOverhead) {
         this->log_WARNING_HI_InvalidLengthReceived();
         this->dataReturnOut_out(0, data, context);  // drop the frame
@@ -89,8 +81,8 @@ void FprimeDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, cons
     ComCfg::FrameContext contextCopy = context;
     // If the header APID is a valid ComCfg::Apid value, set it in the context; otherwise mark it
     // invalid and let downstream components (e.g. custom router) handle it
-    if (ComCfg::Apid::isValid(packetDescriptor)) {
-        contextCopy.set_apid(static_cast<ComCfg::Apid::T>(packetDescriptor));
+    if (ComCfg::Apid::isValid(header.get_apid())) {
+        contextCopy.set_apid(static_cast<ComCfg::Apid::T>(header.get_apid()));
     } else {
         contextCopy.set_apid(ComCfg::Apid::INVALID_UNINITIALIZED);
     }
