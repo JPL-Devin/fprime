@@ -41,7 +41,7 @@ void FprimeDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, cons
     // ---------------- Validate Frame Header ----------------
     // Deserialize the transmitted header field by field. The apid field is read as a raw
     // FwPacketDescriptorType so that values outside the ComCfg::Apid enumeration are
-    // tolerated (they map to FW_PACKET_UNKNOWN) instead of being rejected
+    // tolerated (they map to INVALID_UNINITIALIZED) instead of being rejected
     auto deserializer = data.getDeserializer();
     FprimeProtocol::TokenType startWord = 0;
     FprimeProtocol::TokenType lengthField = 0;
@@ -87,10 +87,12 @@ void FprimeDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, cons
     }
     // -------- Extract APID from header --------
     ComCfg::FrameContext contextCopy = context;
-    // If the APID is not a valid ComCfg::Apid value, let it default to FW_PACKET_UNKNOWN
-    // and let downstream components (e.g. custom router) handle it
-    if (packetDescriptor < ComCfg::Apid::INVALID_UNINITIALIZED) {
+    // If the header APID is a valid ComCfg::Apid value, set it in the context; otherwise mark it
+    // invalid and let downstream components (e.g. custom router) handle it
+    if (ComCfg::Apid::isValid(packetDescriptor)) {
         contextCopy.set_apid(static_cast<ComCfg::Apid::T>(packetDescriptor));
+    } else {
+        contextCopy.set_apid(ComCfg::Apid::INVALID_UNINITIALIZED);
     }
 
     // ---------------- Validate Frame Trailer ----------------

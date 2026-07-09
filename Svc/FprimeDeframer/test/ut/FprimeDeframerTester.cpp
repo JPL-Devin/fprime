@@ -50,8 +50,8 @@ void FprimeDeframerTester ::testNominalFrame() {
 
 void FprimeDeframerTester ::testNominalFrameApid() {
     // Nominal frame with no payload: lengthField only accounts for the apid field (= 2).
-    // The APID is a random value below INVALID_UNINITIALIZED: the deframer accepts any
-    // numerically in-range value (not just defined enum constants) and reports it in the context
+    // A random APID byte: valid values are reported in the context, invalid ones map to
+    // INVALID_UNINITIALIZED
     U8 randomByte = static_cast<U8>(STest::Random::lowerUpper(0, 255));
     //           |  F´ start word        |     Length (= 2)      | APID            | Checksum (4 bytes)    |
     U8 data[14] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x00, 0x00, 0x02, 0x00, randomByte, 0x00, 0x00, 0x00, 0x00};
@@ -59,16 +59,22 @@ void FprimeDeframerTester ::testNominalFrameApid() {
     this->injectChecksum(data, sizeof(data));
     this->mockReceiveData(data, sizeof(data));
 
-    ASSERT_from_dataOut_SIZE(1);                                                     // something emitted on dataOut
-    ASSERT_from_dataReturnOut_SIZE(0);                                               // nothing emitted on dataReturnOut
-    ASSERT_EQ(this->fromPortHistory_dataOut->at(0).data.getSize(), 0);               // payload is empty
-    ASSERT_EQ(this->fromPortHistory_dataOut->at(0).context.get_apid(), randomByte);  // APID should be set in context
-    ASSERT_EVENTS_SIZE(0);                                                           // no events emitted
+    ASSERT_from_dataOut_SIZE(1);                                        // something emitted on dataOut
+    ASSERT_from_dataReturnOut_SIZE(0);                                  // nothing emitted on dataReturnOut
+    ASSERT_EQ(this->fromPortHistory_dataOut->at(0).data.getSize(), 0);  // payload is empty
+    if (ComCfg::Apid::isValid(randomByte)) {
+        // Random byte is a valid APID: APID should be set to random byte in context
+        ASSERT_EQ(this->fromPortHistory_dataOut->at(0).context.get_apid(), randomByte);
+    } else {
+        // Random byte is not a valid APID: APID should be set to invalid in context
+        ASSERT_EQ(this->fromPortHistory_dataOut->at(0).context.get_apid(), ComCfg::Apid::INVALID_UNINITIALIZED);
+    }
+    ASSERT_EVENTS_SIZE(0);  // no events emitted
 }
 
 void FprimeDeframerTester ::testOutOfRangeApid() {
-    // A frame whose APID is not a valid ComCfg::Apid enum value (>= INVALID_UNINITIALIZED)
-    // should still be deframed, with the context APID defaulting to FW_PACKET_UNKNOWN
+    // A frame whose APID is not a valid ComCfg::Apid enum value
+    // should still be deframed, with the context APID set to INVALID_UNINITIALIZED
     //           |  F´ start word        |     Length (= 2)      | APID (0x0900)   | Checksum (4 bytes)    |
     U8 data[14] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x00, 0x00, 0x02, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00};
     this->injectChecksum(data, sizeof(data));
@@ -76,7 +82,7 @@ void FprimeDeframerTester ::testOutOfRangeApid() {
 
     ASSERT_from_dataOut_SIZE(1);        // frame is still emitted
     ASSERT_from_dataReturnOut_SIZE(0);  // nothing emitted on dataReturnOut
-    ASSERT_EQ(this->fromPortHistory_dataOut->at(0).context.get_apid(), ComCfg::Apid::FW_PACKET_UNKNOWN);
+    ASSERT_EQ(this->fromPortHistory_dataOut->at(0).context.get_apid(), ComCfg::Apid::INVALID_UNINITIALIZED);
     ASSERT_EVENTS_SIZE(0);  // no events emitted
 }
 
