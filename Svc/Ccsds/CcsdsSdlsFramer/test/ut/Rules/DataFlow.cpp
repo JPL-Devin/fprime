@@ -40,7 +40,7 @@ void CcsdsSdlsFramerTester::DataFlow__EncryptedData__action() {
     context.set_saIndex(sa);
 
     this->m_allocateUndersized = false;
-    this->invoke_to_encryptIn(0, buffer, context);
+    this->invoke_to_encryptIn(0, Svc::Ccsds::SdlsStatus::SUCCESS, buffer, context);
 
     // A frame buffer of encrypted size plus the SA index must be allocated
     ASSERT_from_bufferAllocate_SIZE(1);
@@ -77,16 +77,21 @@ void CcsdsSdlsFramerTester::DataFlow__AllocationFailure__action() {
     Fw::Buffer buffer(storage, sizeof storage);
     ComCfg::FrameContext context;
 
-    this->m_allocateUndersized = true;
-    this->invoke_to_encryptIn(0, buffer, context);
+    // Fail the allocation either with an undersized buffer or an invalid one
+    const bool invalid = (STest::Pick::lowerUpper(0, 1) == 1);
+    this->m_allocateInvalid = invalid;
+    this->m_allocateUndersized = !invalid;
+    this->invoke_to_encryptIn(0, Svc::Ccsds::SdlsStatus::SUCCESS, buffer, context);
+    this->m_allocateInvalid = false;
     this->m_allocateUndersized = false;
 
     ASSERT_EVENTS_SIZE(1);
     ASSERT_EVENTS_BufferAllocationFailed_SIZE(1);
 
-    // The frame must be dropped: undersized allocation deallocated, encrypted buffer returned
+    // The frame must be dropped: undersized allocation deallocated (invalid buffers are not
+    // deallocated), encrypted buffer returned
     ASSERT_from_dataOut_SIZE(0);
-    ASSERT_from_bufferDeallocate_SIZE(1);
+    ASSERT_from_bufferDeallocate_SIZE(invalid ? 0 : 1);
     ASSERT_from_encryptReturnOut_SIZE(1);
     ASSERT_from_encryptReturnOut(0, buffer, context);
 }

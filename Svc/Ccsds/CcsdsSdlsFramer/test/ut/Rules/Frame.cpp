@@ -37,7 +37,6 @@ void CcsdsSdlsFramerTester::Frame__ContextSa__action() {
     ComCfg::FrameContext context;
     context.set_saIndex(sa);
 
-    this->m_encryptStatus = Svc::Ccsds::SdlsStatus::SUCCESS;
     this->invoke_to_dataIn(0, buffer, context);
 
     // The context's SA index must reach the encryption helper
@@ -67,7 +66,6 @@ void CcsdsSdlsFramerTester::Frame__ParameterSa__action() {
     Fw::Buffer buffer(storage, static_cast<Fw::Buffer::SizeType>(STest::Pick::lowerUpper(1, TEST_BUFFER_SIZE)));
     ComCfg::FrameContext context;
 
-    this->m_encryptStatus = Svc::Ccsds::SdlsStatus::SUCCESS;
     this->invoke_to_dataIn(0, buffer, context);
 
     ASSERT_from_encryptOut_SIZE(1);
@@ -94,22 +92,23 @@ void CcsdsSdlsFramerTester::Frame__EncryptFailure__action() {
     Fw::Buffer buffer(storage, sizeof storage);
     ComCfg::FrameContext context;
 
-    // Stage a random non-SUCCESS status from the encryption helper
+    // Pick a random non-SUCCESS status passed forward by the encryption helper
     const Svc::Ccsds::SdlsStatus failures[] = {Svc::Ccsds::SdlsStatus::UNKNOWN_SA, Svc::Ccsds::SdlsStatus::UNKNOWN_PORT,
                                                Svc::Ccsds::SdlsStatus::ENCRYPTION_FAILURE};
-    this->m_encryptStatus = failures[STest::Pick::lowerUpper(0, 2)];
+    const Svc::Ccsds::SdlsStatus status = failures[STest::Pick::lowerUpper(0, 2)];
 
-    this->invoke_to_dataIn(0, buffer, context);
+    this->invoke_to_encryptIn(0, status, buffer, context);
 
-    ASSERT_from_encryptOut_SIZE(1);
     ASSERT_EVENTS_SIZE(1);
     ASSERT_EVENTS_EncryptionFailed_SIZE(1);
-    ASSERT_EVENTS_EncryptionFailed(0, this->m_encryptStatus);
+    ASSERT_EVENTS_EncryptionFailed(0, status);
 
-    // The failing encryptor returns the buffer via bufferReturnIn: no direct return here
+    // The frame is dropped: no allocation or frame output, ownership returns to the encryption helper
+    ASSERT_from_bufferAllocate_SIZE(0);
+    ASSERT_from_dataOut_SIZE(0);
+    ASSERT_from_encryptReturnOut_SIZE(1);
+    ASSERT_from_encryptReturnOut(0, buffer, context);
     ASSERT_from_dataReturnOut_SIZE(0);
-
-    this->m_encryptStatus = Svc::Ccsds::SdlsStatus::SUCCESS;
 }
 
 }  // namespace Ccsds

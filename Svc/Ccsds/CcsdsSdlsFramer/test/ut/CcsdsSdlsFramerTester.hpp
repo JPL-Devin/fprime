@@ -52,11 +52,11 @@ class CcsdsSdlsFramerTester : public CcsdsSdlsFramerGTestBase {
     // Handler overrides for typed from ports
     // ----------------------------------------------------------------------
 
-    //! Override recording the request and returning the staged status
-    Svc::Ccsds::SdlsStatus from_encryptOut_handler(FwIndexType portNum,
-                                                   U16 securityAssociationIndex,
-                                                   Fw::Buffer& data,
-                                                   const ComCfg::FrameContext& context) override;
+    //! Override recording the encryption request
+    void from_encryptOut_handler(FwIndexType portNum,
+                                 U16 securityAssociationIndex,
+                                 Fw::Buffer& data,
+                                 const ComCfg::FrameContext& context) override;
 
     //! Override returning a buffer from the tester-owned allocation storage
     Fw::Buffer from_bufferAllocate_handler(FwIndexType portNum, FwSizeType size) override;
@@ -80,11 +80,11 @@ class CcsdsSdlsFramerTester : public CcsdsSdlsFramerGTestBase {
     //! The component under test
     CcsdsSdlsFramer component;
 
-    //! Status returned by the encryption helper stub (from_encryptOut)
-    Svc::Ccsds::SdlsStatus m_encryptStatus = Svc::Ccsds::SdlsStatus::SUCCESS;
-
     //! Whether the allocation stub returns an undersized buffer
     bool m_allocateUndersized = false;
+
+    //! Whether the allocation stub returns an invalid buffer
+    bool m_allocateInvalid = false;
 
     //! Storage backing the allocation stub
     U8 m_allocationStorage[TEST_ALLOCATION_SIZE];

@@ -54,8 +54,9 @@ class CcsdsSdlsDeframer final : public CcsdsSdlsDeframerComponentBase {
 
     //! Handler implementation for decryptIn
     //!
-    //! Port for receiving decrypted data (possibly newly allocated)
+    //! Port for receiving the operation status and decrypted data (possibly newly allocated)
     void decryptIn_handler(FwIndexType portNum,  //!< The port number
+                           const Svc::Ccsds::SdlsStatus& status,
                            Fw::Buffer& data,
                            const ComCfg::FrameContext& context) override;
 };

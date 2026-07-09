@@ -34,16 +34,18 @@ CcsdsSdlsFramerTester ::~CcsdsSdlsFramerTester() {
 // Handler overrides for typed from ports
 // ----------------------------------------------------------------------
 
-Svc::Ccsds::SdlsStatus CcsdsSdlsFramerTester ::from_encryptOut_handler(FwIndexType portNum,
-                                                                       U16 securityAssociationIndex,
-                                                                       Fw::Buffer& data,
-                                                                       const ComCfg::FrameContext& context) {
+void CcsdsSdlsFramerTester ::from_encryptOut_handler(FwIndexType portNum,
+                                                     U16 securityAssociationIndex,
+                                                     Fw::Buffer& data,
+                                                     const ComCfg::FrameContext& context) {
     this->pushFromPortEntry_encryptOut(securityAssociationIndex, data, context);
-    return this->m_encryptStatus;
 }
 
 Fw::Buffer CcsdsSdlsFramerTester ::from_bufferAllocate_handler(FwIndexType portNum, FwSizeType size) {
     this->pushFromPortEntry_bufferAllocate(size);
+    if (this->m_allocateInvalid) {
+        return Fw::Buffer();
+    }
     if (this->m_allocateUndersized) {
         return Fw::Buffer(this->m_allocationStorage, static_cast<Fw::Buffer::SizeType>(size - 1));
     }

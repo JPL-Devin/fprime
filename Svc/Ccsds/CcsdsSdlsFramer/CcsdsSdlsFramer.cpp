@@ -42,16 +42,15 @@ void CcsdsSdlsFramer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, con
     if (saIndex == unsetSaIndex) {
         Fw::ParamValid valid = Fw::ParamValid::INVALID;
         saIndex = this->paramGet_SA_INDEX(valid);
+        FW_ASSERT((valid == Fw::ParamValid::VALID) || (valid == Fw::ParamValid::DEFAULT),
+                  static_cast<FwAssertArgType>(valid.e));
     }
 
     // Copy context and record the security association index used for encryption
     ComCfg::FrameContext newContext = context;
     newContext.set_saIndex(saIndex);
 
-    Svc::Ccsds::SdlsStatus encryptionStatus = this->encryptOut_out(0, saIndex, data, newContext);
-    if (encryptionStatus != Svc::Ccsds::SdlsStatus::SUCCESS) {
-        this->log_WARNING_HI_EncryptionFailed(encryptionStatus);
-    }
+    this->encryptOut_out(0, saIndex, data, newContext);
 }
 
 void CcsdsSdlsFramer ::dataReturnIn_handler(FwIndexType portNum,
@@ -61,26 +60,38 @@ void CcsdsSdlsFramer ::dataReturnIn_handler(FwIndexType portNum,
     this->bufferDeallocate_out(0, data);
 }
 
-void CcsdsSdlsFramer ::encryptIn_handler(FwIndexType portNum, Fw::Buffer& data, const ComCfg::FrameContext& context) {
+void CcsdsSdlsFramer ::encryptIn_handler(FwIndexType portNum,
+                                         const Svc::Ccsds::SdlsStatus& status,
+                                         Fw::Buffer& data,
+                                         const ComCfg::FrameContext& context) {
+    if (status != Svc::Ccsds::SdlsStatus::SUCCESS) {
+        this->log_WARNING_HI_EncryptionFailed(status);
+        // Drop the frame: return ownership of the buffer to the encryption subsystem
+        this->encryptReturnOut_out(0, data, context);
+        return;
+    }
+
     FW_ASSERT(data.getSize() <= std::numeric_limits<Fw::Buffer::SizeType>::max() - sizeof(U16),
               static_cast<FwAssertArgType>(data.getSize()));
     const Fw::Buffer::SizeType frameSize = static_cast<Fw::Buffer::SizeType>(data.getSize() + sizeof(U16));
 
     // Allocate the frame buffer used to prepend the security association index to the encrypted data
     Fw::Buffer frameBuffer = this->bufferAllocate_out(0, frameSize);
-    if (frameBuffer.getSize() < frameSize) {
-        this->log_WARNING_HI_BufferAllocationFailed(static_cast<U32>(frameSize));
-        // Drop the frame: return both the undersized allocation and the encrypted data buffer
-        this->bufferDeallocate_out(0, frameBuffer);
+    if ((!frameBuffer.isValid()) || (frameBuffer.getSize() < frameSize)) {
+        this->log_WARNING_HI_BufferAllocationFailed(frameSize);
+        // Drop the frame: return the undersized allocation (when valid) and the encrypted data buffer
+        if (frameBuffer.isValid()) {
+            this->bufferDeallocate_out(0, frameBuffer);
+        }
         this->encryptReturnOut_out(0, data, context);
         return;
     }
 
     auto frameSerializer = frameBuffer.getSerializer();
-    Fw::SerializeStatus status = frameSerializer.serializeFrom(context.get_saIndex());
-    FW_ASSERT(status == Fw::FW_SERIALIZE_OK, status);
-    status = frameSerializer.serializeFrom(data.getData(), data.getSize(), Fw::Serialization::OMIT_LENGTH);
-    FW_ASSERT(status == Fw::FW_SERIALIZE_OK, status);
+    Fw::SerializeStatus serializeStatus = frameSerializer.serializeFrom(context.get_saIndex());
+    FW_ASSERT(serializeStatus == Fw::FW_SERIALIZE_OK, serializeStatus);
+    serializeStatus = frameSerializer.serializeFrom(data.getData(), data.getSize(), Fw::Serialization::OMIT_LENGTH);
+    FW_ASSERT(serializeStatus == Fw::FW_SERIALIZE_OK, serializeStatus);
 
     // Trim to actual frame size in case the allocator returned a larger buffer
     frameBuffer.setSize(frameSize);

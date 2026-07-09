@@ -60,8 +60,9 @@ class CcsdsSdlsFramer final : public CcsdsSdlsFramerComponentBase {
 
     //! Handler implementation for encryptIn
     //!
-    //! Port for receiving encrypted data (possibly newly allocated)
+    //! Port for receiving the operation status and encrypted data (possibly newly allocated)
     void encryptIn_handler(FwIndexType portNum,  //!< The port number
+                           const Svc::Ccsds::SdlsStatus& status,
                            Fw::Buffer& data,
                            const ComCfg::FrameContext& context) override;
 };

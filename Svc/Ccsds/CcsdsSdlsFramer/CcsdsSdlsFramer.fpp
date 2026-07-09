@@ -4,7 +4,7 @@ module Ccsds {
     @ an SDLS frame. This component follows these steps to frame the SDLS frame:
     @ 1. Determine the security association index from the frame context, falling back to the SA_INDEX parameter
     @ 2. Call the SDLS encryption component to encrypt the data
-    @ 3. Check the status of the encryption and raise an event if it fails
+    @ 3. Check the status passed forward with the encrypted data and raise an event if it indicates failure
     @ 4. Allocate a frame buffer and prepend the security association index (16 bits) to the encrypted data
     @ 5. Pass the SDLS frame to the next component in the pipeline
     passive component CcsdsSdlsFramer {
@@ -16,7 +16,7 @@ module Ccsds {
         event EncryptionFailed(status: Svc.Ccsds.SdlsStatus) severity warning high format "Failed to encrypt frame: {}"
 
         @ Event raised when the allocated frame buffer is too small for the security association index and encrypted data
-        event BufferAllocationFailed(allocationSize: U32) severity warning high format "Failed to allocate frame buffer of size {}"
+        event BufferAllocationFailed(allocationSize: FwSizeType) severity warning high format "Failed to allocate frame buffer of size {}"
 
         @ Port to allocate a buffer for the SDLS frame
         output port bufferAllocate: Fw.BufferGet

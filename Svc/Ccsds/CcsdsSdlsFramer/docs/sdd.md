@@ -8,8 +8,8 @@ Framing an SDLS frame proceeds as follows:
 
 1. Determine the security association (SA) index: from the frame context when set, otherwise from the `SA_INDEX` parameter.
 2. Record the SA index in the frame context and pass the data, SA index, and context to the encryption helper.
-3. Check the returned status; on failure raise an event.
-4. Upon receiving encrypted data back, allocate a frame buffer and prepend the 16-bit SA index.
+3. Check the status passed forward with the encrypted data; on failure raise an event and return the buffer.
+4. Upon receiving successfully encrypted data back, allocate a frame buffer and prepend the 16-bit SA index.
 5. Pass the SDLS frame downstream for further framing/transmission.
 
 Buffer ownership follows the standard F Prime data-with-context return pattern: encrypted buffers are returned to the encryption helper via `encryptReturnOut` once copied into the frame, allocated frame buffers returned from downstream (`dataReturnIn`) are deallocated via `bufferDeallocate`, and original data buffers returned by the helper (`bufferReturnIn`) go back upstream via `dataReturnOut`. Com status (`comStatusIn`) passes through unmodified to `comStatusOut`.
@@ -21,11 +21,11 @@ Buffer ownership follows the standard F Prime data-with-context return pattern: 
 | SVC-CCSDS-SDLS-FRAMER-001 | The CcsdsSdlsFramer shall accept data with frame context via the `Svc.Framer` interface (`dataIn`). | Standard framing pipeline entry point. | Unit test |
 | SVC-CCSDS-SDLS-FRAMER-002 | The CcsdsSdlsFramer shall determine the security association (SA) index from the frame context when set, otherwise from the `SA_INDEX` parameter, record it in the frame context, and pass the data, SA index, and context to the encryption helper via `encryptOut`. | The SA index selects the encryption path; upstream components may override the configured default. | Unit test |
 | SVC-CCSDS-SDLS-FRAMER-003 | Upon receiving encrypted data on `encryptIn`, the CcsdsSdlsFramer shall allocate a frame buffer via `bufferAllocate`, prepend the 16-bit SA index to the encrypted data, return ownership of the encrypted buffer via `encryptReturnOut`, and pass the resulting SDLS frame downstream via `dataOut`. | The SA index must lead the frame so the receiving deframer can extract it; prepending requires a new allocation. | Unit test |
-| SVC-CCSDS-SDLS-FRAMER-004 | Upon a non-SUCCESS status from the encryption helper, the CcsdsSdlsFramer shall emit the `EncryptionFailed` WARNING_HI event. The failing encryptor returns the buffer via `bufferReturnIn`; the framer shall not return it directly. | Encryption failures must be visible to the system; buffer ownership returns through the encryption helper's callback. | Unit test |
+| SVC-CCSDS-SDLS-FRAMER-004 | Upon a non-SUCCESS status passed forward on `encryptIn`, the CcsdsSdlsFramer shall emit the `EncryptionFailed` WARNING_HI event and return ownership of the accompanying buffer to the encryption subsystem via `encryptReturnOut`. | Encryption failures must be visible to the system and the buffer must not leak. | Unit test |
 | SVC-CCSDS-SDLS-FRAMER-005 | The CcsdsSdlsFramer shall deallocate frame buffers received back on `dataReturnIn` via `bufferDeallocate`. | The framer allocated the frame buffer and must release it. | Unit test |
 | SVC-CCSDS-SDLS-FRAMER-006 | The CcsdsSdlsFramer shall return original data buffers received back from the encryption helper (`bufferReturnIn`) upstream via `dataReturnOut`. | Original data buffers must return to their upstream allocator. | Unit test |
 | SVC-CCSDS-SDLS-FRAMER-007 | The CcsdsSdlsFramer shall pass com status received on `comStatusIn` through to `comStatusOut` unmodified. | Ready signals must traverse the framing pipeline. | Unit test |
-| SVC-CCSDS-SDLS-FRAMER-008 | Upon an undersized buffer allocation, the CcsdsSdlsFramer shall emit the `BufferAllocationFailed` WARNING_HI event, deallocate the undersized buffer, and return the encrypted buffer via `encryptReturnOut`. | Allocation failures must be reported and no buffer may leak. | Unit test |
+| SVC-CCSDS-SDLS-FRAMER-008 | Upon an invalid or undersized buffer allocation, the CcsdsSdlsFramer shall emit the `BufferAllocationFailed` WARNING_HI event, deallocate the undersized buffer when valid, and return the encrypted buffer via `encryptReturnOut`. | Allocation failures must be reported and no buffer may leak; invalid buffers need not be deallocated. | Unit test |
 
 ## Design
 
@@ -40,13 +40,13 @@ The component is passive with no commands or telemetry. It composes two interfac
 | sync input | comStatusIn | Fw.SuccessCondition | Receives downstream ready status. |
 | output | comStatusOut | Fw.SuccessCondition | Passes ready status upstream. |
 | output | encryptOut | Svc.Ccsds.CcsdsSdlsEncryption | Sends the SA index and data to the encryption helper. |
-| sync input | encryptIn | Svc.ComDataWithContext | Receives encrypted data from the helper. |
+| sync input | encryptIn | Svc.Ccsds.CcsdsSdlsData | Receives the operation status and encrypted data from the helper. |
 | output | encryptReturnOut | Svc.ComDataWithContext | Returns ownership of encrypted buffers to the helper. |
 | sync input | bufferReturnIn | Svc.ComDataWithContext | Receives back the data buffer sent on `encryptOut`. |
 | output | bufferAllocate | Fw.BufferGet | Allocates the frame buffer for the SA prepend. |
 | output | bufferDeallocate | Fw.BufferSend | Deallocates frame buffers. |
 
-Events: `EncryptionFailed` (WARNING_HI, carries the `SdlsStatus`) and `BufferAllocationFailed` (WARNING_HI, carries the requested size).
+Events: `EncryptionFailed` (WARNING_HI, carries the `SdlsStatus`) and `BufferAllocationFailed` (WARNING_HI, carries the requested size as `FwSizeType`).
 
 Parameters: `SA_INDEX` (U16, default 0) — the SA index used when the incoming frame context does not specify one (context `saIndex` equal to its default value of 0xFFFF is treated as unset).
 
