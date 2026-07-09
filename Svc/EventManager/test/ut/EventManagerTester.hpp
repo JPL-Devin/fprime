@@ -32,7 +32,7 @@ class EventManagerTester : public Svc::EventManagerGTestBase {
   private:
     void from_PktSend_handler(const FwIndexType portNum,  //!< The port number
                               Fw::ComBuffer& data,        //!< Buffer containing packet data
-                              U32 context                 //!< context (not used)
+                              const ComCfg::Apid& apid    //!< APID (packet type) of the data
                               ) override;
     void from_FatalAnnounce_handler(const FwIndexType portNum,  //!< The port number
                                     FwEventIdType Id            //!< The ID of the FATAL event

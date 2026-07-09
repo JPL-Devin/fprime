@@ -332,7 +332,7 @@ void TlmChan::Run_handler(FwIndexType portNum, U32 context) {
             Fw::SerializeStatus stat = pkt.addValue(p_entry->id, p_entry->lastUpdate, p_entry->buffer);
 
             if (Fw::FW_SERIALIZE_NO_ROOM_LEFT == stat) {
-                this->PktSend_out(0, pkt.getBuffer(), 0);
+                this->PktSend_out(0, pkt.getBuffer(), ComCfg::Apid::FW_PACKET_TELEM);
                 pkt.resetPktSer();
                 stat = pkt.addValue(p_entry->id, p_entry->lastUpdate, p_entry->buffer);
                 // If a single channel doesn't fit in an empty packet the packet
@@ -351,7 +351,7 @@ void TlmChan::Run_handler(FwIndexType portNum, U32 context) {
 
     // send remnant entries
     if (pkt.getNumEntries() > 0) {
-        this->PktSend_out(0, pkt.getBuffer(), 0);
+        this->PktSend_out(0, pkt.getBuffer(), ComCfg::Apid::FW_PACKET_TELEM);
     }
 
     // Emit a WARNING_HI event when the processing cap was reached this cycle.

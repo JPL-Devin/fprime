@@ -31,8 +31,6 @@ CmdSplitterTester ::~CmdSplitterTester() {}
 
 Fw::ComBuffer CmdSplitterTester ::build_command_around_opcode(FwOpcodeType opcode) {
     Fw::ComBuffer comBuffer;
-    EXPECT_EQ(comBuffer.serializeFrom(static_cast<FwPacketDescriptorType>(Fw::ComPacketType::FW_PACKET_COMMAND)),
-              Fw::FW_SERIALIZE_OK);
     EXPECT_EQ(comBuffer.serializeFrom(opcode), Fw::FW_SERIALIZE_OK);
 
     Fw::CmdArgBuffer args;

@@ -26,11 +26,12 @@ FrameDetector::Status FprimeFrameDetector::detect(const Types::CircularBuffer& d
     // and then we could pass the CircularBuffer directly into the FrameHeader/FrameTrailer deserializers. This is left
     // as a TODO for future improvement as it is a significant refactor
 
-    FprimeProtocol::FrameHeader header;
     FprimeProtocol::FrameTrailer trailer;
 
     // ---------------- Frame Header ----------------
-    // Copy CircularBuffer data into linear buffer, for serialization into FrameHeader object
+    // Copy CircularBuffer data into linear buffer, for deserialization of the header fields.
+    // The header is deserialized field by field (rather than into a FrameHeader object) so that
+    // apid values outside the ComCfg::Apid enumeration do not cause the frame to be rejected
     U8 header_data[FprimeProtocol::FrameHeader::SERIALIZED_SIZE];
     Fw::SerializeStatus status = data.peek(header_data, FprimeProtocol::FrameHeader::SERIALIZED_SIZE, 0);
     if (status != Fw::FW_SERIALIZE_OK) {
@@ -39,14 +40,23 @@ FrameDetector::Status FprimeFrameDetector::detect(const Types::CircularBuffer& d
     Fw::ExternalSerializeBuffer header_ser_buffer(header_data, FprimeProtocol::FrameHeader::SERIALIZED_SIZE);
     status = header_ser_buffer.setBuffLen(FprimeProtocol::FrameHeader::SERIALIZED_SIZE);
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
-    // Attempt to deserialize data into the FrameHeader object
-    status = header.deserializeFrom(header_ser_buffer);
+    FprimeProtocol::TokenType start_word = 0;
+    FprimeProtocol::TokenType length_field = 0;
+    status = header_ser_buffer.deserializeTo(start_word);
+    if (status != Fw::FW_SERIALIZE_OK) {
+        return Status::NO_FRAME_DETECTED;
+    }
+    status = header_ser_buffer.deserializeTo(length_field);
     if (status != Fw::FW_SERIALIZE_OK) {
         return Status::NO_FRAME_DETECTED;
     }
     // Check that deserialized start_word token matches expected value (default start_word value in the FPP object)
     FprimeProtocol::FrameHeader default_value;
-    if (header.get_startWord() != default_value.get_startWord()) {
+    if (start_word != default_value.get_startWord()) {
+        return Status::NO_FRAME_DETECTED;
+    }
+    // The length field accounts for the apid field (part of the header) and the payload
+    if (length_field < sizeof(FwPacketDescriptorType)) {
         return Status::NO_FRAME_DETECTED;
     }
     // Validate size before proceeding.
@@ -63,15 +73,17 @@ FrameDetector::Status FprimeFrameDetector::detect(const Types::CircularBuffer& d
     // fixed overhead. Using subtraction on unsigned types (as in the prior implementation) is
     // fragile — if the constants change sign or width the subtraction itself can wrap silently.
     // An explicit addition-based check is clearer and easier to audit.
-    if (header.get_lengthField() > std::numeric_limits<FwSizeType>::max() - header_trailer_overhead) {
+    if (length_field > std::numeric_limits<FwSizeType>::max() - header_trailer_overhead) {
         // lengthField + overhead would overflow — frame is invalid
         return Status::NO_FRAME_DETECTED;
     }
 
-    // We expect the frame size to be size of header + body (of size specified in header) + trailer.
+    // We expect the frame size to be size of header (which accounts for the apid field) + payload + trailer.
+    // The length field includes the apid field, which is already counted in the header size,
+    // so subtract it from the length field when computing the total frame size.
     // Overflow is impossible here: the guard above ensures
     //   lengthField <= MAX - header_trailer_overhead
-    const FwSizeType expected_frame_size = header.get_lengthField() + header_trailer_overhead;
+    const FwSizeType expected_frame_size = (length_field - sizeof(FwPacketDescriptorType)) + header_trailer_overhead;
     // If the frame will never fit, then report NO_FRAME_DETECTED to drop the erroneous frame
     if (data.get_capacity() < expected_frame_size) {
         return Status::NO_FRAME_DETECTED;
@@ -86,7 +98,7 @@ FrameDetector::Status FprimeFrameDetector::detect(const Types::CircularBuffer& d
     U8 trailer_data[FprimeProtocol::FrameTrailer::SERIALIZED_SIZE];
     Fw::ExternalSerializeBuffer trailer_ser_buffer(trailer_data, FprimeProtocol::FrameTrailer::SERIALIZED_SIZE);
     status = data.peek(trailer_data, FprimeProtocol::FrameTrailer::SERIALIZED_SIZE,
-                       FprimeProtocol::FrameHeader::SERIALIZED_SIZE + header.get_lengthField());
+                       expected_frame_size - FprimeProtocol::FrameTrailer::SERIALIZED_SIZE);
     if (status != Fw::FW_SERIALIZE_OK) {
         return Status::NO_FRAME_DETECTED;
     }
@@ -107,10 +119,9 @@ FrameDetector::Status FprimeFrameDetector::detect(const Types::CircularBuffer& d
     //                <  MAX - HEADER_SIZE
     // so this addition cannot overflow. The assert makes that contract explicit at the
     // point of use so it remains correct if this code is ever moved or refactored.
-    FW_ASSERT(header.get_lengthField() <=
-                  std::numeric_limits<FwSizeType>::max() - FprimeProtocol::FrameHeader::SERIALIZED_SIZE,
-              static_cast<FwAssertArgType>(header.get_lengthField()));
-    FwSizeType hash_field_size = header.get_lengthField() + FprimeProtocol::FrameHeader::SERIALIZED_SIZE;
+    FW_ASSERT(length_field <= std::numeric_limits<FwSizeType>::max() - FprimeProtocol::FrameHeader::SERIALIZED_SIZE,
+              static_cast<FwAssertArgType>(length_field));
+    FwSizeType hash_field_size = expected_frame_size - FprimeProtocol::FrameTrailer::SERIALIZED_SIZE;
     hash.init();
     for (FwSizeType i = 0; i < hash_field_size; i++) {
         U8 byte = 0;

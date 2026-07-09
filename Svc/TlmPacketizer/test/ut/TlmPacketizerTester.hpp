@@ -111,7 +111,7 @@ class TlmPacketizerTester : public TlmPacketizerGTestBase {
     //!
     void from_PktSend_handler(const FwIndexType portNum, /*!< The port number*/
                               Fw::ComBuffer& data,       /*!< Buffer containing packet data*/
-                              U32 context                /*!< Call context value; meaning chosen by user*/
+                              const ComCfg::Apid& apid   /*!< APID (packet type) of the data*/
                               ) override;
 
     //! Handler for from_pingOut

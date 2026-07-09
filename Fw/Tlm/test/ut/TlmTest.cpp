@@ -41,7 +41,7 @@ TEST(FwTlmTest, TlmPacketSerializeFill) {
 
     // compute the number of entries that should fit - will equal rounded down value of
     // ComBuffer size - size of telemetry packet id / size of an entry
-    static const FwSizeType NUM_ENTRIES = (FW_COM_BUFFER_MAX_SIZE - sizeof(FwPacketDescriptorType)) / SIZE_OF_ENTRY;
+    static const FwSizeType NUM_ENTRIES = FW_COM_BUFFER_MAX_SIZE / SIZE_OF_ENTRY;
 
     Fw::TlmPacket pktIn;
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, pktIn.resetPktSer());

@@ -18,8 +18,6 @@ namespace CommandBuffers {
 
 void create(Fw::ComBuffer& comBuff, const FwOpcodeType opcode, const U32 argument) {
     comBuff.resetSer();
-    const FwPacketDescriptorType descriptor = Fw::ComPacketType::FW_PACKET_COMMAND;
-    ASSERT_EQ(Fw::FW_SERIALIZE_OK, comBuff.serializeFrom(descriptor));
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, comBuff.serializeFrom(opcode));
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, comBuff.serializeFrom(argument));
 }

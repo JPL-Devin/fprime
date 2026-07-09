@@ -95,7 +95,7 @@ void ComQueue::configure(QueueConfigurationTable queueConfig,
                 entry.index = entryIndex;
                 // Message size is determined by the type of object being stored, which in turn is determined by the
                 // index of the entry. Those lower than COM_PORT_COUNT are Fw::ComBuffers and those larger Fw::Buffer.
-                entry.msgSize = (entryIndex < COM_PORT_COUNT) ? sizeof(Fw::ComBuffer) : sizeof(Fw::Buffer);
+                entry.msgSize = (entryIndex < COM_PORT_COUNT) ? sizeof(ComQueueEntry) : sizeof(BufferQueueEntry);
                 // Overflow checks
                 FW_ASSERT((std::numeric_limits<FwSizeType>::max() / entry.depth) >= entry.msgSize,
                           static_cast<FwAssertArgType>(entry.depth), static_cast<FwAssertArgType>(entry.msgSize));
@@ -213,20 +213,26 @@ void ComQueue::SET_QUEUE_PRIORITY_cmdHandler(FwOpcodeType opCode,
 // Handler implementations for user-defined typed input ports
 // ----------------------------------------------------------------------
 
-void ComQueue::comPacketQueueIn_handler(const FwIndexType portNum, Fw::ComBuffer& data, U32 context) {
+void ComQueue::comPacketQueueIn_handler(const FwIndexType portNum, Fw::ComBuffer& data, const ComCfg::Apid& apid) {
     // Ensure that the port number of comPacketQueueIn is consistent with the expectation
     FW_ASSERT(portNum >= 0 && portNum < COM_PORT_COUNT, static_cast<FwAssertArgType>(portNum));
-    (void)this->enqueue(portNum, QueueType::COM_QUEUE, reinterpret_cast<const U8*>(&data), sizeof(Fw::ComBuffer));
+    ComQueueEntry entry;
+    entry.comBuffer = data;
+    entry.apid = apid.e;
+    (void)this->enqueue(portNum, QueueType::COM_QUEUE, reinterpret_cast<const U8*>(&entry), sizeof(ComQueueEntry));
 }
 
-void ComQueue::bufferQueueIn_handler(const FwIndexType portNum, Fw::Buffer& fwBuffer) {
+void ComQueue::bufferQueueIn_handler(const FwIndexType portNum, Fw::Buffer& fwBuffer, const ComCfg::Apid& apid) {
     FW_ASSERT(std::numeric_limits<FwIndexType>::max() - COM_PORT_COUNT > portNum);
     const FwIndexType queueNum = static_cast<FwIndexType>(portNum + COM_PORT_COUNT);
     // Ensure that the port number of bufferQueueIn is consistent with the expectation
     FW_ASSERT(portNum >= 0 && portNum < BUFFER_PORT_COUNT, static_cast<FwAssertArgType>(portNum));
     FW_ASSERT(queueNum < TOTAL_PORT_COUNT);
+    BufferQueueEntry entry;
+    entry.buffer = fwBuffer;
+    entry.apid = apid.e;
     bool success =
-        this->enqueue(queueNum, QueueType::BUFFER_QUEUE, reinterpret_cast<const U8*>(&fwBuffer), sizeof(Fw::Buffer));
+        this->enqueue(queueNum, QueueType::BUFFER_QUEUE, reinterpret_cast<const U8*>(&entry), sizeof(BufferQueueEntry));
     if (!success) {
         this->bufferReturnOut_out(portNum, fwBuffer);
     }
@@ -296,7 +302,7 @@ void ComQueue ::dataReturnIn_handler(FwIndexType portNum, Fw::Buffer& data, cons
 // Hook implementations for typed async input ports
 // ----------------------------------------------------------------------
 
-void ComQueue::bufferQueueIn_overflowHook(FwIndexType portNum, Fw::Buffer& fwBuffer) {
+void ComQueue::bufferQueueIn_overflowHook(FwIndexType portNum, Fw::Buffer& fwBuffer, const ComCfg::Apid& apid) {
     FW_ASSERT(portNum >= 0 && portNum < BUFFER_PORT_COUNT, static_cast<FwAssertArgType>(portNum));
     this->bufferReturnOut_out(portNum, fwBuffer);
 }
@@ -308,7 +314,8 @@ void ComQueue::bufferQueueIn_overflowHook(FwIndexType portNum, Fw::Buffer& fwBuf
 bool ComQueue::enqueue(const FwIndexType queueNum, QueueType queueType, const U8* data, const FwSizeType size) {
     // Enqueue the given message onto the matching queue. When no space is available then emit the queue overflow event,
     // set the appropriate throttle, and move on. Will assert if passed a message for a depth 0 queue.
-    const FwSizeType expectedSize = (queueType == QueueType::COM_QUEUE) ? sizeof(Fw::ComBuffer) : sizeof(Fw::Buffer);
+    const FwSizeType expectedSize =
+        (queueType == QueueType::COM_QUEUE) ? sizeof(ComQueueEntry) : sizeof(BufferQueueEntry);
     FW_ASSERT((queueType == QueueType::COM_QUEUE) || (queueNum >= COM_PORT_COUNT),
               static_cast<FwAssertArgType>(queueType), static_cast<FwAssertArgType>(queueNum));
     const FwIndexType portNum =
@@ -329,11 +336,11 @@ bool ComQueue::enqueue(const FwIndexType queueNum, QueueType queueType, const U8
                 // Queue is full and will drop oldest; remove the front entry to return ownership.
                 // popFront() always removes from the front (oldest) regardless of queue mode,
                 // matching the rotate-based removal that Queue::enqueue() uses for DROP_OLDEST.
-                Fw::Buffer droppedBuffer;
+                BufferQueueEntry droppedEntry;
                 Fw::SerializeStatus dequeueStatus =
-                    queue.popFront(reinterpret_cast<U8*>(&droppedBuffer), sizeof(droppedBuffer));
+                    queue.popFront(reinterpret_cast<U8*>(&droppedEntry), sizeof(droppedEntry));
                 FW_ASSERT(dequeueStatus == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(dequeueStatus));
-                this->bufferReturnOut_out(portNum, droppedBuffer);
+                this->bufferReturnOut_out(portNum, droppedEntry.buffer);
                 preEmptiveOverflow = true;
                 break;
             }
@@ -358,16 +365,13 @@ bool ComQueue::enqueue(const FwIndexType queueNum, QueueType queueType, const U8
     return status != Fw::FW_SERIALIZE_NO_ROOM_LEFT;
 }
 
-void ComQueue::sendComBuffer(Fw::ComBuffer& comBuffer, FwIndexType queueIndex) {
+void ComQueue::sendComBuffer(Fw::ComBuffer& comBuffer, ComCfg::Apid::T apid, FwIndexType queueIndex) {
     FW_ASSERT(this->m_state == READY);
     Fw::Buffer outBuffer(comBuffer.getBuffAddr(), static_cast<Fw::Buffer::SizeType>(comBuffer.getSize()));
 
     // Context value is used to determine what to do when the buffer returns on the dataReturnIn port
     ComCfg::FrameContext context;
-    FwPacketDescriptorType descriptor = 0;
-    Fw::SerializeStatus status = comBuffer.deserializeTo(descriptor);
-    FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
-    context.set_apid(static_cast<ComCfg::Apid::T>(descriptor));
+    context.set_apid(apid);
     context.set_comQueueIndex(queueIndex);
     FW_ASSERT(this->m_buffer_state == OWNED);
     this->m_buffer_state = UNOWNED;
@@ -376,16 +380,13 @@ void ComQueue::sendComBuffer(Fw::ComBuffer& comBuffer, FwIndexType queueIndex) {
     this->m_state = WAITING;
 }
 
-void ComQueue::sendBuffer(Fw::Buffer& buffer, FwIndexType queueIndex) {
+void ComQueue::sendBuffer(Fw::Buffer& buffer, ComCfg::Apid::T apid, FwIndexType queueIndex) {
     // Retry buffer expected to be cleared as we are either transferring ownership or have already deallocated it.
     FW_ASSERT(this->m_state == READY);
 
     // Context value is used to determine what to do when the buffer returns on the dataReturnIn port
     ComCfg::FrameContext context;
-    FwPacketDescriptorType descriptor;
-    Fw::SerializeStatus status = buffer.getDeserializer().deserializeTo(descriptor);
-    FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
-    context.set_apid(static_cast<ComCfg::Apid::T>(descriptor));
+    context.set_apid(apid);
     context.set_comQueueIndex(queueIndex);
     FW_ASSERT(this->m_buffer_state == OWNED);
     this->m_buffer_state = UNOWNED;
@@ -403,16 +404,16 @@ void ComQueue::drainQueue(FwIndexType index) {
     const FwSizeType available = queue.getQueueSize();
     for (FwSizeType i = 0; (i < available) && (status == Fw::FW_SERIALIZE_OK); i++) {
         if (index < COM_PORT_COUNT) {
-            // Dequeueing is reading the whole persisted Fw::ComBuffer object from the queue's storage.
+            // Dequeueing is reading the whole persisted entry object from the queue's storage.
             // thus it takes an address to the object to fill and the size of the actual object
-            Fw::ComBuffer comBuffer;
-            status = queue.dequeue(reinterpret_cast<U8*>(&comBuffer), sizeof(comBuffer));
+            ComQueueEntry entry;
+            status = queue.dequeue(reinterpret_cast<U8*>(&entry), sizeof(entry));
         } else {
             // For buffer queues, if the buffer requires ownership return, return it via the bufferReturnOut port
-            // Dequeueing is reading the whole persisted Fw::Buffer object from the queue's storage.
-            Fw::Buffer buffer;
-            status = queue.dequeue(reinterpret_cast<U8*>(&buffer), sizeof(buffer));
-            this->bufferReturnOut_out(static_cast<FwIndexType>(index - COM_PORT_COUNT), buffer);
+            // Dequeueing is reading the whole persisted entry object from the queue's storage.
+            BufferQueueEntry entry;
+            status = queue.dequeue(reinterpret_cast<U8*>(&entry), sizeof(entry));
+            this->bufferReturnOut_out(static_cast<FwIndexType>(index - COM_PORT_COUNT), entry.buffer);
         }
     }
 }
@@ -436,20 +437,20 @@ void ComQueue::processQueue() {
 
         // Send out the message based on the type
         if (entry.index < COM_PORT_COUNT) {
-            // Dequeue is reading the whole persisted Fw::ComBuffer object from the queue's storage.
+            // Dequeue is reading the whole persisted entry object from the queue's storage.
             // thus it takes an address to the object to fill and the size of the actual object.
             FW_ASSERT(this->m_buffer_state == OWNED);
             auto dequeue_status =
-                queue.dequeue(reinterpret_cast<U8*>(&this->m_dequeued_com_buffer), sizeof(this->m_dequeued_com_buffer));
+                queue.dequeue(reinterpret_cast<U8*>(&this->m_dequeued_com_entry), sizeof(this->m_dequeued_com_entry));
             FW_ASSERT(dequeue_status == Fw::SerializeStatus::FW_SERIALIZE_OK,
                       static_cast<FwAssertArgType>(dequeue_status));
-            this->sendComBuffer(this->m_dequeued_com_buffer, entry.index);
+            this->sendComBuffer(this->m_dequeued_com_entry.comBuffer, this->m_dequeued_com_entry.apid, entry.index);
         } else {
-            Fw::Buffer buffer;
-            auto dequeue_status = queue.dequeue(reinterpret_cast<U8*>(&buffer), sizeof(buffer));
+            BufferQueueEntry bufferEntry;
+            auto dequeue_status = queue.dequeue(reinterpret_cast<U8*>(&bufferEntry), sizeof(bufferEntry));
             FW_ASSERT(dequeue_status == Fw::SerializeStatus::FW_SERIALIZE_OK,
                       static_cast<FwAssertArgType>(dequeue_status));
-            this->sendBuffer(buffer, entry.index);
+            this->sendBuffer(bufferEntry.buffer, bufferEntry.apid, entry.index);
         }
 
         // Update the throttle and the index that was just sent

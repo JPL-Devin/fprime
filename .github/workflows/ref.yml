@@ -92,6 +92,11 @@ jobs:
         uses: nasa/fprime-actions/upgrade-package@devel
         with:
           repository: nasa/fprime-gds
+      # TEMPORARY (fork CI only): install companion fprime-gds branch.
+      # When upstreamed to nasa/fprime, remove this step and use the
+      # pr-xxxx branch process (get-target-branch workflow) instead.
+      - name: "Upgrade fprime-gds to companion fork branch"
+        run: pip install "fprime-gds @ git+https://github.com/JPL-Devin/fprime-gds@devin/1783026220-gds-spp-descriptor-free"
       - name: "Download Build Artifacts"
         uses: actions/download-artifact@v8
         with:

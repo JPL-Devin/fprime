@@ -85,11 +85,3 @@ event DecodeError(
   severity warning high \
   id 9 \
   format "Unable to decode file packet. Status: {}"
-
-@ Invalid packet received
-event InvalidPacketReceived(
-                   packetType: FwPacketDescriptorType @< The packet type received
-                 ) \
-  severity warning high \
-  id 10 \
-  format "Invalid packet received. Wrong packet type: {}"

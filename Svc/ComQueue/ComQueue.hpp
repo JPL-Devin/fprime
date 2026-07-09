@@ -85,6 +85,24 @@ class ComQueue final : public ComQueueComponentBase {
     // ----------------------------------------------------------------------
 
     /**
+     * Storage for a queued Fw::ComBuffer along with its APID (packet type).
+     * Entries are byte-copied through Types::Queue; safe because they are always copied back
+     * into a properly constructed, aligned entry of the same type before any member access.
+     */
+    struct ComQueueEntry {
+        Fw::ComBuffer comBuffer;                                     //!< The queued com buffer
+        ComCfg::Apid::T apid = ComCfg::Apid::INVALID_UNINITIALIZED;  //!< APID (packet type) of the queued data
+    };
+
+    /**
+     * Storage for a queued Fw::Buffer along with its APID (packet type).
+     */
+    struct BufferQueueEntry {
+        Fw::Buffer buffer;                                           //!< The queued buffer
+        ComCfg::Apid::T apid = ComCfg::Apid::INVALID_UNINITIALIZED;  //!< APID (packet type) of the queued data
+    };
+
+    /**
      * Storage for internal queue metadata. This is stored in the prioritized list and contains indices to the the
      * un-prioritized queue objects. Depth and priority is copied from the configuration supplied by the configure
      * method. Index and message size are calculated by the configuration call.
@@ -174,13 +192,14 @@ class ComQueue final : public ComQueueComponentBase {
     //! Receive and queue a Fw::Buffer
     //!
     void bufferQueueIn_handler(const FwIndexType portNum, /*!< The port number*/
-                               Fw::Buffer& fwBuffer /*!< Buffer containing packet data*/) override;
+                               Fw::Buffer& fwBuffer,      /*!< Buffer containing packet data*/
+                               const ComCfg::Apid& apid /*!< APID (packet type) of the data*/) override;
 
     //! Receive and queue a Fw::ComBuffer
     //!
     void comPacketQueueIn_handler(const FwIndexType portNum, /*!< The port number*/
                                   Fw::ComBuffer& data,       /*!< Buffer containing packet data*/
-                                  U32 context                /*!< Call context value; meaning chosen by user*/
+                                  const ComCfg::Apid& apid   /*!< APID (packet type) of the data*/
                                   ) override;
 
     //! Handle the status of the last sent message
@@ -208,8 +227,9 @@ class ComQueue final : public ComQueueComponentBase {
 
     //! Queue overflow hook method that deallocates the fwBuffer
     //!
-    void bufferQueueIn_overflowHook(FwIndexType portNum,  //!< The port number
-                                    Fw::Buffer& fwBuffer  //!< The buffer
+    void bufferQueueIn_overflowHook(FwIndexType portNum,      //!< The port number
+                                    Fw::Buffer& fwBuffer,     //!< The buffer
+                                    const ComCfg::Apid& apid  //!< APID (packet type) of the data
                                     ) override;
 
     // ----------------------------------------------------------------------
@@ -227,12 +247,14 @@ class ComQueue final : public ComQueueComponentBase {
     //! Send a chosen Fw::ComBuffer
     //!
     void sendComBuffer(Fw::ComBuffer& comBuffer,  //!< Reference to buffer to send
+                       ComCfg::Apid::T apid,      //!< APID (packet type) of the data
                        FwIndexType queueIndex     //!< Index of the queue emitting the message
     );
 
     //! Send a chosen Fw::Buffer
     //!
     void sendBuffer(Fw::Buffer& buffer,     //!< Reference to buffer to send
+                    ComCfg::Apid::T apid,   //!< APID (packet type) of the data
                     FwIndexType queueIndex  //!< Index of the queue emitting the message
     );
 
@@ -250,7 +272,7 @@ class ComQueue final : public ComQueueComponentBase {
     // ----------------------------------------------------------------------
     // Member variables
     // ----------------------------------------------------------------------
-    Fw::ComBuffer m_dequeued_com_buffer;                //!< Store a dequeued com buffer so it does not leave scope
+    ComQueueEntry m_dequeued_com_entry;                 //!< Store a dequeued com entry so it does not leave scope
     Types::Queue m_queues[TOTAL_PORT_COUNT];            //!< Stores queued data waiting for transmission
     QueueMetadata m_prioritizedList[TOTAL_PORT_COUNT];  //!< Priority sorted list of queue metadata
     bool m_throttle[TOTAL_PORT_COUNT];                  //!< Per-queue EVR throttles

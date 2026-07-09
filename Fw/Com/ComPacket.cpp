@@ -13,17 +13,8 @@ ComPacket::ComPacket() : m_type(ComPacketType::FW_PACKET_UNKNOWN) {}
 
 ComPacket::~ComPacket() {}
 
-SerializeStatus ComPacket::serializeBase(SerialBufferBase& buffer) const {
-    return buffer.serializeFrom(static_cast<FwPacketDescriptorType>(this->m_type));
-}
-
-SerializeStatus ComPacket::deserializeBase(SerialBufferBase& buffer) {
-    FwPacketDescriptorType serVal;
-    SerializeStatus stat = buffer.deserializeTo(serVal);
-    if (FW_SERIALIZE_OK == stat) {
-        this->m_type = static_cast<ComPacketType>(serVal);
-    }
-    return stat;
+ComPacketType ComPacket::getPacketType() const {
+    return this->m_type;
 }
 
 } /* namespace Fw */
