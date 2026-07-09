@@ -9,6 +9,8 @@
 
 #include "SeqDispatcherGTestBase.hpp"
 #include "Svc/SeqDispatcher/SeqDispatcher.hpp"
+#include "Svc/SeqDispatcher/test/ut/TestState/TestState.hpp"
+#include "TestUtils/RuleBasedTesting.hpp"
 
 namespace Svc {
 
@@ -19,7 +21,7 @@ class SeqDispatcherTester : public SeqDispatcherGTestBase {
 
   public:
     // Maximum size of histories storing events, telemetry, and port outputs
-    static const U32 MAX_HISTORY_SIZE = 10;
+    static const U32 MAX_HISTORY_SIZE = 100;
     // Instance ID supplied to the component instance under test
     static const FwEnumStoreType TEST_INSTANCE_ID = 0;
     // Queue depth supplied to component instance under test
@@ -68,7 +70,7 @@ class SeqDispatcherTester : public SeqDispatcherGTestBase {
     //!
     void initComponents();
 
-  private:
+  public:
     // ----------------------------------------------------------------------
     // Variables
     // ----------------------------------------------------------------------
@@ -76,6 +78,35 @@ class SeqDispatcherTester : public SeqDispatcherGTestBase {
     //! The component under test
     //!
     SeqDispatcher component;
+
+    //! Shadow state for rule-based testing
+    SeqDispatcherTestState shadow;
+
+  public:
+    // ----------------------------------------------------------------------
+    // Rule Based Testing
+    // ----------------------------------------------------------------------
+
+    //! Rules for the RUN command
+    FW_RBT_DEFINE_RULE(SeqDispatcherTester, RunCmd, Ok);
+    FW_RBT_DEFINE_RULE(SeqDispatcherTester, RunCmd, NoSequencersAvailable);
+
+    //! Rules for the seqDoneIn port
+    FW_RBT_DEFINE_RULE(SeqDispatcherTester, SeqDone, KnownBlock);
+    FW_RBT_DEFINE_RULE(SeqDispatcherTester, SeqDone, KnownNoBlock);
+    FW_RBT_DEFINE_RULE(SeqDispatcherTester, SeqDone, Unknown);
+
+    //! Rules for the seqStartIn port
+    FW_RBT_DEFINE_RULE(SeqDispatcherTester, SeqStart, Expected);
+    FW_RBT_DEFINE_RULE(SeqDispatcherTester, SeqStart, Unexpected);
+    FW_RBT_DEFINE_RULE(SeqDispatcherTester, SeqStart, Conflicting);
+
+    //! Rules for the seqRunIn port
+    FW_RBT_DEFINE_RULE(SeqDispatcherTester, SeqRunIn, Ok);
+    FW_RBT_DEFINE_RULE(SeqDispatcherTester, SeqRunIn, NoSequencersAvailable);
+
+    //! Rules for the LOG_STATUS command
+    FW_RBT_DEFINE_RULE(SeqDispatcherTester, LogStatusCmd, Ok);
 };
 
 }  // namespace Svc

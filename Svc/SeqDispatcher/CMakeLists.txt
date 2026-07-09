@@ -23,5 +23,13 @@ register_fprime_ut(
   SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/test/ut/SeqDispatcherTester.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/test/ut/SeqDispatcherTestMain.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/TestState/TestState.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/Rules/RunCmd.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/Rules/SeqDone.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/Rules/SeqStart.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/Rules/SeqRunIn.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/Rules/LogStatusCmd.cpp"
+  DEPENDS
+    STest
   UT_AUTO_HELPERS
 )
