@@ -11,7 +11,7 @@ The SA-to-port mapping is a compile-time FPP array of {`U16` SA, `FwIndexType` p
 - Looks up the SA index in the map; if found, forwards the request out the mapped `saDecryptOut` port.
 - Passes an `UNKNOWN_SA` status forward on `decryptOut` (with the untouched buffer) if the SA index has no map entry, or `UNKNOWN_PORT` if the mapped port index is out of range or unconnected; the buffer is not forwarded downstream in either case.
 - Passes buffers returned by downstream decryptors (deallocation path) upstream via `bufferReturnOut`.
-- Passes the operation status and decrypted data emitted by downstream decryptors upstream via `decryptOut`, recording the originating port in an `Fw::ArrayMap` bookkeeping table (sized by `SdlsCfg.SaRouterMaxOutstandingBuffers`), and routes ownership returns received on `decryptReturnIn` back to the originating decryptor via `saDecryptReturnOut` — or upstream via `bufferReturnOut` for buffers the router itself forwarded on routing errors.
+- Passes the operation status and decrypted data emitted by downstream decryptors upstream via `decryptOut`, recording the originating port in an `Fw::ArrayMap` bookkeeping table keyed by the buffer's context identifier (sized by `SdlsCfg.SaRouterMaxOutstandingBuffers`); the context key remains valid even when downstream consumers adjust the buffer's data pointer before returning ownership, and routes ownership returns received on `decryptReturnIn` back to the originating decryptor via `saDecryptReturnOut` — or upstream via `bufferReturnOut` for buffers the router itself forwarded on routing errors.
 
 ## Port Descriptions
 

@@ -30,6 +30,7 @@ void SdlsSaRouterTester::DataFlow__DecryptData__action() {
     ASSERT_NE(storage, nullptr);
     const FwIndexType portNum = static_cast<FwIndexType>(STest::Pick::lowerUpper(0, SdlsCfg::SaRouterPortCount - 1));
     Fw::Buffer buffer(storage, TEST_BUFFER_SIZE);
+    buffer.setContext(this->getPoolBufferContext(storage));
     ComCfg::FrameContext context;
 
     // Pick a random status to verify pass-forward alongside the data
@@ -57,7 +58,11 @@ void SdlsSaRouterTester::DataFlow__DecryptReturn__action() {
 
     const U8* const storage = this->shadow.shadow_getRandomOutstanding();
     const FwIndexType expectedPort = this->shadow.shadow_outstanding[storage];
-    Fw::Buffer buffer(const_cast<U8*>(storage), TEST_BUFFER_SIZE);
+    // Downstream deframers may advance the buffer's data pointer before returning ownership;
+    // return the buffer with a shifted pointer to verify tracking is pointer-independent
+    const U32 offset = STest::Pick::lowerUpper(0, TEST_BUFFER_SIZE - 1);
+    Fw::Buffer buffer(const_cast<U8*>(storage) + offset, TEST_BUFFER_SIZE - offset);
+    buffer.setContext(this->getPoolBufferContext(storage));
     ComCfg::FrameContext context;
 
     this->invoke_to_decryptReturnIn(0, buffer, context);

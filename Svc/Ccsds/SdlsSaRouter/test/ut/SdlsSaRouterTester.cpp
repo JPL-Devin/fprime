@@ -106,6 +106,10 @@ U8* SdlsSaRouterTester ::getFreePoolBuffer() {
     return nullptr;
 }
 
+U32 SdlsSaRouterTester ::getPoolBufferContext(const U8* storage) const {
+    return static_cast<U32>((storage - &this->m_pool[0][0]) / TEST_BUFFER_SIZE);
+}
+
 }  // namespace Ccsds
 
 }  // namespace Svc

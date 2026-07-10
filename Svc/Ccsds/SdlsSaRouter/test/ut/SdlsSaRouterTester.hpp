@@ -82,6 +82,9 @@ class SdlsSaRouterTester : public SdlsSaRouterGTestBase {
     //! Return a pool buffer pointer not currently outstanding, or nullptr if all are in use
     U8* getFreePoolBuffer();
 
+    //! Return the buffer context identifier associated with a pool buffer
+    U32 getPoolBufferContext(const U8* storage) const;
+
     //! Return true if the SA appears in the configured map
     bool isMappedSa(U16 sa) const;
 

@@ -80,8 +80,8 @@ class SdlsSaRouter final : public SdlsSaRouterComponentBase {
     //! Sentinel port index marking buffers forwarded by the router itself on routing errors
     static constexpr FwIndexType ROUTER_ERROR_PORT = -1;
 
-    //! Table of outstanding decrypted data buffers to their originating port index
-    Fw::ArrayMap<const U8*, FwIndexType, SdlsCfg::SaRouterMaxOutstandingBuffers> m_outstanding;
+    //! Table of outstanding decrypted data buffers (keyed by buffer context) to their originating port index
+    Fw::ArrayMap<U32, FwIndexType, SdlsCfg::SaRouterMaxOutstandingBuffers> m_outstanding;
 };
 
 }  // namespace Ccsds
