@@ -83,6 +83,10 @@ class SdlsSaRouter final : public SdlsSaRouterComponentBase {
     //! Table of outstanding decrypted data buffers (keyed by allocation context, which is
     //! stable across in-place pointer/size adjustments made downstream) to their originating
     //! port index
+    //!
+    //! TODO: the allocation context is only reliable within the buffer-manager paradigm. Once
+    //! Fw::Buffer stores its original pointer plus an offset (rather than allowing raw pointer
+    //! manipulation), revert this tracking to key on the original allocation pointer.
     Fw::ArrayMap<U32, FwIndexType, SdlsCfg::SaRouterMaxOutstandingBuffers> m_outstanding;
 };
 
