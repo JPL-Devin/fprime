@@ -27,23 +27,7 @@ module ComCcsdsSdls {
         #     - ComCcsdsSdls.SdlsDecryption.dataOut      -> [downstream].dataIn
         #     - [downstream].dataReturnOut               -> ComCcsdsSdls.SdlsDecryption.dataReturnIn
 
-        instance sdlsDeframer
-        instance saRouter
-        instance decryptor
-
-        connections Decryption {
-            # CcsdsSdlsDeframer <-> SdlsSaRouter (decryption requests and returns)
-            sdlsDeframer.decryptOut       -> saRouter.decryptIn
-            saRouter.decryptOut           -> sdlsDeframer.decryptIn
-            sdlsDeframer.decryptReturnOut -> saRouter.decryptReturnIn
-            saRouter.bufferReturnOut      -> sdlsDeframer.bufferReturnIn
-
-            # SdlsSaRouter <-> default decryptor
-            saRouter.saDecryptOut[SdlsCfg.SaRouterPorts.PLAINTEXT_DECRYPTION]       -> decryptor.decryptIn
-            decryptor.decryptOut           -> saRouter.saDecryptIn[SdlsCfg.SaRouterPorts.PLAINTEXT_DECRYPTION]
-            saRouter.saDecryptReturnOut[SdlsCfg.SaRouterPorts.PLAINTEXT_DECRYPTION] -> decryptor.decryptReturnIn
-            decryptor.bufferReturnOut      -> saRouter.saBufferReturnIn[SdlsCfg.SaRouterPorts.PLAINTEXT_DECRYPTION]
-        }
+        include "SdlsDecryption.fppi"
 
         # ----------------------------------------------------------------------
         # Topology ports
@@ -82,38 +66,16 @@ module ComCcsdsSdls {
         #     - [Svc.Com].dataOut       -> ComCcsdsSdls.FramingSubtopology.dataIn
 
         # Packet layer (router, ComQueue, space packet framer/deframer, buffer manager)
-        import ComCcsds.SpacePacketFraming
+        include "../ComCcsds/SpacePacketFraming.fppi"
 
         # TM/TC transfer frame layer (TM framer, frame accumulator, TC deframer)
-        import ComCcsds.TmTcFraming
+        include "../ComCcsds/TmTcFraming.fppi"
 
         # SDLS decryption layer (SDLS deframer, SA router, decryptor)
-        import SdlsDecryption
+        include "SdlsDecryption.fppi"
 
-        connections Downlink {
-            # SpacePacketFraming <-> TmTcFraming (downlink is not encrypted)
-            ComCcsds.SpacePacketFraming.dataOut -> ComCcsds.TmTcFraming.dataIn
-            ComCcsds.TmTcFraming.dataReturnOut  -> ComCcsds.SpacePacketFraming.dataReturnIn
-
-            # ComStatus
-            ComCcsds.TmTcFraming.comStatusOut -> ComCcsds.SpacePacketFraming.comStatusIn
-            # (Outgoing) TmTcFraming <-> ComInterface connections shall be established by the user
-        }
-
-        connections Uplink {
-            # (Incoming) ComInterface <-> TmTcFraming connections shall be established by the user
-            # TmTcFraming buffer allocations
-            ComCcsds.TmTcFraming.bufferDeallocate -> ComCcsds.SpacePacketFraming.bufferSendIn
-            ComCcsds.TmTcFraming.bufferAllocate   -> ComCcsds.SpacePacketFraming.bufferGetCallee
-
-            # TmTcFraming <-> SdlsDecryption (SDLS decryption step)
-            ComCcsds.TmTcFraming.dataOut -> SdlsDecryption.dataIn
-            SdlsDecryption.dataReturnOut -> ComCcsds.TmTcFraming.dataReturnIn
-
-            # SdlsDecryption <-> SpacePacketFraming
-            SdlsDecryption.dataOut                    -> ComCcsds.SpacePacketFraming.dataIn
-            ComCcsds.SpacePacketFraming.dataReturnOut -> SdlsDecryption.dataReturnIn
-        }
+        # Connections composing the packet, transfer frame, and decryption layers
+        include "SdlsFramingInterconnect.fppi"
 
         # ----------------------------------------------------------------------
         # Topology ports (Svc.Com boundary)
@@ -137,19 +99,29 @@ module ComCcsdsSdls {
 
     # This subtopology uses FramingSubtopology with a ComStub component for Com Interface
     topology Subtopology {
-        import FramingSubtopology
+        # Packet layer (router, ComQueue, space packet framer/deframer, buffer manager)
+        include "../ComCcsds/SpacePacketFraming.fppi"
+
+        # TM/TC transfer frame layer (TM framer, frame accumulator, TC deframer)
+        include "../ComCcsds/TmTcFraming.fppi"
+
+        # SDLS decryption layer (SDLS deframer, SA router, decryptor)
+        include "SdlsDecryption.fppi"
+
+        # Connections composing the packet, transfer frame, and decryption layers
+        include "SdlsFramingInterconnect.fppi"
 
         instance ComCcsds.comStub
 
         connections ComStub {
-            # FramingSubtopology <-> ComStub (Downlink)
-            FramingSubtopology.dataOut  -> ComCcsds.comStub.dataIn
-            ComCcsds.comStub.dataReturnOut -> FramingSubtopology.dataReturnIn
-            ComCcsds.comStub.comStatusOut  -> FramingSubtopology.comStatusIn
+            # TmTcFraming <-> ComStub (Downlink)
+            ComCcsds.framer.dataOut        -> ComCcsds.comStub.dataIn
+            ComCcsds.comStub.dataReturnOut -> ComCcsds.framer.dataReturnIn
+            ComCcsds.comStub.comStatusOut  -> ComCcsds.framer.comStatusIn
 
-            # ComStub <-> FramingSubtopology (Uplink)
-            ComCcsds.comStub.dataOut -> FramingSubtopology.dataIn
-            FramingSubtopology.dataReturnOut -> ComCcsds.comStub.dataReturnIn
+            # ComStub <-> TmTcFraming (Uplink)
+            ComCcsds.comStub.dataOut -> ComCcsds.frameAccumulator.dataIn
+            ComCcsds.frameAccumulator.dataReturnOut -> ComCcsds.comStub.dataReturnIn
         }
 
         # ----------------------------------------------------------------------
