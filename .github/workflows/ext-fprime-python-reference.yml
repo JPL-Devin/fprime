@@ -29,6 +29,7 @@ jobs:
     uses: ./.github/workflows/reusable-get-pr-branch.yml
     with:
       target_repository: fprime-community/fprime-python-reference
+      default_target_ref: main
 
   build-and-test:
     name: "Python Reference Build and Integration Tests"
