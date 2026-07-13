@@ -94,6 +94,7 @@ Sources: `Svc/Ccsds/Types/Types.fpp`, `Svc/Ccsds/TcDeframer`, `Svc/Ccsds/TmFrame
 5-byte primary header, variable data field, optional 2-byte Frame Error Control Field (FECF /
 CRC16). F´ uses TC Type-BD frames (no FARM sequence checks).
 
+*ASCII:*
 ```text
        0               1
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
@@ -104,6 +105,24 @@ CRC16). F´ uses TC Type-BD frames (no FARM sequence checks).
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   4    | Frame Sequence Number |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title TC flagsAndScId (bit positions)
+0-1: "Version"
+2: "Bypass"
+3: "Control command"
+4-5: "Reserved"
+6-15: "Spacecraft ID"
+```
+
+```mermaid
+packet-beta
+title TC vcIdAndLength (bit positions)
+0-5: "Virtual channel ID"
+6-15: "Frame length minus 1"
 ```
 
 Legend: `Ver` = frame version (2b), `B` = bypass flag (1b), `C` = control-command flag (1b),
@@ -145,6 +164,7 @@ Source: `Svc/Ccsds/TcDeframer/TcDeframer.cpp`, `Svc/Ccsds/Types/Types.fpp`.
 Fixed-size frame (default `ComCfg::TmFrameFixedSize` = **1024 bytes**). 6-byte primary header,
 data field filled with Space Packet(s) plus idle padding, 2-byte FECF trailer.
 
+*ASCII:*
 ```text
        0               1
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
@@ -157,6 +177,26 @@ data field filled with Space Packet(s) plus idle padding, 2-byte FECF trailer.
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   4-5  |H|S|O|Seg| First Hdr Ptr       |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title TM globalVcId (bit positions)
+0-1: "Frame version"
+2-11: "Spacecraft ID"
+12-14: "Virtual channel ID"
+15: "OCF flag"
+```
+
+```mermaid
+packet-beta
+title TM dataFieldStatus (bit positions)
+0: "Secondary header"
+1: "Synchronization"
+2: "Packet order"
+3-4: "Segment length ID"
+5-15: "First header pointer"
 ```
 
 Legend: `Ver` = frame version (2b), `SCID` = spacecraft ID (10b), `VCID` = virtual-channel ID
@@ -204,6 +244,7 @@ Source: `Svc/Ccsds/TmFramer/TmFramer.cpp`, `Svc/Ccsds/Types/Types.fpp`, `config/
 6-byte AOS primary header + 2-byte M_PDU header + M_PDU packet zone + optional 2-byte FECF.
 Payload (packet zone) starts at byte 8.
 
+*ASCII:*
 ```text
        0               1
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
@@ -216,6 +257,25 @@ Payload (packet zone) starts at byte 8.
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   2-5  |               VC Frame Count                   |R|C|SC |Cycle |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title AOS globalVcId (bit positions)
+0-1: "Frame version"
+2-9: "Spacecraft ID LSBs"
+10-15: "Virtual channel ID"
+```
+
+```mermaid
+packet-beta
+title AOS frameCountAndSignaling (bit positions)
+0-23: "VC frame count"
+24: "Replay flag"
+25: "VC count cycle flag"
+26-27: "Spacecraft ID MSBs"
+28-31: "VC frame count cycle"
 ```
 
 Legend: `Ver` = AOS frame version (2b), `SCID` = spacecraft ID (8b in the first word plus 2b
@@ -267,12 +327,23 @@ trailer. It does **not** use CCSDS Space Packets — the F´ Com packet descript
 | 8 | N | Payload (Com packet descriptor + payload packet) | |
 | 8+N | 4 | Trailer `crcField` (`U32`) | hash of header+payload |
 
+*ASCII:*
 ```text
 +====================+====================+================================+============+
 | Start word (4)     | Length field (4)  | Payload (N)                    | Hash (4)    |
 | 0xDEADBEEF         | payload bytes     | Com descriptor + packet        | crcField    |
 +====================+====================+================================+============+
  0                    4                    8                            8+N       12+N
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title Native F Prime frame (byte offsets)
+0-3: "Start word 0xDEADBEEF"
+4-7: "Payload length"
+8-511: "Payload (representative N)"
+512-515: "Hash / CRC32"
 ```
 
 - The **start word** `0xDEADBEEF` is the frame delimiter/sync marker (there is no separate byte
@@ -305,6 +376,7 @@ There is no Space Packet trailer/CRC at this layer.
 | 4 | 2 | Packet Data Length |
 | 6 | N | Data field (F´ Com packet descriptor + payload packet) |
 
+*ASCII:*
 ```text
        0               1
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
@@ -317,6 +389,29 @@ There is no Space Packet trailer/CRC at this layer.
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   6    | Data field: Com descriptor... |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title CCSDS Space Packet primary header (bit positions)
+0-2: "Version"
+3: "Type"
+4: "Secondary header"
+5-15: "APID"
+```
+
+```mermaid
+packet-beta
+title CCSDS Space Packet sequence control (bit positions)
+0-1: "Sequence flags"
+2-15: "Sequence count"
+```
+
+```mermaid
+packet-beta
+title CCSDS Space Packet data length (bit positions)
+0-15: "Packet data length minus 1"
 ```
 
 Legend: `Ver` = packet version number (3b), `T` = packet type (1b), `S` = secondary-header flag
@@ -355,12 +450,21 @@ This layer is common to **both** framing options. Every F´ communications buffe
 identifies the type of payload packet that follows. `Fw::ComPacket` serializes this descriptor as
 its first field.
 
+*ASCII:*
 ```text
 +====================+===============================================+
 | Descriptor (2)     | Type-specific payload (0..510)                |
 | FwPacketDescriptor | Command / Log / Tlm / File / other packet     |
 +====================+===============================================+
  0                    2                                           512
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title Com packet (byte offsets)
+0-1: "Descriptor"
+2-511: "Type-specific payload (variable)"
 ```
 
 | Offset | Size | Field |
@@ -403,12 +507,22 @@ The default communications buffer size is `FW_COM_BUFFER_MAX_SIZE` = **512 bytes
 Descriptor `FW_PACKET_COMMAND` (`0x0000`). Carries an opcode plus a raw argument buffer. Uplink
 only.
 
+*ASCII:*
 ```text
 +====================+====================+==============================+
 | Descriptor (2)     | Opcode (4)         | Command args (0..506)        |
 | = 0x0000           | FwOpcodeType       | serialized, no length prefix |
 +====================+====================+==============================+
  0                    2                    6                         512
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title Command packet (byte offsets)
+0-1: "Descriptor 0x0000"
+2-5: "Opcode"
+6-511: "Command args (0..506)"
 ```
 
 | Offset | Size | Field |
@@ -430,12 +544,23 @@ Sources: `Fw/Cmd/CmdPacket.hpp`, `Fw/Cmd/CmdPacket.cpp`, `Fw/Cmd/CmdArgBuffer.hp
 Descriptor `FW_PACKET_LOG` (`0x0002`). Carries an event (EVR) ID, a time tag, and serialized event
 arguments. Downlink only.
 
+*ASCII:*
 ```text
 +====================+====================+=================+==============================+
-| Descriptor (2)     | Event ID (4)       | Time tag (11)   | Event args (0..493)          |
+| Descriptor (2)     | Event ID (4)       | Time tag (11)   | Event args (0..495)          |
 | = 0x0002           | FwEventIdType      | Fw::Time        | serialized, no length prefix |
 +====================+====================+=================+==============================+
  0                    2                    6                17                         512
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title Event / log packet (byte offsets)
+0-1: "Descriptor 0x0002"
+2-5: "Event ID"
+6-16: "Time tag"
+17-511: "Event args (0..495)"
 ```
 
 | Offset | Size | Field |
@@ -445,8 +570,9 @@ arguments. Downlink only.
 | 6 | 11 | Time tag (`Fw::Time`, see [§5](#5-shared-time-tag-format)) |
 | 17 | remaining | Serialized event arguments (no length prefix) |
 
-Default maximum argument area `FW_LOG_BUFFER_MAX_SIZE` = 512 − `sizeof(FwEventIdType)` −
-`sizeof(FwPacketDescriptorType)` = **506 bytes** (before subtracting the time tag).
+The configured `FW_LOG_BUFFER_MAX_SIZE` is 512 − `sizeof(FwEventIdType)` −
+`sizeof(FwPacketDescriptorType)` = **506 bytes**; after the 11-byte time tag, the complete
+packet has room for at most **495 event-argument bytes**.
 
 Sources: `Fw/Log/LogPacket.hpp`, `Fw/Log/LogPacket.cpp`, `Fw/Log/LogBuffer.hpp`.
 
@@ -455,15 +581,26 @@ Sources: `Fw/Log/LogPacket.hpp`, `Fw/Log/LogPacket.cpp`, `Fw/Log/LogBuffer.hpp`.
 Descriptor `FW_PACKET_TELEM` (`0x0001`). Carries one or more channel entries, each with a channel
 ID, time tag, and serialized value. Downlink only.
 
+*ASCII:*
 ```text
 +====================+=================+=================+==============================+
-| Descriptor (2)     | Channel ID (4)  | Time tag (11)   | Value (N)                    |
+| Descriptor (2)     | Channel ID (4)  | Time tag (11)   | Value (0..495)               |
 | = 0x0001           | FwChanIdType    | Fw::Time        | no length prefix             |
 +====================+=================+=================+==============================+
  0                    2                 6                17
                                                          +==============================+
                                                          | ... next entry repeats       |
                                                          +==============================+
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title Telemetry channel packet (byte offsets)
+0-1: "Descriptor 0x0001"
+2-5: "Channel ID"
+6-16: "Time tag"
+17-511: "Channel value (0..495)"
 ```
 
 | Offset | Size | Field |
@@ -475,8 +612,9 @@ ID, time tag, and serialized value. Downlink only.
 | 17+N | … | Next channel entry (ID + time tag + value), if present |
 
 Each entry is `sizeof(FwChanIdType)` + 11 (time tag) + value bytes. Default maximum value area
-`FW_TLM_BUFFER_MAX_SIZE` = 512 − `sizeof(FwChanIdType)` − `sizeof(FwPacketDescriptorType)` =
-**506 bytes**.
+in a complete packet is 512 − `sizeof(FwChanIdType)` − `sizeof(FwPacketDescriptorType)` −
+`Fw::Time::SERIALIZED_SIZE` = **495 bytes**. The configured `FW_TLM_BUFFER_MAX_SIZE` is **506
+bytes** because it does not include the time tag.
 
 Sources: `Fw/Tlm/TlmPacket.hpp`, `Fw/Tlm/TlmPacket.cpp`, `Fw/Tlm/TlmBuffer.hpp`.
 
@@ -486,12 +624,23 @@ Descriptor `FW_PACKET_PACKETIZED_TLM` (`0x0004`), produced by `Svc::TlmPacketize
 per-channel IDs, a single packet ID selects a predefined packet layout; channel values are
 concatenated at configured offsets.
 
+*ASCII:*
 ```text
 +====================+=================+=================+==============================+
 | Descriptor (2)     | Packet ID (2)  | Time tag (11)   | Channel values (N)            |
 | = 0x0004           | FwTlmPacketize  | Fw::Time        | configured offsets/sizes     |
 +====================+=================+=================+==============================+
  0                    2                 4                15
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title Packetized telemetry packet (byte offsets)
+0-1: "Descriptor 0x0004"
+2-3: "Packet ID"
+4-14: "Time tag"
+15-511: "Channel values (variable)"
 ```
 
 | Offset | Size | Field |
@@ -513,11 +662,20 @@ Descriptor `FW_PACKET_FILE` (`0x0003`). Used for file uplink/downlink. The paylo
 `Fw::FilePacket`, which begins with its own 5-byte common header (a subtype byte + sequence index)
 followed by subtype-specific fields.
 
+*ASCII:*
 ```text
 +====================+==============================+
 | Type (1)           | Sequence index (4)           |
 +====================+==============================+
  0                    1                              5
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title File packet common header (byte offsets)
+0: "Type"
+1-4: "Sequence index"
 ```
 
 Common file-packet header (offsets relative to the start of the `Fw::FilePacket`, i.e. after the
@@ -535,12 +693,26 @@ characters (max 255).
 
 #### START packet (`T_START`)
 
+*ASCII:*
 ```text
 +=======+==============+===========+====================+========================+
 |Type(1)| Seq (4)      | File size | Src path (1+L)     | Dst path (1+L)         |
 |START  |              | (4)       | len + bytes        | len + bytes            |
 +=======+==============+===========+====================+========================+
  0       1              5           9                    10+sourceLen
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title File START packet (byte offsets; 10-byte paths shown)
+0: "Type START"
+1-4: "Sequence index"
+5-8: "File size"
+9: "Source path length"
+10-19: "Source path bytes"
+20: "Destination path length"
+21-30: "Destination path bytes"
 ```
 
 | Offset | Size | Field |
@@ -555,12 +727,24 @@ characters (max 255).
 
 #### DATA packet (`T_DATA`)
 
+*ASCII:*
 ```text
 +=======+==============+==============+=============+=============================+
 |Type(1)| Seq (4)      | File offset  | Data size   | File data (N)               |
 |DATA   |              | (4)          | (2)         |                             |
 +=======+==============+==============+=============+=============================+
  0       1              5              9             11
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title File DATA packet (byte offsets; N=500 shown)
+0: "Type DATA"
+1-4: "Sequence index"
+5-8: "File offset"
+9-10: "Data size"
+11-510: "File data (N)"
 ```
 
 | Offset | Size | Field |
@@ -573,12 +757,22 @@ characters (max 255).
 
 #### END packet (`T_END`)
 
+*ASCII:*
 ```text
 +=======+==============+==========================+
 |Type(1)| Seq (4)      | File checksum (4)        |
 |END    |              | CFDP checksum value      |
 +=======+==============+==========================+
  0       1              5                          9
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title File END packet (byte offsets)
+0: "Type END"
+1-4: "Sequence index"
+5-8: "File checksum"
 ```
 
 | Offset | Size | Field |
@@ -591,12 +785,21 @@ Total 9 bytes.
 
 #### CANCEL packet (`T_CANCEL`)
 
+*ASCII:*
 ```text
 +=======+==============+
 |Type(1)| Seq (4)      |
 |CANCEL |              |
 +=======+==============+
  0       1              5
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title File CANCEL packet (byte offsets)
+0: "Type CANCEL"
+1-4: "Sequence index"
 ```
 
 | Offset | Size | Field |
@@ -615,12 +818,23 @@ Sources: `Fw/FilePacket/FilePacket.hpp`, `Fw/FilePacket/*.cpp`.
 Events, telemetry channels, and packetized telemetry all embed an `Fw::Time` time tag. With the
 default configuration it serializes to **11 bytes**:
 
+*ASCII:*
 ```text
 +==================+===================+====================+====================+
 | Time base (2)    | Time context (1) | Seconds (4)        | Microseconds (4)    |
 | U16              | U8                | U32                | U32                |
 +==================+===================+====================+====================+
  0                  2                   3                    7                  11
+```
+
+*Mermaid:*
+```mermaid
+packet-beta
+title Fw::Time tag (byte offsets)
+0-1: "Time base"
+2: "Time context"
+3-6: "Seconds"
+7-10: "Microseconds"
 ```
 
 | Offset (within tag) | Size | Field | Type |
