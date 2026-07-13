@@ -175,7 +175,7 @@ evr_seq = []
 for i in range(0,10):
     evr_seq.append(fprime_test_api.get_event_pred("CommandReceived", [i]))
 
-# asserts tha history has a sequence of 10 "CommandReceived" events with the argument vals 0 through 9 (inclusive).
+# asserts the history has a sequence of 10 "CommandReceived" events with the argument vals 0 through 9 (inclusive).
 # the resulting sequence must follow the history's enforced order
 results = fprime_test_api.assert_event_sequence(evr_seq)
 ```
@@ -235,8 +235,8 @@ ne_pred = predicates.not_equal_to(50)
 # a valid value must be within the range 0 to 100 and must not be 50.
 and_pred = predicates.satisfies_all([rng_pred, ne_pred])
 
-or_pred(15) # evaluates True
-or_pred(50) # evaluates False
+and_pred(15) # evaluates True
+and_pred(50) # evaluates False
 ```
 
 

@@ -189,7 +189,7 @@ updated.
 
 The last action in constructing the topology is to start the tasks for
 any active components. The start() method is found in the
-ActiveComponentBase base class in Fw/Comp/FwActiveComponentBase.hpp.
+ActiveComponentBase base class in Fw/Comp/ActiveComponentBase.hpp.
 Table 22 provides the arguments and their meanings.
 
 **Table 22.** Active component start()

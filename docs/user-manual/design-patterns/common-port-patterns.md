@@ -16,7 +16,7 @@ Synchronous get ports are used to return data immediately from a component. Thes
 
 These ports can provide function-call like behavior between components that are connected together in an F Prime topology while still working within the bounds of the F Prime component architecture.
 
-An example of synchronous get ports can be seen in the [PrmDb component](https://github.com/nasa/fprime/blob/devel/Svc/PrmDb/PrmDb.fpp#L42-L43).
+An example of synchronous get ports can be seen in the [PrmDb component](https://github.com/nasa/fprime/blob/devel/Svc/PrmDb/PrmDb.fpp#L66-L67).
 
 ```mermaid
 sequenceDiagram

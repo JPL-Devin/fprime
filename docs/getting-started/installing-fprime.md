@@ -63,7 +63,7 @@ This command will ask for some input. Sample responses are below:
   [2/2] Project top-level namespace [MyFprimeProject]: MyProject
 ```
 
-1.  This commands perform the following actions:
+1.  This command performs the following actions:
     - Create a new git repository with the standard F´ project structure
     - Create a new virtual environment within the project and install dependencies
 
@@ -108,12 +108,12 @@ This section will add some known hints to trouble-shooting with the installation
 * [fprime-util: command not found](#fprime-util-command-not-found)
 * [Helper script fpp-redirect-helper exited with reason: Permission denied](#helper-script-fpp-redirect-helper-exited-with-reason-permission-denied)
 ### Windows
-* [Windows Subsystem for Linux (WSL) Version 1: Bad CPIU Error](#windows-subsystem-for-linux-wsl-version-1-bad-cpiu-error)
+* [Windows Subsystem for Linux (WSL) Version 1: Bad CPU Error](#windows-subsystem-for-linux-wsl-version-1-bad-cpu-error)
 ### Linux
 * [Ubuntu, Debian, Java and Python PIP](#ubuntu-debian-java-and-python-pip)
 ### macOS
 * [SSL Error with Python 3.8+](#ssl-error-with-python-38-on-macos)
-* [Apple Silicon: Bad CPIU Error](#apple-silicon-bad-cpiu-error)
+* [Apple Silicon: Bad CPU Error](#apple-silicon-bad-cpu-error)
 
 ### Recommended PIP Versions
 Some of the F´ Python packages are built in a way that it is recommended to install them with modern versions of PIP. Systems not recommended or pip versions less than recommended will require Java and run slower versions of FPP tools. The recommended versions are described below:
@@ -133,21 +133,20 @@ If the user is using a virtual environment and receives the ‘command not found
 If installing without a virtual environment, PIP occasionally uses `$HOME/.local/bin` as a place to install user tools. Users running without virtual environments should add this directory to the path.
 
 ### Helper script ‘fpp-redirect-helper’ exited with reason: Permission denied
-This error can occur when the helper-script, (`fprime/cmake/autocoder/fpp-wrapper/fpp-redirect-helper`) loses its execution permission.
+This error can occur when the helper-script loses its execution permission.
 
-To verify that this is the case, change to the directory containing `fpp-redirect-helper` and verify that it is executable.
+To resolve, locate the `fpp-redirect-helper` script within your virtual environment's installed F´ tools and verify that it is executable.
 
 ```
-cd fprime/cmake/autocoder/fpp-wrapper/
-ls -l
+ls -l $(which fpp-redirect-helper)
 ```
 If it is not executable, add the permission back.
 
-`chmod 700 fpp-redirect-helper`
+`chmod 700 $(which fpp-redirect-helper)`
 
-### Windows Subsystem for Linux (WSL) Version 1: Bad CPIU Error
+### Windows Subsystem for Linux (WSL) Version 1: Bad CPU Error
 
-WSL 1 is no longer supported. Users running WSL1 will experience very slow generation and builds.  Often a `Bad CPIU Error` will occur. Users who must use WSL1 will need to [install FPP directly](https://github.com/nasa/fpp/tree/main/compiler).
+WSL 1 is no longer supported. Users running WSL1 will experience very slow generation and builds.  Often a `Bad CPU Error` will occur. Users who must use WSL1 will need to [install FPP directly](https://github.com/nasa/fpp/tree/main/compiler).
 
 ### Ubuntu, Debian, Java and Python PIP
 Ubuntu and possibly other Debian variants don’t include the pip packages in the default Python 3 installation. To get fully functional, use these commands on Ubuntu and Debian based systems:
@@ -169,6 +168,6 @@ cd /Applications/Python\ 3.X/
 ```
 After running above command, re-try installing `fprime-bootstrap`.
 
-### Apple Silicon: Bad CPIU Error
+### Apple Silicon: Bad CPU Error
 
-Macintosh users who have not installed Rosetta software will experience a "Bad CPIU Error".  Users should [install Rosetta](https://support.apple.com/en-us/102527) or [install FPP directly](https://github.com/nasa/fpp/tree/main/compiler).
+Macintosh users who have not installed Rosetta software will experience a "Bad CPU Error".  Users should [install Rosetta](https://support.apple.com/en-us/102527) or [install FPP directly](https://github.com/nasa/fpp/tree/main/compiler).

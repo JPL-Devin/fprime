@@ -98,7 +98,7 @@ class MyOsMutex : public MutexInterface {
 ```
 
 > [!TIP]
-> Look at each interface header in `Os/` (e.g., `Os/Mutex.hpp`, `Os/File.hpp`, `Os/Task.hpp`) to see the exact set of pure virtual methods that need to be implemented for each. Each interface also defines a `Status` enum — your implementation must return the appropriate [status values](../../Os/docs/sdd.md#24-error-handling).
+> Look at each interface header in `Os/` (e.g., `Os/Mutex.hpp`, `Os/File.hpp`, `Os/Task.hpp`) to see the exact set of pure virtual methods that need to be implemented for each. Each interface also defines a `Status` enum — your implementation must return the appropriate [status values](../../Os/docs/sdd.md#54-error-handling).
 
 ### 2.2 — Implement the Methods
 
