@@ -98,11 +98,11 @@ CRC16). F´ uses TC Type-BD frames (no FARM sequence checks).
        0               1
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  0-1  |Ver |B|C| Rsv |       SCID     |
+  0-1  |V  |B|C|R  |       SCID        |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  2-3  |       VCID        | Frame Len |
+  2-3  |    VCID   |     Frame Len     |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  4    |        Frame Sequence Number  |
+  4    | Frame Sequence Number |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
 
@@ -149,14 +149,13 @@ data field filled with Space Packet(s) plus idle padding, 2-byte FECF trailer.
        0               1
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  0-1  |Ver |       SCID       | VCID|O|
+  0-1  |V  |        SCID       |VCID |O|
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  2    |    Master Frame Count         |
+  2    |    Master Frame Count   |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  3    |   Virtual Channel Count       |
+  3    |   Virtual Channel Count |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  4-5  |H|S|O| Seg |    First Header   |
-       |           Pointer              |
+  4-5  |H|S|O|Seg| First Hdr Ptr       |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
 
@@ -209,15 +208,14 @@ Payload (packet zone) starts at byte 8.
        0               1
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  0-1  |Ver |    SCID (LSBs)    | VCID |
+  0-1  |V  |   SCID (LSBs) |   VCID    |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
        0       1       2       3
-       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  2-5  |       VC Frame Count (24b)    |
-       |R|C|SCID MSB| VC Cycle (4b)   |
-       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  2-5  |               VC Frame Count                   |R|C|SC |Cycle |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
 
 Legend: `Ver` = AOS frame version (2b), `SCID` = spacecraft ID (8b in the first word plus 2b
@@ -311,11 +309,11 @@ There is no Space Packet trailer/CRC at this layer.
        0               1
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  0-1  |Ver |T|S|          APID         |
+  0-1  | Ver  |T|S|         APID         |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  2-3  |Seq Flags|       Seq Count     |
+  2-3  |Seq |          Seq Count          |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  4-5  |       Packet Data Length      |
+  4-5  |       Packet Data Length       |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   6    | Data field: Com descriptor... |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
