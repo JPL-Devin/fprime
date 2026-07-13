@@ -111,18 +111,18 @@ CRC16). F´ uses TC Type-BD frames (no FARM sequence checks).
 ```mermaid
 packet-beta
 title TC flagsAndScId (bit positions)
-0-1: "Version"
-2: "Bypass"
-3: "Control command"
-4-5: "Reserved"
-6-15: "Spacecraft ID"
+0-1: "Ver"
+2: "B"
+3: "C"
+4-5: "Rsv"
+6-15: "SCID"
 ```
 
 ```mermaid
 packet-beta
 title TC vcIdAndLength (bit positions)
-0-5: "Virtual channel ID"
-6-15: "Frame length minus 1"
+0-5: "VCID"
+6-15: "Len"
 ```
 
 Legend: `Ver` = frame version (2b), `B` = bypass flag (1b), `C` = control-command flag (1b),
@@ -183,20 +183,20 @@ data field filled with Space Packet(s) plus idle padding, 2-byte FECF trailer.
 ```mermaid
 packet-beta
 title TM globalVcId (bit positions)
-0-1: "Frame version"
-2-11: "Spacecraft ID"
-12-14: "Virtual channel ID"
-15: "OCF flag"
+0-1: "Ver"
+2-11: "SCID"
+12-14: "VCID"
+15: "O"
 ```
 
 ```mermaid
 packet-beta
 title TM dataFieldStatus (bit positions)
-0: "Secondary header"
-1: "Synchronization"
-2: "Packet order"
-3-4: "Segment length ID"
-5-15: "First header pointer"
+0: "H"
+1: "S"
+2: "O"
+3-4: "Seg"
+5-15: "FHP"
 ```
 
 Legend: `Ver` = frame version (2b), `SCID` = spacecraft ID (10b), `VCID` = virtual-channel ID
@@ -263,19 +263,19 @@ Payload (packet zone) starts at byte 8.
 ```mermaid
 packet-beta
 title AOS globalVcId (bit positions)
-0-1: "Frame version"
-2-9: "Spacecraft ID LSBs"
-10-15: "Virtual channel ID"
+0-1: "Ver"
+2-9: "SCID LSB"
+10-15: "VCID"
 ```
 
 ```mermaid
 packet-beta
 title AOS frameCountAndSignaling (bit positions)
-0-23: "VC frame count"
-24: "Replay flag"
-25: "VC count cycle flag"
-26-27: "Spacecraft ID MSBs"
-28-31: "VC frame count cycle"
+0-23: "VFC"
+24: "R"
+25: "C"
+26-27: "SCID MSB"
+28-31: "VFC cyc"
 ```
 
 Legend: `Ver` = AOS frame version (2b), `SCID` = spacecraft ID (8b in the first word plus 2b
@@ -339,11 +339,11 @@ trailer. It does **not** use CCSDS Space Packets — the F´ Com packet descript
 *Mermaid:*
 ```mermaid
 packet-beta
-title Native F Prime frame (byte offsets)
-0-3: "Start word 0xDEADBEEF"
-4-7: "Payload length"
-8-511: "Payload (representative N)"
-512-515: "Hash / CRC32"
+title Native F Prime frame (byte offsets; schematic)
+0-3: "Start"
+4-7: "Len"
+8-11: "Pay (var)"
+12-15: "Hash"
 ```
 
 - The **start word** `0xDEADBEEF` is the frame delimiter/sync marker (there is no separate byte
@@ -395,23 +395,23 @@ There is no Space Packet trailer/CRC at this layer.
 ```mermaid
 packet-beta
 title CCSDS Space Packet primary header (bit positions)
-0-2: "Version"
-3: "Type"
-4: "Secondary header"
+0-2: "Ver"
+3: "T"
+4: "S"
 5-15: "APID"
 ```
 
 ```mermaid
 packet-beta
 title CCSDS Space Packet sequence control (bit positions)
-0-1: "Sequence flags"
-2-15: "Sequence count"
+0-1: "SF"
+2-15: "Seq"
 ```
 
 ```mermaid
 packet-beta
 title CCSDS Space Packet data length (bit positions)
-0-15: "Packet data length minus 1"
+0-15: "Len"
 ```
 
 Legend: `Ver` = packet version number (3b), `T` = packet type (1b), `S` = secondary-header flag
@@ -462,9 +462,9 @@ its first field.
 *Mermaid:*
 ```mermaid
 packet-beta
-title Com packet (byte offsets)
-0-1: "Descriptor"
-2-511: "Type-specific payload (variable)"
+title Com packet (byte offsets; schematic)
+0-1: "Desc"
+2-5: "Pay (var)"
 ```
 
 | Offset | Size | Field |
@@ -519,10 +519,10 @@ only.
 *Mermaid:*
 ```mermaid
 packet-beta
-title Command packet (byte offsets)
-0-1: "Descriptor 0x0000"
-2-5: "Opcode"
-6-511: "Command args (0..506)"
+title Command packet (byte offsets; schematic)
+0-1: "Desc"
+2-5: "Op"
+6-9: "Args (var)"
 ```
 
 | Offset | Size | Field |
@@ -556,11 +556,11 @@ arguments. Downlink only.
 *Mermaid:*
 ```mermaid
 packet-beta
-title Event / log packet (byte offsets)
-0-1: "Descriptor 0x0002"
-2-5: "Event ID"
-6-16: "Time tag"
-17-511: "Event args (0..495)"
+title Event / log packet (byte offsets; schematic)
+0-1: "Desc"
+2-5: "EID"
+6-16: "Time"
+17-20: "Args (var)"
 ```
 
 | Offset | Size | Field |
@@ -596,11 +596,11 @@ ID, time tag, and serialized value. Downlink only.
 *Mermaid:*
 ```mermaid
 packet-beta
-title Telemetry channel packet (byte offsets)
-0-1: "Descriptor 0x0001"
-2-5: "Channel ID"
-6-16: "Time tag"
-17-511: "Channel value (0..495)"
+title Telemetry channel packet (byte offsets; schematic)
+0-1: "Desc"
+2-5: "ChID"
+6-16: "Time"
+17-20: "Val (var)"
 ```
 
 | Offset | Size | Field |
@@ -636,11 +636,11 @@ concatenated at configured offsets.
 *Mermaid:*
 ```mermaid
 packet-beta
-title Packetized telemetry packet (byte offsets)
-0-1: "Descriptor 0x0004"
-2-3: "Packet ID"
-4-14: "Time tag"
-15-511: "Channel values (variable)"
+title Packetized telemetry packet (byte offsets; schematic)
+0-1: "Desc"
+2-3: "PID"
+4-14: "Time"
+15-18: "Vals (var)"
 ```
 
 | Offset | Size | Field |
@@ -675,7 +675,7 @@ followed by subtype-specific fields.
 packet-beta
 title File packet common header (byte offsets)
 0: "Type"
-1-4: "Sequence index"
+1-4: "Seq idx"
 ```
 
 Common file-packet header (offsets relative to the start of the `Fw::FilePacket`, i.e. after the
@@ -705,14 +705,14 @@ characters (max 255).
 *Mermaid:*
 ```mermaid
 packet-beta
-title File START packet (byte offsets; 10-byte paths shown)
-0: "Type START"
-1-4: "Sequence index"
-5-8: "File size"
-9: "Source path length"
-10-19: "Source path bytes"
-20: "Destination path length"
-21-30: "Destination path bytes"
+title File START packet (byte offsets; schematic)
+0: "START"
+1-4: "Seq idx"
+5-8: "Size"
+9: "Src len"
+10-13: "Src (var)"
+14: "Dst len"
+15-18: "Dst (var)"
 ```
 
 | Offset | Size | Field |
@@ -739,12 +739,12 @@ title File START packet (byte offsets; 10-byte paths shown)
 *Mermaid:*
 ```mermaid
 packet-beta
-title File DATA packet (byte offsets; N=500 shown)
-0: "Type DATA"
-1-4: "Sequence index"
-5-8: "File offset"
-9-10: "Data size"
-11-510: "File data (N)"
+title File DATA packet (byte offsets; schematic)
+0: "DATA"
+1-4: "Seq idx"
+5-8: "Offset"
+9-10: "Len"
+11-14: "Data (var)"
 ```
 
 | Offset | Size | Field |
@@ -770,9 +770,9 @@ title File DATA packet (byte offsets; N=500 shown)
 ```mermaid
 packet-beta
 title File END packet (byte offsets)
-0: "Type END"
-1-4: "Sequence index"
-5-8: "File checksum"
+0: "END"
+1-4: "Seq idx"
+5-8: "CRC"
 ```
 
 | Offset | Size | Field |
@@ -798,8 +798,8 @@ Total 9 bytes.
 ```mermaid
 packet-beta
 title File CANCEL packet (byte offsets)
-0: "Type CANCEL"
-1-4: "Sequence index"
+0: "CANCEL"
+1-4: "Seq idx"
 ```
 
 | Offset | Size | Field |
@@ -831,10 +831,10 @@ default configuration it serializes to **11 bytes**:
 ```mermaid
 packet-beta
 title Fw::Time tag (byte offsets)
-0-1: "Time base"
-2: "Time context"
-3-6: "Seconds"
-7-10: "Microseconds"
+0-1: "Base"
+2: "Ctx"
+3-6: "Sec"
+7-10: "Usec"
 ```
 
 | Offset (within tag) | Size | Field | Type |
