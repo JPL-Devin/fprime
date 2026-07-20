@@ -43,6 +43,9 @@ jobs:
           submodules: recursive
           repository: fprime-community/fprime-python-reference
           ref: ${{ needs.get-branch.outputs.target-branch }}
+      - name: "Update fprime-python submodule to latest main"
+        run: git -C lib/fprime-python fetch --depth 1 origin main && git -C lib/fprime-python checkout FETCH_HEAD
+        shell: bash
       - name: "Overlay current F´ revision"
         uses: actions/checkout@v4
         with:
