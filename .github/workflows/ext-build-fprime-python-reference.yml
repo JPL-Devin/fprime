@@ -37,15 +37,23 @@ jobs:
     env:
       FPRIME_LOCATION: lib/fprime
     steps:
+      # TODO: once fprime-community/fprime-python-reference#1 merges, checkout
+      # repository fprime-community/fprime-python-reference with
+      # ref ${{ needs.get-branch.outputs.target-branch }} and submodules: recursive,
+      # and drop the manual fprime-python checkout below
       - name: "Checkout target repository"
         uses: actions/checkout@v4
         with:
-          submodules: recursive
-          repository: fprime-community/fprime-python-reference
-          ref: ${{ needs.get-branch.outputs.target-branch }}
-      - name: "Update fprime-python submodule to latest main"
-        run: git -C lib/fprime-python fetch --depth 1 origin main && git -C lib/fprime-python checkout FETCH_HEAD
-        shell: bash
+          repository: lestarch-autobot/fprime-python-reference
+          ref: 9b8ad3ad6679b133c0e41555dfe4c1cbf302b0ca
+      # TODO: revert to the fprime-python pin from the reference repo once
+      # fprime-community/fprime-python#9 merges
+      - name: "Checkout fprime-python devel compatibility fix"
+        uses: actions/checkout@v4
+        with:
+          repository: lestarch-autobot/fprime-python
+          ref: d9b12c3ff6ccdc9f1719c77f1fd4963642f7bcbc
+          path: lib/fprime-python
       - name: "Overlay current F´ revision"
         uses: actions/checkout@v4
         with:
