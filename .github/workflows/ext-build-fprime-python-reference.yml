@@ -59,7 +59,7 @@ jobs:
         run: |
           # fprime_python_model is not published to PyPI; pre-install it from source
           # TODO: install from main once fprime-community/fprime-python-model#28 merges
-          pip3 install "fprime_python_model @ git+https://github.com/fprime-community/fprime-python-model.git@fix/used-symbol-set-non-topology"
+          pip3 install "fprime_python_model @ git+https://github.com/lestarch-autobot/fprime-python-model.git@fix/used-symbol-set-non-topology"
           pip3 install -r requirements.txt
         shell: bash
       - name: "Generate build cache"
