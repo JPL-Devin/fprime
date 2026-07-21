@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: lestarch-autobot/fprime-python-reference
-          ref: 820796eb26230d9ffef4a8e005f2c2263ad8b43b
+          ref: 26c720f1808eea78fc61302a1bc3d2c31f609215
       # TODO: revert to the fprime-python pin from the reference repo once
       # fprime-community/fprime-python#9 merges
       - name: "Checkout fprime-python devel compatibility fix"
