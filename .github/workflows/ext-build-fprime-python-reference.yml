@@ -37,15 +37,12 @@ jobs:
     env:
       FPRIME_LOCATION: lib/fprime
     steps:
-      # TODO: once fprime-community/fprime-python-reference#1 merges, checkout
-      # repository fprime-community/fprime-python-reference with
-      # ref ${{ needs.get-branch.outputs.target-branch }}
       - name: "Checkout target repository"
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          repository: lestarch-autobot/fprime-python-reference
-          ref: 0cfa553600538eb4c3a8f3fe42f8916f7f8ec849
+          repository: fprime-community/fprime-python-reference
+          ref: ${{ needs.get-branch.outputs.target-branch }}
       - name: "Overlay current F´ revision"
         uses: actions/checkout@v4
         with:
