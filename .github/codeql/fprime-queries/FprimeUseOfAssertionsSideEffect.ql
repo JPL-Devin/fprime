@@ -45,6 +45,18 @@ predicate isErrnoRead(FunctionCall call) {
 }
 
 /**
+ * Holds if `call` is the expansion of the `PTHREAD_STACK_MIN` macro. On glibc
+ * >= 2.34 this macro may expand to `__sysconf (__SC_THREAD_STACK_MIN_VALUE)`,
+ * which merely queries a system constant.
+ */
+predicate isPthreadStackMinRead(FunctionCall call) {
+  exists(MacroInvocation mi |
+    mi.getMacro().getName() = "PTHREAD_STACK_MIN" and
+    mi.getAnExpandedElement() = call
+  )
+}
+
+/**
  * Holds if calling `call` may change program state.
  *
  * Calls to `const` member functions are treated as side-effect-free queries.
@@ -59,6 +71,7 @@ predicate callMayHaveSideEffect(FunctionCall call) {
   not call.getTarget() instanceof ConstMemberFunction and
   not hasConstOverload(call.getTarget()) and
   not isErrnoRead(call) and
+  not isPthreadStackMinRead(call) and
   // F Prime's bounded strnlen equivalent; the stock purity analysis
   // whitelists strnlen by name but reports string_length as impure only
   // because its own body contains an FW_ASSERT
