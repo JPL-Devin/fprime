@@ -38,6 +38,21 @@ module Ccsds {
 
         @ Ports for receiving back iv/data buffers from downstream crypto components for deallocation
         guarded input port saBufferReturnIn: [SdlsCfg.SaRouterPortCount] Svc.ComDataWithContext
+
+        ###############################################################################
+        # Standard AC Ports: Required for Events                                      #
+        ###############################################################################
+
+        import Fw.Event
+
+        @ Port for requesting the current time
+        time get port timeCaller
+
+        @ The outstanding-buffer tracking table is full; the data was dropped and its buffer returned
+        event TrackingTableFull() severity warning high format "SA router tracking table full: data dropped and buffer returned"
+
+        @ A returned buffer was not found in the tracking table; it was returned upstream
+        event UntrackedBufferReturned() severity warning high format "SA router received an untracked buffer return"
     }
 }
 }

@@ -26,6 +26,13 @@ The SA-to-port mapping is a compile-time FPP array of {`U16` SA, `FwIndexType` p
 | output        | saDataReturnOut | [SdlsCfg.SaRouterPortCount] Svc.ComDataWithContext | Returns ownership of processed data buffers to downstream crypto components. |
 | guarded input | saBufferReturnIn   | [SdlsCfg.SaRouterPortCount] Svc.ComDataWithContext | Receives back iv/data buffers from downstream crypto components for deallocation. |
 
+## Events
+
+| Name | Severity | Description |
+|------|----------|-------------|
+| TrackingTableFull | WARNING_HI | The outstanding-buffer tracking table is full; the data was dropped and its buffer returned. |
+| UntrackedBufferReturned | WARNING_HI | A returned buffer was not found in the tracking table; it was returned upstream. |
+
 ## Configuration
 
 | Constant | Description |
