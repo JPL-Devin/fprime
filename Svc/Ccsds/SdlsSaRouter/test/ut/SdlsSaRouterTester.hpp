@@ -109,7 +109,7 @@ class SdlsSaRouterTester : public SdlsSaRouterGTestBase {
     FwIndexType m_lastSaDataReturnOutPort = -1;
 
     //! Pool of buffers used as outstanding processed data
-    U8 m_pool[SdlsCfg::SaRouterMaxOutstandingBuffers][TEST_BUFFER_SIZE];
+    U8 m_pool[SdlsCfg::SaRouterMaxOutstandingBuffers][TEST_BUFFER_SIZE] = {};
 
     //! SAs from the compile-time routing map (SdlsCfg::SaMap defaults)
     U16 m_mapSas[SdlsCfg::SaRouterMapEntryCount];

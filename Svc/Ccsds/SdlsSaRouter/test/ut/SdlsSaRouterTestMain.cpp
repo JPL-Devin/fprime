@@ -89,7 +89,7 @@ TEST(SdlsSaRouter, RandomizedTesting) {
     STest::RandomScenario<SdlsSaRouterTester> random("Random Rules", rules, FW_NUM_ARRAY_ELEMENTS(rules));
     STest::BoundedScenario<SdlsSaRouterTester> bounded("Bounded Random Rules Scenario", random, numRulesToApply);
     const U32 numSteps = bounded.run(tester);
-    printf("Ran %u steps.\n", numSteps);
+    ASSERT_EQ(numSteps, numRulesToApply);
 }
 
 int main(int argc, char** argv) {

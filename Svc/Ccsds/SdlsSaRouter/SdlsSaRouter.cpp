@@ -49,14 +49,22 @@ void SdlsSaRouter ::dataIn_handler(FwIndexType portNum,
     // so the eventual ownership return routes back upstream via bufferReturnOut
     const Fw::Success inserted =
         this->m_outstanding.insert(data.getContext(), static_cast<FwIndexType>(ROUTER_ERROR_PORT));
-    FW_ASSERT(inserted == Fw::Success::SUCCESS);
+    if (inserted != Fw::Success::SUCCESS) {
+        // Tracking table full: drop the request and return the buffer upstream immediately
+        this->bufferReturnOut_out(0, data, context);
+        return;
+    }
     this->dataOut_out(0, errorStatus, data, context);
 }
 
 void SdlsSaRouter ::dataReturnIn_handler(FwIndexType portNum, Fw::Buffer& data, const ComCfg::FrameContext& context) {
     FwIndexType outputPort = 0;
     const Fw::Success found = this->m_outstanding.find(data.getContext(), outputPort);
-    FW_ASSERT(found == Fw::Success::SUCCESS);
+    if (found != Fw::Success::SUCCESS) {
+        // Untracked buffer (e.g. lost to a context-key collision): return it upstream
+        this->bufferReturnOut_out(0, data, context);
+        return;
+    }
     (void)this->m_outstanding.remove(data.getContext(), outputPort);
     if (outputPort == ROUTER_ERROR_PORT) {
         // Buffer was forwarded by the router itself on a routing error: return it upstream
@@ -77,7 +85,11 @@ void SdlsSaRouter ::saDataIn_handler(FwIndexType portNum,
                                      Fw::Buffer& data,
                                      const ComCfg::FrameContext& context) {
     const Fw::Success inserted = this->m_outstanding.insert(data.getContext(), portNum);
-    FW_ASSERT(inserted == Fw::Success::SUCCESS, static_cast<FwAssertArgType>(portNum));
+    if (inserted != Fw::Success::SUCCESS) {
+        // Tracking table full: drop the data and return ownership to the downstream component
+        this->saDataReturnOut_out(portNum, data, context);
+        return;
+    }
     this->dataOut_out(0, status, data, context);
 }
 

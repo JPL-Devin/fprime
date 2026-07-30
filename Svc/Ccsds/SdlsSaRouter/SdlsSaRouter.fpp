@@ -18,7 +18,7 @@ module Ccsds {
         output port dataOut: Svc.Ccsds.CcsdsSdlsData
 
         @ Port for receiving back ownership of buffers sent on dataOut
-        sync input port dataReturnIn: Svc.ComDataWithContext
+        guarded input port dataReturnIn: Svc.ComDataWithContext
 
         @ Port for returning the incoming iv/data buffer for deallocation
         output port bufferReturnOut: Svc.ComDataWithContext
@@ -31,13 +31,13 @@ module Ccsds {
         output port saDataOut: [SdlsCfg.SaRouterPortCount] Svc.Ccsds.CcsdsSdlsEncryption
 
         @ Ports for receiving the operation status and processed data (possibly newly allocated) from downstream crypto components
-        sync input port saDataIn: [SdlsCfg.SaRouterPortCount] Svc.Ccsds.CcsdsSdlsData
+        guarded input port saDataIn: [SdlsCfg.SaRouterPortCount] Svc.Ccsds.CcsdsSdlsData
 
         @ Ports for returning ownership of processed data buffers to downstream crypto components
         output port saDataReturnOut: [SdlsCfg.SaRouterPortCount] Svc.ComDataWithContext
 
         @ Ports for receiving back iv/data buffers from downstream crypto components for deallocation
-        sync input port saBufferReturnIn: [SdlsCfg.SaRouterPortCount] Svc.ComDataWithContext
+        guarded input port saBufferReturnIn: [SdlsCfg.SaRouterPortCount] Svc.ComDataWithContext
     }
 }
 }

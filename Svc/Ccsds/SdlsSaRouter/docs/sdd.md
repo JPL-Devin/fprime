@@ -19,12 +19,12 @@ The SA-to-port mapping is a compile-time FPP array of {`U16` SA, `FwIndexType` p
 |---------------|--------------------|---------------------------------|-------------|
 | guarded input | dataIn          | Svc.Ccsds.CcsdsSdlsEncryption   | Receives the SA index and iv/data buffer to route. |
 | output        | dataOut         | Svc.Ccsds.CcsdsSdlsData         | Sends the operation status and processed data (possibly newly allocated) upstream. |
-| sync input    | dataReturnIn    | Svc.ComDataWithContext          | Receives back ownership of buffers sent on `dataOut`. |
+| guarded input | dataReturnIn    | Svc.ComDataWithContext          | Receives back ownership of buffers sent on `dataOut`. |
 | output        | bufferReturnOut    | Svc.ComDataWithContext          | Returns incoming iv/data buffers for deallocation. |
 | output        | saDataOut       | [SdlsCfg.SaRouterPortCount] Svc.Ccsds.CcsdsSdlsEncryption | Sends the SA index and iv/data buffer to the mapped downstream crypto component. |
-| sync input    | saDataIn        | [SdlsCfg.SaRouterPortCount] Svc.Ccsds.CcsdsSdlsData | Receives the operation status and processed data from downstream crypto components. |
+| guarded input | saDataIn        | [SdlsCfg.SaRouterPortCount] Svc.Ccsds.CcsdsSdlsData | Receives the operation status and processed data from downstream crypto components. |
 | output        | saDataReturnOut | [SdlsCfg.SaRouterPortCount] Svc.ComDataWithContext | Returns ownership of processed data buffers to downstream crypto components. |
-| sync input    | saBufferReturnIn   | [SdlsCfg.SaRouterPortCount] Svc.ComDataWithContext | Receives back iv/data buffers from downstream crypto components for deallocation. |
+| guarded input | saBufferReturnIn   | [SdlsCfg.SaRouterPortCount] Svc.ComDataWithContext | Receives back iv/data buffers from downstream crypto components for deallocation. |
 
 ## Configuration
 
