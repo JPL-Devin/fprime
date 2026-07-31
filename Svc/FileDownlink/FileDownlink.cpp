@@ -382,10 +382,10 @@ void FileDownlink ::sendCancelPacket() {
 
     Fw::FilePacket filePacket;
     filePacket.fromCancelPacket(cancelPacket);
+    const U32 bufferSize = filePacket.bufferSize() + static_cast<U32>(sizeof(FwPacketDescriptorType));
     this->getBuffer(buffer, CANCEL_PACKET);
-    FW_ASSERT(buffer.getSize() >= filePacket.bufferSize() + sizeof(FwPacketDescriptorType),
-              static_cast<FwAssertArgType>(buffer.getSize()),
-              static_cast<FwAssertArgType>(filePacket.bufferSize() + sizeof(FwPacketDescriptorType)));
+    FW_ASSERT(buffer.getSize() >= bufferSize, static_cast<FwAssertArgType>(buffer.getSize()),
+              static_cast<FwAssertArgType>(bufferSize));
 
     // Serialize the packet descriptor FW_PACKET_FILE to the buffer
     Fw::SerializeStatus status =
@@ -396,6 +396,8 @@ void FileDownlink ::sendCancelPacket() {
     // Serialize the filePacket content into the buffer
     status = filePacket.toBuffer(offsetBuffer);
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK);
+    // Set the buffer size to the serialized packet size before sending downstream
+    buffer.setSize(bufferSize);
     this->bufferSendOut_out(0, buffer);
     this->m_packetsSent.packetSent();
 }

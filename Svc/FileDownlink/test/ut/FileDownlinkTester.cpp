@@ -162,6 +162,16 @@ void FileDownlinkTester ::cancelDownlink() {
     this->component.doDispatch();  // Process return of original buffer and send cancel packet
     this->component.doDispatch();  // Process return of cancel packet
 
+    ASSERT_GT(this->fromPortHistory_bufferSendOut->size(), 0U);
+    const Fw::Buffer& cancelBuffer =
+        this->fromPortHistory_bufferSendOut->at(this->fromPortHistory_bufferSendOut->size() - 1).fwBuffer;
+    Fw::FilePacket::CancelPacket cancelPacket;
+    cancelPacket.initialize(1);
+    Fw::FilePacket filePacket;
+    filePacket.fromCancelPacket(cancelPacket);
+    ASSERT_EQ(filePacket.bufferSize() + sizeof(FwPacketDescriptorType), cancelBuffer.getSize());
+    validateCancelPacket(cancelBuffer, 1);
+
     // Ensure initial send file command also receives a response.
     Fw::CmdResponse resp =
         (FILEDOWNLINK_COMMAND_FAILURES_DISABLED) ? Fw::CmdResponse::OK : Fw::CmdResponse::EXECUTION_ERROR;
