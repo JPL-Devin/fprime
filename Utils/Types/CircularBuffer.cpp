@@ -12,6 +12,7 @@
  *  Revised March 2022
  *      Author: bocchino
  */
+#include <cstring>
 #include <Fw/FPrimeBasicTypes.hpp>
 #include <Fw/Types/Assert.hpp>
 #include <Utils/Types/CircularBuffer.hpp>
@@ -61,12 +62,12 @@ Fw::SerializeStatus CircularBuffer ::serialize(const U8* const buffer, const FwS
     if (size > get_free_size()) {
         return Fw::FW_SERIALIZE_NO_ROOM_LEFT;
     }
-    // Copy in all the supplied data
+    // Copy in all the supplied data using memcpy for performance
     FwSizeType idx = advance_idx(m_head_idx, m_allocated_size);
-    for (U32 i = 0; i < size; i++) {
-        FW_ASSERT(idx < m_store_size, static_cast<FwAssertArgType>(idx));
-        m_store[idx] = buffer[i];
-        idx = advance_idx(idx);
+    FwSizeType first_chunk = std::min(size, m_store_size - idx);
+    std::memcpy(&m_store[idx], buffer, first_chunk);
+    if (first_chunk < size) {
+        std::memcpy(m_store, &buffer[first_chunk], size - first_chunk);
     }
     m_allocated_size += size;
     FW_ASSERT(m_allocated_size <= this->get_capacity(), static_cast<FwAssertArgType>(m_allocated_size));
@@ -117,11 +118,11 @@ Fw::SerializeStatus CircularBuffer ::peek(U8* buffer, FwSizeType size, FwSizeTyp
         return Fw::FW_DESERIALIZE_BUFFER_EMPTY;
     }
     FwSizeType idx = advance_idx(m_head_idx, offset);
-    // Deserialize all the bytes from network format
-    for (FwSizeType i = 0; i < size; i++) {
-        FW_ASSERT(idx < m_store_size, static_cast<FwAssertArgType>(idx));
-        buffer[i] = m_store[idx];
-        idx = advance_idx(idx);
+    // Copy out data using memcpy for performance
+    FwSizeType first_chunk = std::min(size, m_store_size - idx);
+    std::memcpy(buffer, &m_store[idx], first_chunk);
+    if (first_chunk < size) {
+        std::memcpy(&buffer[first_chunk], m_store, size - first_chunk);
     }
     return Fw::FW_SERIALIZE_OK;
 }
