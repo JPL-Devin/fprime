@@ -17,6 +17,7 @@ FPRIME-BM-003 | `BufferManager` shall return an empty buffer (size = 0) if no bu
 FPRIME-BM-004 | `BufferManager` shall accept empty returned buffers without an assert|Just send a warning to cover the case where an empty buffer is returned by a component|Test
 FPRIME-BM-005 | `BufferManager` shall use a provided Fw::MemAllocator instance to request overall buffer memory|Let the user decide where the memory comes from|Test
 FPRIME-BM-006 | `BufferManager` shall allow buffers to be returned in any order|Do not restrict the lifetime or usage of buffers|Test
+FPRIME-BM-007 | `BufferManager` shall return a buffer whose size is greater than or equal to the requested size|Users can rely on the returned buffer being large enough to hold the requested data; they must not rely on the size being exactly the requested size and should set it themselves|Test
 
 ## 3 Design
 
@@ -76,8 +77,14 @@ When `BufferManager` receives a request for a buffer of size *s* on
 
 1. Search for an unallocated buffer that is big enough to hold the requested buffer size.
 2. Mark the buffer as allocated.
-3. Return the `Fw::Buffer` instance to the user.
+3. Return the `Fw::Buffer` instance to the user. Its size is guaranteed to be greater than or equal to the requested size *s*.
 4. If a free buffer cannot be found, return an empty buffer to the user.
+
+> [!NOTE]
+> A successful allocation is guaranteed to return a buffer whose size (`Fw::Buffer::getSize()`) is at least the requested size *s*, because it is drawn from a bin at least that large. Users must not rely on the returned size being exactly *s*. After a successful allocation, users should:
+> 1. Check `buffer.isValid()` (a failed allocation returns an invalid, size-`0` buffer).
+> 2. `FW_ASSERT(buffer.getSize() >= requestedSize)`.
+> 3. Call `buffer.setSize()` to set the size they intend to use.
 
 #### 3.6.2 bufferSendIn
 

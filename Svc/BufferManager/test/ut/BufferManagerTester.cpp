@@ -265,6 +265,7 @@ void BufferManagerTester::multBuffSize() {
     Fw::Buffer buffs[BIN0_NUM_BUFFERS + BIN1_NUM_BUFFERS + BIN2_NUM_BUFFERS];
 
     REQUIREMENT("FPRIME-BM-002");
+    REQUIREMENT("FPRIME-BM-007");
 
     // BufferManager should be able to provide the whole pool worth of buffers
     // for a requested size smaller than the smallest bin.
@@ -274,6 +275,9 @@ void BufferManagerTester::multBuffSize() {
         buffs[b] = this->invoke_to_bufferGetCallee(0, BIN0_BUFFER_SIZE);
         // check allocation state
         ASSERT_TRUE(this->component.m_buffers[b].allocated);
+        // returned buffer size is guaranteed to be at least the requested size,
+        // even when the buffer is drawn from a larger bin
+        ASSERT_GE(buffs[b].getSize(), BIN0_BUFFER_SIZE);
         // check stats
         ASSERT_EQ(b + 1, this->component.m_currBuffs);
         // check stats
