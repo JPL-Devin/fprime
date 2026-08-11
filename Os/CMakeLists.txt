@@ -138,7 +138,29 @@ register_fprime_module(
 add_named_os_module(Console Fw_Logger)
 add_named_os_module("File;FileSystem;Directory" Utils_Hash Fw_DataStructures)
 add_named_os_module(Task ${CMAKE_THREAD_LIBS_INIT})
-add_named_os_module("Mutex;Condition")
+# Mutex: Mutex.hpp is a thin public alias header; the interface and link-time
+# delegate live in MutexInterface.hpp and DelegateMutex.{hpp,cpp}. Condition
+# remains bundled in this module to keep the Os_Mutex link target unchanged.
+# Registered explicitly because add_named_os_module assumes a matching
+# <name>.cpp per header.
+register_fprime_module(
+      "Os_Mutex"
+    REQUIRES_IMPLEMENTATIONS
+      "Os_Mutex"
+    SOURCES
+      "${CMAKE_CURRENT_LIST_DIR}/DelegateMutex.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/Mutex.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/Condition.cpp"
+    HEADERS
+      "${CMAKE_CURRENT_LIST_DIR}/Mutex.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/MutexInterface.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/DelegateMutex.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/Condition.hpp"
+    DEPENDS
+      Fw_Time
+      Fw_Types
+)
+fprime_target_dependencies(Os PUBLIC "Os_Mutex")
 add_named_os_module(CountingSemaphore)
 add_named_os_module(Queue)
 add_named_os_module(Cpu)
