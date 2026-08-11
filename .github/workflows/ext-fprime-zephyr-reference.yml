@@ -50,7 +50,7 @@ jobs:
           stage: build
       - name: "Build Binary (Pico 2)"
         run: |
-          CCACHE_DISABLE=1 fprime-ci -c ./lib/fprime-zephyr/ci/sample-configs/pico2.yml --add-stage build
+          fprime-ci -c ./lib/fprime-zephyr/ci/sample-configs/pico2.yml --add-stage build
       - name: "Archive Results (Pico 2)"
         uses: actions/upload-artifact@v7
         with:
@@ -60,7 +60,7 @@ jobs:
         run: rm -f ./archive.tar.gz
       - name: "Build Binary (Teensy 4.1)"
         run: |
-          CCACHE_DISABLE=1 fprime-ci -c ./lib/fprime-zephyr/ci/sample-configs/teensy41.yml --add-stage build
+          fprime-ci -c ./lib/fprime-zephyr/ci/sample-configs/teensy41.yml --add-stage build
       - name: "Archive Results (Teensy 4.1)"
         uses: actions/upload-artifact@v7
         with:
