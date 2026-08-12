@@ -38,6 +38,7 @@ register_fprime_config(
         "${CMAKE_CURRENT_LIST_DIR}/FPrimeNumericalConfig.h"
         "${CMAKE_CURRENT_LIST_DIR}/IpCfg.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/OsDelegateConditionVariable.hpp"
+        "${CMAKE_CURRENT_LIST_DIR}/OsDelegateConsole.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/OsDelegateCpu.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/OsDelegateDirectory.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/OsDelegateMemory.hpp"
