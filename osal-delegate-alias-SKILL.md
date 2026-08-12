@@ -4,6 +4,10 @@ description: "Make an F Prime OSAL abstraction (Os::X) selectable at compile tim
 disable-model-invocation: true
 ---
 
+
+
+## FIRST Look at  osal-delegate-alias-SKILL.md for whether the class being converted is stand alone or intertwined 
+
 # OSAL X: compile-time-selectable implementation
 
 Goal: let a platform pick the `Os::X` implementation at **compile time** while the
