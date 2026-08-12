@@ -198,8 +198,44 @@ register_fprime_module(
 fprime_target_dependencies(Os PUBLIC "Os_ConditionVariable")
 add_named_os_module(CountingSemaphore)
 add_named_os_module(Queue)
-add_named_os_module(Cpu)
-add_named_os_module(Memory)
+# Cpu: Cpu.hpp is a thin public alias header (no .cpp); the interface and
+# link-time delegate live in CpuInterface.hpp and DelegateCpu.{hpp,cpp}.
+# Registered explicitly because add_named_os_module assumes a matching
+# <name>.cpp per header.
+register_fprime_module(
+      "Os_Cpu"
+    REQUIRES_IMPLEMENTATIONS
+      "Os_Cpu"
+    SOURCES
+      "${CMAKE_CURRENT_LIST_DIR}/DelegateCpu.cpp"
+    HEADERS
+      "${CMAKE_CURRENT_LIST_DIR}/Cpu.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/CpuInterface.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/DelegateCpu.hpp"
+    DEPENDS
+      Fw_Time
+      Fw_Types
+)
+fprime_target_dependencies(Os PUBLIC "Os_Cpu")
+# Memory: Memory.hpp is a thin public alias header (no .cpp); the interface and
+# link-time delegate live in MemoryInterface.hpp and DelegateMemory.{hpp,cpp}.
+# Registered explicitly because add_named_os_module assumes a matching
+# <name>.cpp per header.
+register_fprime_module(
+      "Os_Memory"
+    REQUIRES_IMPLEMENTATIONS
+      "Os_Memory"
+    SOURCES
+      "${CMAKE_CURRENT_LIST_DIR}/DelegateMemory.cpp"
+    HEADERS
+      "${CMAKE_CURRENT_LIST_DIR}/Memory.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/MemoryInterface.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/DelegateMemory.hpp"
+    DEPENDS
+      Fw_Time
+      Fw_Types
+)
+fprime_target_dependencies(Os PUBLIC "Os_Memory")
 # RawTime: RawTime.hpp is a thin public alias header (no .cpp); the interface and
 # link-time delegate live in DelegateRawTime.{hpp,cpp}. Registered explicitly
 # because add_named_os_module assumes a matching <name>.cpp per header.
