@@ -73,8 +73,8 @@ Every OSAL _core service_ (e.g. File, Task, Mutex, etc.) follows a uniform three
 
 | Layer | Example | Description |
 |---|---|---|
-| Interface | [`Os::FileInterface`](../File.hpp#L27) | A pure-virtual base class that defines the contract for a given OS service. |
-| Wrapper | [`Os::File`](../File.hpp#L225) | A `final` concrete class that holds a reference to the interface delegate constructed inside it. Application code interacts exclusively with the wrapper. |
+| Interface | [`Os::FileInterface`](../FileInterface.hpp) | A base class that defines the contract for a given OS service and implements its shared behavior. |
+| Wrapper | [`Os::DelegateFile`](../DelegateFile.hpp) | A `final` concrete class that holds a reference to the interface delegate constructed inside it. Application code interacts exclusively with the configured `Os::File` alias, which selects this wrapper by default. |
 | Implementation | [`Os::Posix::File`](../Posix/File.hpp) | A concrete class that implements the interface. This is what needs to be implemented to support a new OS on F Prime. |
 
 This pattern allows for the selection of the implementation used for a given build to be performed through the build system at link-time: CMake chooses which `Default*.cpp` file to link, and that file provides the `getDelegate` factory function for a given OSAL implementation.

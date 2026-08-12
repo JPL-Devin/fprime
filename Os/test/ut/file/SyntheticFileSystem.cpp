@@ -10,7 +10,7 @@ namespace Os {
 namespace Test {
 
 SyntheticFile::~SyntheticFile() {
-    this->close();
+    this->_close();
 }
 
 SyntheticFileSystem::OpenData SyntheticFileSystem::open(const CHAR* char_path,
@@ -80,9 +80,9 @@ void SyntheticFile::remove(const CHAR* char_path) {
     s_file_system->remove(char_path);
 }
 
-File::Status SyntheticFile::open(const CHAR* char_path,
-                                 const Os::File::Mode open_mode,
-                                 const File::OverwriteType overwrite) {
+File::Status SyntheticFile::_open(const CHAR* char_path,
+                                  const Os::File::Mode open_mode,
+                                  const File::OverwriteType overwrite) {
     SyntheticFileSystem::OpenData data = s_file_system->open(char_path, open_mode, overwrite);
     if (data.status == Os::File::Status::OP_OK) {
         this->m_data = data.file;
@@ -91,7 +91,7 @@ File::Status SyntheticFile::open(const CHAR* char_path,
     return data.status;
 }
 
-void SyntheticFile::close() {
+void SyntheticFile::_close() {
     if (this->m_data != nullptr) {
         this->m_data->m_mode = Os::File::Mode::OPEN_NO_MODE;
         this->m_data->m_path.clear();
@@ -103,7 +103,7 @@ void SyntheticFile::close() {
     }
 }
 
-Os::File::Status SyntheticFile::read(U8* buffer, FwSizeType& size, WaitType wait) {
+Os::File::Status SyntheticFile::_read(U8* buffer, FwSizeType& size, WaitType wait) {
     (void)wait;
     FW_ASSERT(this->m_data != nullptr);
     FW_ASSERT(buffer != nullptr);
@@ -138,7 +138,7 @@ Os::File::Status SyntheticFile::read(U8* buffer, FwSizeType& size, WaitType wait
     return Os::File::Status::OP_OK;
 }
 
-Os::File::Status SyntheticFile::write(const U8* buffer, FwSizeType& size, WaitType wait) {
+Os::File::Status SyntheticFile::_write(const U8* buffer, FwSizeType& size, WaitType wait) {
     (void)wait;
     FW_ASSERT(this->m_data != nullptr);
     FW_ASSERT(buffer != nullptr);
@@ -196,7 +196,7 @@ Os::File::Status SyntheticFile::write(const U8* buffer, FwSizeType& size, WaitTy
     return Os::File::Status::OP_OK;
 }
 
-Os::File::Status SyntheticFile::seek(const FwSignedSizeType offset, const SeekType absolute) {
+Os::File::Status SyntheticFile::_seek(const FwSignedSizeType offset, const SeekType absolute) {
     FW_ASSERT(this->m_data != nullptr);
     Os::File::Status status = Os::File::Status::OP_OK;
     // Cannot do a seek with a negative offset in absolute mode
@@ -228,7 +228,7 @@ Os::File::Status SyntheticFile::seek(const FwSignedSizeType offset, const SeekTy
     return status;
 }
 
-Os::File::Status SyntheticFile::preallocate(const FwSizeType offset, const FwSizeType length) {
+Os::File::Status SyntheticFile::_preallocate(const FwSizeType offset, const FwSizeType length) {
     FW_ASSERT(this->m_data != nullptr);
     Os::File::Status status = Os::File::Status::OP_OK;
     FW_ASSERT(this->m_data->m_mode < Os::File::Mode::MAX_OPEN_MODE);
@@ -249,7 +249,7 @@ Os::File::Status SyntheticFile::preallocate(const FwSizeType offset, const FwSiz
     return status;
 }
 
-Os::File::Status SyntheticFile::flush() {
+Os::File::Status SyntheticFile::_flush() {
     FW_ASSERT(this->m_data != nullptr);
     Os::File::Status status = Os::File::Status::OP_OK;
     FW_ASSERT(this->m_data->m_mode < Os::File::Mode::MAX_OPEN_MODE);
@@ -262,12 +262,12 @@ Os::File::Status SyntheticFile::flush() {
     return status;
 }
 
-Os::File::Status SyntheticFile::position(FwSizeType& position) {
+Os::File::Status SyntheticFile::_position(FwSizeType& position) {
     position = this->m_data->m_pointer;
     return Os::File::OP_OK;
 }
 
-Os::File::Status SyntheticFile::size(FwSizeType& size) {
+Os::File::Status SyntheticFile::_size(FwSizeType& size) {
     size = static_cast<FwSizeType>(this->m_data->m_data.size());
     return Os::File::OP_OK;
 }

@@ -29,20 +29,20 @@ void CmdSequencerTester::Interceptor::disable() {
     this->enabled = EnableType::t::NONE;
 }
 
-Os::FileInterface::Status CmdSequencerTester::Interceptor::PosixFileInterceptor::open(const char* path,
-                                                                                      Mode mode,
-                                                                                      OverwriteType overwrite) {
+Os::FileInterface::Status CmdSequencerTester::Interceptor::PosixFileInterceptor::_open(const char* path,
+                                                                                       Mode mode,
+                                                                                       OverwriteType overwrite) {
     if ((s_current_interceptor != nullptr) && (s_current_interceptor->enabled == EnableType::t::OPEN)) {
         return s_current_interceptor->fileStatus;
     }
-    return this->Os::Posix::File::PosixFile::open(path, mode, overwrite);
+    return this->Os::Posix::File::PosixFile::_open(path, mode, overwrite);
 }
 
-Os::File::Status CmdSequencerTester::Interceptor::PosixFileInterceptor::read(U8* buffer,
-                                                                             FwSizeType& requestSize,
-                                                                             Os::File::WaitType waitType) {
+Os::File::Status CmdSequencerTester::Interceptor::PosixFileInterceptor::_read(U8* buffer,
+                                                                              FwSizeType& requestSize,
+                                                                              Os::File::WaitType waitType) {
     (void)waitType;
-    Os::File::Status status = this->Os::Posix::File::PosixFile::read(buffer, requestSize, waitType);
+    Os::File::Status status = this->Os::Posix::File::PosixFile::_read(buffer, requestSize, waitType);
     if (s_current_interceptor == nullptr) {
         return status;
     } else if ((s_current_interceptor->enabled == EnableType::READ) &&

@@ -43,13 +43,13 @@ class StubFile : public FileInterface {
     //! \param overwrite: overwrite existing file on create
     //! \return: NOT_IMPLEMENTED
     //!
-    Os::FileInterface::Status open(const char* path, Mode mode, OverwriteType overwrite) override;
+    Os::FileInterface::Status _open(const char* path, Mode mode, OverwriteType overwrite) override;
 
     //! \brief close the file, if not opened then do nothing
     //!
     //! This implementation does nothing.
     //!
-    void close() override;
+    void _close() override;
 
     //! \brief get size of currently open file
     //!
@@ -57,7 +57,7 @@ class StubFile : public FileInterface {
     //! \param size: output parameter for size.
     //! \return NOT_IMPLEMENTED
     //!
-    Status size(FwSizeType& size_result) override;
+    Status _size(FwSizeType& size_result) override;
 
     //! \brief get file pointer position of the currently open file
     //!
@@ -65,7 +65,7 @@ class StubFile : public FileInterface {
     //! \param position: output parameter for size.
     //! \return NOT_IMPLEMENTED
     //!
-    Status position(FwSizeType& position_result) override;
+    Status _position(FwSizeType& position_result) override;
 
     //! \brief pre-allocate file storage
     //!
@@ -78,7 +78,7 @@ class StubFile : public FileInterface {
     //! \param length: length after offset to preallocate
     //! \return NOT_IMPLEMENTED
     //!
-    Status preallocate(FwSizeType offset, FwSizeType length) override;
+    Status _preallocate(FwSizeType offset, FwSizeType length) override;
 
     //! \brief seek the file pointer to the given offset
     //!
@@ -88,7 +88,7 @@ class StubFile : public FileInterface {
     //! \param seekType: `ABSOLUTE` for seeking from beginning of file, `RELATIVE` to use current position.
     //! \return NOT_IMPLEMENTED
     //!
-    Status seek(FwSignedSizeType offset, SeekType seekType) override;
+    Status _seek(FwSignedSizeType offset, SeekType seekType) override;
 
     //! \brief flush file contents to storage
     //!
@@ -96,7 +96,7 @@ class StubFile : public FileInterface {
     //!
     //! \return NOT_IMPLEMENTED
     //!
-    Status flush() override;
+    Status _flush() override;
 
     //! \brief read data from this file into supplied buffer bounded by size
     //!
@@ -111,7 +111,7 @@ class StubFile : public FileInterface {
     //! \param wait: `WAIT` to wait for data, `NO_WAIT` to return what is currently available
     //! \return NOT_IMPLEMENTED
     //!
-    Status read(U8* buffer, FwSizeType& size, WaitType wait) override;
+    Status _read(U8* buffer, FwSizeType& size, WaitType wait) override;
 
     //! \brief read data from this file into supplied buffer bounded by size
     //!
@@ -126,7 +126,7 @@ class StubFile : public FileInterface {
     //! \param wait: `WAIT` to wait for data to write to disk, `NO_WAIT` to return what is currently available
     //! \return NOT_IMPLEMENTED
     //!
-    Status write(const U8* buffer, FwSizeType& size, WaitType wait) override;
+    Status _write(const U8* buffer, FwSizeType& size, WaitType wait) override;
 
     //! \brief returns the raw file handle
     //!

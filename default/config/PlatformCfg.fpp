@@ -9,7 +9,8 @@ constant FW_CONSOLE_HANDLE_MAX_SIZE = 24
 constant FW_TASK_HANDLE_MAX_SIZE = 40
 
 @ Maximum size of a handle for Os::File
-constant FW_FILE_HANDLE_MAX_SIZE = 16
+@ Implementations inherit the FileInterface state, which includes a FW_FILE_CHUNK_SIZE CRC buffer
+constant FW_FILE_HANDLE_MAX_SIZE = FW_FILE_CHUNK_SIZE + 128
 
 @ Maximum size of a handle for Os::Mutex
 constant FW_MUTEX_HANDLE_MAX_SIZE = 72

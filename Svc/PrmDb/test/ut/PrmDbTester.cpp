@@ -1481,9 +1481,9 @@ void PrmDbTester::PrmDbTestFile::setTester(Svc::PrmDbTester* tester) {
     s_tester = tester;
 }
 
-Os::File::Status PrmDbTester::PrmDbTestFile::read(U8* buffer, FwSizeType& size, Os::File::WaitType wait) {
+Os::File::Status PrmDbTester::PrmDbTestFile::_read(U8* buffer, FwSizeType& size, Os::File::WaitType wait) {
     EXPECT_NE(s_tester, nullptr);
-    Os::File::Status status = this->Os::Stub::File::Test::TestFile::read(buffer, size, wait);
+    Os::File::Status status = this->Os::Stub::File::Test::TestFile::_read(buffer, size, wait);
     if (s_tester->m_waits == 0) {
         switch (s_tester->m_errorType) {
             case FILE_STATUS_ERROR:
@@ -1506,9 +1506,9 @@ Os::File::Status PrmDbTester::PrmDbTestFile::read(U8* buffer, FwSizeType& size, 
     return status;
 }
 
-Os::File::Status PrmDbTester::PrmDbTestFile::write(const U8* buffer, FwSizeType& size, Os::File::WaitType wait) {
+Os::File::Status PrmDbTester::PrmDbTestFile::_write(const U8* buffer, FwSizeType& size, Os::File::WaitType wait) {
     EXPECT_NE(s_tester, nullptr);
-    Os::File::Status status = this->Os::Stub::File::Test::TestFile::write(buffer, size, wait);
+    Os::File::Status status = this->Os::Stub::File::Test::TestFile::_write(buffer, size, wait);
     if (s_tester->m_waits == 0) {
         switch (s_tester->m_errorType) {
             case FILE_STATUS_ERROR:

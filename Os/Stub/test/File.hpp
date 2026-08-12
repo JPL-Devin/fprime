@@ -157,14 +157,14 @@ class TestFile : public FileInterface {
     //! \param overwrite: overwrite existing file on create
     //! \return: status of the open
     //!
-    Os::FileInterface::Status open(const char* path, Mode mode, OverwriteType overwrite) override;
+    Os::FileInterface::Status _open(const char* path, Mode mode, OverwriteType overwrite) override;
 
     //! \brief close the file, if not opened then do nothing
     //!
     //! Closes the file, if open. Otherwise this function does nothing. Delegates to the chosen implementation's
     //! `closeInternal` function. `mode` is set to `OPEN_NO_MODE`.
     //!
-    void close() override;
+    void _close() override;
 
     //! \brief get size of currently open file
     //!
@@ -172,7 +172,7 @@ class TestFile : public FileInterface {
     //! \param size: output parameter for size.
     //! \return OP_OK on success otherwise error status
     //!
-    Status size(FwSizeType& size_result) override;
+    Status _size(FwSizeType& size_result) override;
 
     //! \brief get file pointer position of the currently open file
     //!
@@ -180,7 +180,7 @@ class TestFile : public FileInterface {
     //! \param position: output parameter for size.
     //! \return OP_OK on success otherwise error status
     //!
-    Status position(FwSizeType& position_result) override;
+    Status _position(FwSizeType& position_result) override;
 
     //! \brief pre-allocate file storage
     //!
@@ -194,7 +194,7 @@ class TestFile : public FileInterface {
     //! \param length: length after offset to preallocate
     //! \return OP_OK on success otherwise error status
     //!
-    Status preallocate(FwSizeType offset, FwSizeType length) override;
+    Status _preallocate(FwSizeType offset, FwSizeType length) override;
 
     //! \brief seek the file pointer to the given offset
     //!
@@ -205,7 +205,7 @@ class TestFile : public FileInterface {
     //! \param seekType: `ABSOLUTE` for seeking from beginning of file, `RELATIVE` to use current position.
     //! \return OP_OK on success otherwise error status
     //!
-    Status seek(FwSignedSizeType offset, SeekType seekType) override;
+    Status _seek(FwSignedSizeType offset, SeekType seekType) override;
 
     //! \brief flush file contents to storage
     //!
@@ -214,7 +214,7 @@ class TestFile : public FileInterface {
     //!
     //! \return OP_OK on success otherwise error status
     //!
-    Status flush() override;
+    Status _flush() override;
 
     //! \brief read data from this file into supplied buffer bounded by size
     //!
@@ -234,7 +234,7 @@ class TestFile : public FileInterface {
     //! \param wait: `WAIT` to wait for data, `NO_WAIT` to return what is currently available
     //! \return OP_OK on success otherwise error status
     //!
-    Status read(U8* buffer, FwSizeType& size, WaitType wait) override;
+    Status _read(U8* buffer, FwSizeType& size, WaitType wait) override;
 
     //! \brief read data from this file into supplied buffer bounded by size
     //!
@@ -254,7 +254,7 @@ class TestFile : public FileInterface {
     //! \param wait: `WAIT` to wait for data to write to disk, `NO_WAIT` to return what is currently available
     //! \return OP_OK on success otherwise error status
     //!
-    Status write(const U8* buffer, FwSizeType& size, WaitType wait) override;
+    Status _write(const U8* buffer, FwSizeType& size, WaitType wait) override;
 
     //! \brief returns the raw file handle
     //!

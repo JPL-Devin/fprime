@@ -58,11 +58,11 @@ class SyntheticFile : public FileInterface {
     //! \param overwrite: overwrite if exists
     //! \return (status, synthetic file object)
     //!
-    Status open(const CHAR* path, const Os::File::Mode mode, const OverwriteType overwrite) override;
+    Status _open(const CHAR* path, const Os::File::Mode mode, const OverwriteType overwrite) override;
 
     //! \brief close the file
     //!
-    void close() final;
+    void _close() final;
 
     //! \brief read data from the file
     //!
@@ -73,7 +73,7 @@ class SyntheticFile : public FileInterface {
     //! \param wait: wait, unused
     //! \return status of the read
     //!
-    Os::File::Status read(U8* buffer, FwSizeType& size, File::WaitType wait) override;
+    Os::File::Status _read(U8* buffer, FwSizeType& size, File::WaitType wait) override;
 
     //! \brief write data to the file
     //!
@@ -84,7 +84,7 @@ class SyntheticFile : public FileInterface {
     //! \param bool: wait, unused
     //! \return status of the write
     //!
-    Os::File::Status write(const U8* buffer, FwSizeType& size, File::WaitType wait) override;
+    Os::File::Status _write(const U8* buffer, FwSizeType& size, File::WaitType wait) override;
 
     //! \brief seek pointer within file
     //!
@@ -94,7 +94,7 @@ class SyntheticFile : public FileInterface {
     //! \param bool: absolute
     //! \return status of the seek
     //!
-    Os::File::Status seek(const FwSignedSizeType offset, const File::SeekType absolute) override;
+    Os::File::Status _seek(const FwSignedSizeType offset, const File::SeekType absolute) override;
 
     //! \brief preallocate data within file
     //!
@@ -104,17 +104,17 @@ class SyntheticFile : public FileInterface {
     //! \param length: length of the pre-allocation
     //! \return status of the preallocate
     //!
-    Os::File::Status preallocate(const FwSizeType offset, const FwSizeType length) override;
+    Os::File::Status _preallocate(const FwSizeType offset, const FwSizeType length) override;
 
     //! \brief flush is no-op
     //!
-    Os::File::Status flush() override;
+    Os::File::Status _flush() override;
 
     //! \brief pointer getter
-    Os::File::Status position(FwSizeType& position) override;
+    Os::File::Status _position(FwSizeType& position) override;
 
     //! \brief size getter
-    Os::File::Status size(FwSizeType& size) override;
+    Os::File::Status _size(FwSizeType& size) override;
 
     //! \brief silt data handle
     FileHandle* getHandle() override;

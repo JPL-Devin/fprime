@@ -98,9 +98,9 @@ mode_t PosixFile::map_open_create_mode(const U32 create_mode) {
     return out_mode;
 }
 
-PosixFile::Status PosixFile::open(const char* filepath,
-                                  PosixFile::Mode requested_mode,
-                                  PosixFile::OverwriteType overwrite) {
+PosixFile::Status PosixFile::_open(const char* filepath,
+                                   PosixFile::Mode requested_mode,
+                                   PosixFile::OverwriteType overwrite) {
     int mode_flags = 0;
     Status status = OP_OK;
     switch (requested_mode) {
@@ -133,7 +133,7 @@ PosixFile::Status PosixFile::open(const char* filepath,
     return status;
 }
 
-void PosixFile::close() {
+void PosixFile::_close() {
     // Only close file handles that are not open
     if (PosixFileHandle::INVALID_FILE_DESCRIPTOR != this->m_handle.m_file_descriptor) {
         (void)::close(this->m_handle.m_file_descriptor);
@@ -141,9 +141,9 @@ void PosixFile::close() {
     }
 }
 
-PosixFile::Status PosixFile::size(FwSizeType& size_result) {
+PosixFile::Status PosixFile::_size(FwSizeType& size_result) {
     FwSizeType current_position = 0;
-    Status status = this->position(current_position);
+    Status status = this->_position(current_position);
     size_result = 0;
     if (Os::File::Status::OP_OK == status) {
         // Must be a coding error if current_position is larger than off_t max in Posix File
@@ -161,7 +161,7 @@ PosixFile::Status PosixFile::size(FwSizeType& size_result) {
     return status;
 }
 
-PosixFile::Status PosixFile::position(FwSizeType& position_result) {
+PosixFile::Status PosixFile::_position(FwSizeType& position_result) {
     Status status = OP_OK;
     position_result = 0;
     off_t actual = ::lseek(this->m_handle.m_file_descriptor, 0, SEEK_CUR);
@@ -174,7 +174,7 @@ PosixFile::Status PosixFile::position(FwSizeType& position_result) {
     return status;
 }
 
-PosixFile::Status PosixFile::preallocate(FwSizeType offset, FwSizeType length) {
+PosixFile::Status PosixFile::_preallocate(FwSizeType offset, FwSizeType length) {
     PosixFile::Status status = Os::File::Status::NOT_SUPPORTED;
     // Check for larger size than posix supports
     if ((length > OFF_T_MAX_LIMIT) || (offset > OFF_T_MAX_LIMIT) ||
@@ -196,11 +196,11 @@ PosixFile::Status PosixFile::preallocate(FwSizeType offset, FwSizeType length) {
     if (Os::File::Status::NOT_SUPPORTED == status) {
         // Calculate size
         FwSizeType file_size = 0;
-        status = this->size(file_size);
+        status = this->_size(file_size);
         if (Os::File::Status::OP_OK == status) {
             // Calculate current position
             FwSizeType file_position = 0;
-            status = this->position(file_position);
+            status = this->_position(file_position);
             // Check for overflow in seek calls
             if (file_position > static_cast<FwSizeType>(std::numeric_limits<FwSignedSizeType>::max()) ||
                 file_size > static_cast<FwSizeType>(std::numeric_limits<FwSignedSizeType>::max())) {
@@ -209,13 +209,13 @@ PosixFile::Status PosixFile::preallocate(FwSizeType offset, FwSizeType length) {
             // Only allocate when the file is smaller than the allocation
             else if ((Os::File::Status::OP_OK == status) && (file_size < (offset + length))) {
                 const FwSizeType write_length = (offset + length) - file_size;
-                status = this->seek(static_cast<FwSignedSizeType>(file_size), PosixFile::SeekType::ABSOLUTE);
+                status = this->_seek(static_cast<FwSignedSizeType>(file_size), PosixFile::SeekType::ABSOLUTE);
                 if (Os::File::Status::OP_OK == status) {
                     // Fill in zeros past size of file to ensure compatibility with fallocate
                     for (FwSizeType i = 0; i < write_length; i++) {
                         FwSizeType write_size = 1;
                         status =
-                            this->write(reinterpret_cast<const U8*>("\0"), write_size, PosixFile::WaitType::NO_WAIT);
+                            this->_write(reinterpret_cast<const U8*>("\0"), write_size, PosixFile::WaitType::NO_WAIT);
                         if (Status::OP_OK != status || write_size != 1) {
                             break;
                         }
@@ -223,7 +223,7 @@ PosixFile::Status PosixFile::preallocate(FwSizeType offset, FwSizeType length) {
                     // Return to original position
                     if (Os::File::Status::OP_OK == status) {
                         status =
-                            this->seek(static_cast<FwSignedSizeType>(file_position), PosixFile::SeekType::ABSOLUTE);
+                            this->_seek(static_cast<FwSignedSizeType>(file_position), PosixFile::SeekType::ABSOLUTE);
                     }
                 }
             }
@@ -232,7 +232,7 @@ PosixFile::Status PosixFile::preallocate(FwSizeType offset, FwSizeType length) {
     return status;
 }
 
-PosixFile::Status PosixFile::seek(FwSignedSizeType offset, PosixFile::SeekType seekType) {
+PosixFile::Status PosixFile::_seek(FwSignedSizeType offset, PosixFile::SeekType seekType) {
     Status status = OP_OK;
     if (offset > std::numeric_limits<off_t>::max()) {
         status = BAD_SIZE;
@@ -249,7 +249,7 @@ PosixFile::Status PosixFile::seek(FwSignedSizeType offset, PosixFile::SeekType s
     return status;
 }
 
-PosixFile::Status PosixFile::flush() {
+PosixFile::Status PosixFile::_flush() {
     PosixFile::Status status = OP_OK;
     if (PosixFileHandle::ERROR_RETURN_VALUE == ::fsync(this->m_handle.m_file_descriptor)) {
         int errno_store = errno;
@@ -258,7 +258,7 @@ PosixFile::Status PosixFile::flush() {
     return status;
 }
 
-PosixFile::Status PosixFile::read(U8* buffer, FwSizeType& size, PosixFile::WaitType wait) {
+PosixFile::Status PosixFile::_read(U8* buffer, FwSizeType& size, PosixFile::WaitType wait) {
     FW_ASSERT(buffer != nullptr);
     Status status = OP_OK;
     FwSizeType accumulated = 0;
@@ -299,7 +299,7 @@ PosixFile::Status PosixFile::read(U8* buffer, FwSizeType& size, PosixFile::WaitT
     return status;
 }
 
-PosixFile::Status PosixFile::write(const U8* buffer, FwSizeType& size, PosixFile::WaitType wait) {
+PosixFile::Status PosixFile::_write(const U8* buffer, FwSizeType& size, PosixFile::WaitType wait) {
     FW_ASSERT(buffer != nullptr);
     Status status = OP_OK;
     FwSizeType accumulated = 0;
@@ -343,6 +343,14 @@ PosixFile::Status PosixFile::write(const U8* buffer, FwSizeType& size, PosixFile
 
 FileHandle* PosixFile::getHandle() {
     return &this->m_handle;
+}
+
+PosixFile::Status PosixFile::getRawDescriptor(FwSizeType& descriptor) {
+    if (PosixFileHandle::INVALID_FILE_DESCRIPTOR == this->m_handle.m_file_descriptor) {
+        return Status::NOT_OPENED;
+    }
+    descriptor = static_cast<FwSizeType>(this->m_handle.m_file_descriptor);
+    return Status::OP_OK;
 }
 
 }  // namespace File

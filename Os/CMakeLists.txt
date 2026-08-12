@@ -156,7 +156,30 @@ register_fprime_module(
       Fw_Logger
 )
 fprime_target_dependencies(Os PUBLIC "Os_Console")
-add_named_os_module("File;FileSystem" Utils_Hash Fw_DataStructures)
+# File: File.hpp is a thin public alias header; the interface and shared behavior live in
+# FileInterface.hpp and File.cpp, with the link-time delegate in DelegateFile.{hpp,cpp}.
+# FileSystem shares this module. Registered explicitly because add_named_os_module
+# assumes a matching <name>.cpp per header.
+register_fprime_module(
+      "Os_File"
+    REQUIRES_IMPLEMENTATIONS
+      "Os_File"
+    SOURCES
+      "${CMAKE_CURRENT_LIST_DIR}/File.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/DelegateFile.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/FileSystem.cpp"
+    HEADERS
+      "${CMAKE_CURRENT_LIST_DIR}/File.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/FileInterface.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/DelegateFile.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/FileSystem.hpp"
+    DEPENDS
+      Fw_Time
+      Fw_Types
+      Utils_Hash
+      Fw_DataStructures
+)
+fprime_target_dependencies(Os PUBLIC "Os_File")
 # Directory: Directory.hpp is a thin public alias header (no .cpp); the interface and
 # link-time delegate live in DirectoryInterface.hpp and DelegateDirectory.{hpp,cpp}.
 # Registered explicitly because add_named_os_module assumes a matching <name>.cpp per header.

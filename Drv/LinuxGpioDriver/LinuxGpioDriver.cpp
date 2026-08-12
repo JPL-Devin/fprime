@@ -13,7 +13,7 @@
 #include <Fw/FPrimeBasicTypes.hpp>
 #include <Fw/Types/String.hpp>
 #include <Fw/Types/StringUtils.hpp>
-#include <Os/Posix/File.hpp>
+#include <Os/File.hpp>
 
 #include <linux/gpio.h>
 #include <poll.h>
@@ -200,7 +200,13 @@ Os::File::Status LinuxGpioDriver ::open(const char* device,
         return status;
     }
     // Read chip information and check for correctness
-    int chip_descriptor = reinterpret_cast<Os::Posix::File::PosixFileHandle*>(chip_file.getHandle())->m_file_descriptor;
+    FwSizeType raw_descriptor = 0;
+    status = chip_file.getRawDescriptor(raw_descriptor);
+    if (status != Os::File::OP_OK) {
+        this->log_WARNING_HI_OpenChipError(Fw::String(device), Os::FileStatus(static_cast<Os::FileStatus::T>(status)));
+        return status;
+    }
+    const int chip_descriptor = static_cast<int>(raw_descriptor);
     struct gpiochip_info chip_info;
     (void)::memset(&chip_info, 0, sizeof chip_info);
     int return_value = ioctl(chip_descriptor, GPIO_GET_CHIPINFO_IOCTL, &chip_info);

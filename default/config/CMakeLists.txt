@@ -41,6 +41,7 @@ register_fprime_config(
         "${CMAKE_CURRENT_LIST_DIR}/OsDelegateConsole.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/OsDelegateCpu.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/OsDelegateDirectory.hpp"
+        "${CMAKE_CURRENT_LIST_DIR}/OsDelegateFile.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/OsDelegateMemory.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/OsDelegateMutex.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/OsDelegateRawTime.hpp"

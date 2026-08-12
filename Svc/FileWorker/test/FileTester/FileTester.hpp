@@ -32,27 +32,29 @@ class FileTester : public Os::FileInterface {
     //!
     ~FileTester() override = default;
 
-    Os::FileInterface::Status open(const char* path, Mode mode, OverwriteType overwrite) override { return m_statOpen; }
+    Os::FileInterface::Status _open(const char* path, Mode mode, OverwriteType overwrite) override {
+        return m_statOpen;
+    }
 
-    void close() override { return; }
+    void _close() override { return; }
 
-    Status size(FwSizeType& size_result) override {
+    Status _size(FwSizeType& size_result) override {
         (void)size_result;
         size_result = m_size;
         return m_statSize;
     }
 
-    Status position(FwSizeType& position_result) override { return OP_OK; }
+    Status _position(FwSizeType& position_result) override { return OP_OK; }
 
-    Status preallocate(FwSizeType offset, FwSizeType length) override { return OP_OK; }
+    Status _preallocate(FwSizeType offset, FwSizeType length) override { return OP_OK; }
 
-    Status seek(FwSignedSizeType offset, SeekType seekType) override { return OP_OK; }
+    Status _seek(FwSignedSizeType offset, SeekType seekType) override { return OP_OK; }
 
-    Status flush() override { return OP_OK; }
+    Status _flush() override { return OP_OK; }
 
-    Status read(U8* buffer, FwSizeType& size, WaitType wait) override { return m_statRead; }
+    Status _read(U8* buffer, FwSizeType& size, WaitType wait) override { return m_statRead; }
 
-    Status write(const U8* buffer, FwSizeType& size, WaitType wait) override { return m_statWrite; }
+    Status _write(const U8* buffer, FwSizeType& size, WaitType wait) override { return m_statWrite; }
 
     Os::FileHandle* getHandle() override { return reinterpret_cast<Os::FileHandle*>(&m_handle); }
 

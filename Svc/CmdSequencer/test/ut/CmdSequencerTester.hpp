@@ -132,9 +132,9 @@ class CmdSequencerTester : public CmdSequencerGTestBase {
 
             PosixFileInterceptor(const PosixFileInterceptor& other) = default;
 
-            Os::FileInterface::Status open(const char* path, Mode mode, OverwriteType overwrite) override;
+            Os::FileInterface::Status _open(const char* path, Mode mode, OverwriteType overwrite) override;
 
-            Status read(U8* buffer, FwSizeType& size, WaitType wait) override;
+            Status _read(U8* buffer, FwSizeType& size, WaitType wait) override;
 
             //! Current interceptor
             static Interceptor* s_current_interceptor;
