@@ -24,8 +24,10 @@ register_fprime_ut(
   DEPENDS
     Os_File_Test_Stub_Implementation
     Os_File_Stub_Implementation
+    Os_Directory_Stub_Implementation
   CHOOSES_IMPLEMENTATIONS
     Os_File_None
+    Os_Directory_None
 )
 
 set (UT_TARGET_NAME "${FPRIME_CURRENT_MODULE}_ut_exe")

@@ -7,10 +7,12 @@
 ####
 add_custom_target("${FPRIME_CURRENT_MODULE}")
 
-register_os_implementation("File;FileSystem;Directory" Stub)
+register_os_implementation("File;FileSystem" Stub)
+register_os_implementation(Directory Stub)
 register_os_implementation(Console Stub)
 register_os_implementation(Task Stub)
-register_os_implementation("Mutex;ConditionVariable" Stub)
+register_os_implementation("Mutex" Stub)
+register_os_implementation("ConditionVariable" Stub)
 register_os_implementation(Cpu Stub)
 register_os_implementation(Memory Stub)
 register_os_implementation(Queue Stub)
@@ -21,6 +23,13 @@ register_fprime_implementation(
     Os_File_None
   IMPLEMENTS
     Os_File
+  INTERFACE
+)
+
+register_fprime_implementation(
+    Os_Directory_None
+  IMPLEMENTS
+    Os_Directory
   INTERFACE
 )
 
@@ -44,7 +53,9 @@ register_fprime_ut(
   CHOOSES_IMPLEMENTATIONS
     Os_Task_Stub
     Os_Mutex_Stub
+    Os_ConditionVariable_Stub
     Os_File_Stub
+    Os_Directory_Stub
     Os_Console_Stub
     Os_Cpu_Stub
     Os_Memory_Stub

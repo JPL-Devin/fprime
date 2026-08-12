@@ -136,11 +136,29 @@ register_fprime_module(
 )
 
 add_named_os_module(Console Fw_Logger)
-add_named_os_module("File;FileSystem;Directory" Utils_Hash Fw_DataStructures)
+add_named_os_module("File;FileSystem" Utils_Hash Fw_DataStructures)
+# Directory: Directory.hpp is a thin public alias header (no .cpp); the interface and
+# link-time delegate live in DirectoryInterface.hpp and DelegateDirectory.{hpp,cpp}.
+# Registered explicitly because add_named_os_module assumes a matching <name>.cpp per header.
+register_fprime_module(
+      "Os_Directory"
+    REQUIRES_IMPLEMENTATIONS
+      "Os_Directory"
+    SOURCES
+      "${CMAKE_CURRENT_LIST_DIR}/DelegateDirectory.cpp"
+    HEADERS
+      "${CMAKE_CURRENT_LIST_DIR}/Directory.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/DirectoryInterface.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/DelegateDirectory.hpp"
+    DEPENDS
+      Fw_Time
+      Fw_Types
+      Fw_DataStructures
+)
+fprime_target_dependencies(Os PUBLIC "Os_Directory")
 add_named_os_module(Task ${CMAKE_THREAD_LIBS_INIT})
 # Mutex: Mutex.hpp is a thin public alias header; the interface and link-time
-# delegate live in MutexInterface.hpp and DelegateMutex.{hpp,cpp}. Condition
-# remains bundled in this module to keep the Os_Mutex link target unchanged.
+# delegate live in MutexInterface.hpp and DelegateMutex.{hpp,cpp}.
 # Registered explicitly because add_named_os_module assumes a matching
 # <name>.cpp per header.
 register_fprime_module(
@@ -150,17 +168,34 @@ register_fprime_module(
     SOURCES
       "${CMAKE_CURRENT_LIST_DIR}/DelegateMutex.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Mutex.cpp"
-      "${CMAKE_CURRENT_LIST_DIR}/Condition.cpp"
     HEADERS
       "${CMAKE_CURRENT_LIST_DIR}/Mutex.hpp"
       "${CMAKE_CURRENT_LIST_DIR}/MutexInterface.hpp"
       "${CMAKE_CURRENT_LIST_DIR}/DelegateMutex.hpp"
-      "${CMAKE_CURRENT_LIST_DIR}/Condition.hpp"
     DEPENDS
       Fw_Time
       Fw_Types
 )
 fprime_target_dependencies(Os PUBLIC "Os_Mutex")
+# ConditionVariable: Condition.hpp is a thin public alias header (no .cpp);
+# the interface and link-time delegate live in ConditionVariableInterface.hpp and
+# DelegateConditionVariable.{hpp,cpp}. Registered explicitly because
+# add_named_os_module assumes a matching <name>.cpp per header.
+register_fprime_module(
+      "Os_ConditionVariable"
+    REQUIRES_IMPLEMENTATIONS
+      "Os_ConditionVariable"
+    SOURCES
+      "${CMAKE_CURRENT_LIST_DIR}/DelegateConditionVariable.cpp"
+    HEADERS
+      "${CMAKE_CURRENT_LIST_DIR}/Condition.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/ConditionVariableInterface.hpp"
+      "${CMAKE_CURRENT_LIST_DIR}/DelegateConditionVariable.hpp"
+    DEPENDS
+      Os_Mutex
+      Fw_Types
+)
+fprime_target_dependencies(Os PUBLIC "Os_ConditionVariable")
 add_named_os_module(CountingSemaphore)
 add_named_os_module(Queue)
 add_named_os_module(Cpu)

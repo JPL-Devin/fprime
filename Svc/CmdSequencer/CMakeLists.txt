@@ -64,8 +64,10 @@ register_fprime_ut(
     "${CMAKE_CURRENT_LIST_DIR}/test/ut/CmdSequencerTester.cpp"
   DEPENDS
     Os_File_Posix_Implementation
+    Os_Directory_Posix_Implementation
   CHOOSES_IMPLEMENTATIONS
     Os_File_None
+    Os_Directory_None
 )
 set (UT_TARGET_NAME "${FPRIME_CURRENT_MODULE}_ut_exe")
 if (TARGET "${UT_TARGET_NAME}")

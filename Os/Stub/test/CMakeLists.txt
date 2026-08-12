@@ -14,10 +14,12 @@ add_compile_options(
     -Wno-conversion
 )
 
-register_os_implementation("File;FileSystem;Directory" Test_Stub)
+register_os_implementation("File;FileSystem" Test_Stub)
+register_os_implementation(Directory Test_Stub)
 register_os_implementation(Console Test_Stub)
 register_os_implementation(Task Test_Stub)
-register_os_implementation("Mutex;ConditionVariable" Test_Stub)
+register_os_implementation("Mutex" Test_Stub)
+register_os_implementation("ConditionVariable" Test_Stub)
 register_os_implementation(Cpu Test_Stub)
 register_os_implementation(Memory Test_Stub)
 register_os_implementation(Queue Test_Stub)
@@ -143,6 +145,7 @@ register_fprime_ut(
   SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/ut/StubDirectoryTests.cpp"
   CHOOSES_IMPLEMENTATIONS
+    Os_Directory_Test_Stub
     Os_File_Test_Stub
   DEPENDS
     Fw_Types
@@ -156,6 +159,7 @@ register_fprime_ut(
   SOURCES
     "${CMAKE_CURRENT_LIST_DIR}/ut/StubConditionTests.cpp"
   CHOOSES_IMPLEMENTATIONS
+    Os_ConditionVariable_Test_Stub
     Os_Mutex_Test_Stub
   DEPENDS
     Fw_Types

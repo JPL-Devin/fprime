@@ -30,11 +30,13 @@ register_fprime_module(
 )
 
 # Set up Posix implementations
-register_os_implementation("File;FileSystem;Directory" Posix Os_Posix_Shared)
+register_os_implementation("File;FileSystem" Posix Os_Posix_Shared)
+register_os_implementation("Directory" Posix Os_Posix_Shared)
 register_os_implementation("Console" Posix)
 
 register_os_implementation("Task" Posix Os_Posix_Shared Fw_Time)
-register_os_implementation("Mutex;ConditionVariable" Posix Os_Posix_Shared)
+register_os_implementation("Mutex" Posix Os_Posix_Shared)
+register_os_implementation("ConditionVariable" Posix Os_Posix_Shared)
 # POSIX unnamed semaphores (sem_init) are non-functional on macOS (return
 # ENOSYS) and sem_timedwait does not exist. The Darwin implementation
 # covers macOS; exclude the Posix CountingSemaphore entirely.
@@ -136,6 +138,7 @@ register_fprime_ut(
     Fw_Types
     STest
   CHOOSES_IMPLEMENTATIONS
+    "Os_Directory_Posix"
     "Os_File_Posix"
 )
 
@@ -153,6 +156,7 @@ register_fprime_ut(
     Fw_Types
     STest
   CHOOSES_IMPLEMENTATIONS
+    "Os_ConditionVariable_Posix"
     "Os_Mutex_Posix"
 )
 
