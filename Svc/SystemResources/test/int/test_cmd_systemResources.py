@@ -124,6 +124,7 @@ def test_send_systemResources_command(fprime_test_api):
     print("PERCENT: ", CPU_percent1)
 
     fprime_test_api.clear_histories()  # will clear all history (can read telemetry channel again with latest value.  otherwise still have old value)
+
     # Expect number still changing after clear_history
     fprime_test_api.await_telemetry(
         fprime_test_api.get_mnemonic("Svc.SystemResources") + "." + "CPU", start="NOW"
@@ -139,6 +140,7 @@ def test_send_systemResources_command(fprime_test_api):
     fprime_test_api.await_telemetry(
         fprime_test_api.get_mnemonic("Svc.SystemResources") + "." + "CPU", start="NOW"
     )
+
     fprime_test_api.await_telemetry(
         fprime_test_api.get_mnemonic("Svc.SystemResources") + "." + "CPU", start="NOW"
     )

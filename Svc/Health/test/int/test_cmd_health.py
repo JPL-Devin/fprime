@@ -63,6 +63,7 @@ def test_send_health_command(fprime_test_api):
 
     # fprime_test_api.assert_event_count(4, cmd_events)  # Verify event command
     # fprime_test_api.assert_event_count(2, actHi_events)  # Verify event activity_hi
+
     ## Command:  Disabled HLTH_PING_ENABLE command with invalid entry (expected warning_lo)
     # use send_command because No completion (will cause pytest to assert when no completion) use send_command will ignore completion)
     fprime_test_api.send_command(
@@ -155,6 +156,7 @@ def test_send_health_command(fprime_test_api):
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "AppendFile",
         ["/tmp/2MiB.txt", "/tmp/2MiB.txt"],
     )
+
     # If no constraints are specified on the channels, the predicate will always return true        # confirm PingLateWarnings
     WarnHi_error = fprime_test_api.get_telemetry_pred(
         fprime_test_api.get_mnemonic("Svc.Health") + "." + "PingLateWarnings", one_plus
