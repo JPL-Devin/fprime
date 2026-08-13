@@ -52,8 +52,10 @@ roll-ups of their artifacts.
    all-`pending` ledger to the results repo. Do not start reviewing
    from a manifest whose coverage check fails.
 3. **Reviewer roster.** Read `_shared/agent-registry.yml` and filter
-   to `role: reviewer` entries — the same nine reviewers as the PR
-   flow. All nine run on every unit. (CI-safety ordering is
+   to `role: reviewer` entries — the same reviewer set as the PR
+   flow, whatever it contains at run time; never hardcode the
+   roster or its count. Every registered reviewer runs on every
+   unit. (CI-safety ordering is
    irrelevant in batch mode; run them in registry order for
    determinism.)
 4. **Per-unit review loop.** For each non-`completed` unit, in
@@ -64,7 +66,7 @@ roll-ups of their artifacts.
       passes are sequential so §5 de-duplication can read sibling
       artifacts). Record `completed` or `FAILED: <reason>` per
       reviewer.
-   c. When all nine reviewers completed, write
+   c. When every registered reviewer completed, write
       `unit-summary.md` per batch contract §6, mark the unit
       `completed` in the ledger, regenerate the incremental
       repo-wide `summary.md` per batch contract §8, and commit
@@ -72,7 +74,7 @@ roll-ups of their artifacts.
    d. If any reviewer FAILED, do not retry the reviewer inline:
       mark the unit `failed` with the reason, increment `attempts`,
       commit, and continue with the next unit. Failed units get a
-      fresh full pass on a later sweep (all nine reviewers re-run;
+      fresh full pass on a later sweep (all registered reviewers re-run;
       stale partial artifacts from the failed attempt are
       overwritten). After 3 attempts a unit stays `failed` with its
       note.
