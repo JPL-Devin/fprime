@@ -41,17 +41,17 @@ class ActivePhaser final : public ActivePhaserComponentBase {
      * \brief configuration for phasing
      */
     struct PhaserStateEntry {
-        FwIndexType port;
-        U32 start;
-        U32 length;
-        U32 context;
-        PhaserContextType contextType;
-        bool started;
+        FwIndexType port = 0;
+        U32 start = 0;
+        U32 length = 0;
+        U32 context = 0;
+        PhaserContextType contextType = SEQUENTIAL;
+        bool started = false;
     };
 
     struct PhaserStateTable {
-        U32 used;     //!< The number of registered tasks (the last registered task is at used - 1)
-        U32 current;  //!< The current child task entry index
+        U32 used = 0;     //!< The number of registered tasks (the last registered task is at used - 1)
+        U32 current = 0;  //!< The current child task entry index
         PhaserStateEntry entries[MAX_CHILDREN];
     };
 
