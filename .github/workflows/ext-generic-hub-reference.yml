@@ -15,6 +15,7 @@ on:
       - ".github/ISSUE_TEMPLATE/**"
       - ".github/agents/**"
 
+# See [How F´ CI works](README.md) for external-repository overlays, branch selection, and local reproduction.
 # Cancel in-progress runs if a newer run is started on a given PR
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

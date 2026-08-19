@@ -1,3 +1,4 @@
+# See [How F´ CI works](README.md) for external-repository overlays, branch selection, and local reproduction.
 # Soak-test setup for the F´ soak reference deployment on AArch64 Linux.
 #
 # Cross-compiles https://github.com/fprime-community/fprime-soak-test-reference and

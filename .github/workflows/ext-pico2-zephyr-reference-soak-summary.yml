@@ -1,3 +1,4 @@
+# See [How F´ CI works](README.md) for external-repository overlays, branch selection, and local reproduction.
 # On-demand soak summary for the Zephyr Reference deployment on Pi Pico 2.
 #
 # Reads the persistent soak log written by soak-setup / soak-test and

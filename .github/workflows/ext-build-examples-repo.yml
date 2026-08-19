@@ -1,3 +1,4 @@
+# See [How F´ CI works](README.md) for external-repository overlays, branch selection, and local reproduction.
 # Builds and runs UTs on https://github.com/fprime-community/fprime-examples
 
 name: "External Repo: fprime-examples"

@@ -1,3 +1,4 @@
+# See [How F´ CI works](README.md) for external-repository overlays, branch selection, and local reproduction.
 # Builds and runs integration tests on https://github.com/yvijay99/fprime-yamcs-reference
 
 name: "External Repo: YAMCS Reference"
