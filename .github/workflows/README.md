@@ -62,7 +62,7 @@ own `submodules: recursive` checkout supplies `fprime/googletest`.
 `fprime_location` is repository-specific: common values are `./lib/fprime`,
 `./fprime`, `lib/fprime`, `./libs/fprime`, and
 `./FlightExamples/lib/fprime`. The value must match the target repository
-layout. `reusable-project-ci.yml` defaults to `./lib/fprime`; 
+layout. `reusable-project-ci.yml` defaults to `./lib/fprime`;
 `reusable-project-builder.yml` defaults to `./fprime`.
 
 ## Branch resolution for external repositories
@@ -140,13 +140,13 @@ uses `jobs: random`; varying parallelism is intentional.
 | Ref UTs | `cd TestDeploymentsProject && fprime-util generate --ut && fprime-util build --all --ut -j<N> && fprime-util check --all -j<N> --pass-through --output-on-failure` |
 | FppTest | `cd FppTestProject && fprime-util generate --ut -DFPRIME_ENABLE_JSON_MODEL_GENERATION=ON && cd FppTest && fprime-util build --ut && fprime-util check --pass-through --output-on-failure` |
 | FppTest direct port calls | `cd FppTestProject && fprime-util generate --ut -DFPRIME_ENABLE_DIRECT_PORT_CALLS=ON -DFPRIME_ENABLE_JSON_MODEL_GENERATION=ON && cd FppTest && fprime-util build --ut && fprime-util check --pass-through --output-on-failure` |
-| Clang-tidy quality | `fprime-util generate -DCMAKE_C_COMPILER=gcc-10 -DCMAKE_CXX_COMPILER=g++-10 '-DCMAKE_CXX_CLANG_TIDY=clang-tidy-12;--config-file='\"$PWD\"'/release.clang-tidy' && fprime-util build --all` |
+| Clang-tidy quality | `fprime-util generate -DCMAKE_C_COMPILER=gcc-10 -DCMAKE_CXX_COMPILER=g++-10 "-DCMAKE_CXX_CLANG_TIDY=clang-tidy-12;--config-file=$PWD/release.clang-tidy" && fprime-util build --all` |
 | C++ format | `fprime-util format --check --dirs CFDP default Drv FppTestProject Fw Os Ref Svc TestUtils Utils` |
 | Python format | `pip install click==8.0.4 black==21.6b0 && black --check --diff ./` |
 | Markdown links | `npx --yes markdown-link-check --config ./.github/actions/markdown-check/mlc-config.json <markdown-file>` |
-| CMake tests | `cd cmake/test && export CMAKE_INSTALL_DIRECTORY=\"$PWD/../../tools-override\" && export PATH=\"$CMAKE_INSTALL_DIRECTORY/bin:$PATH\" && cmake --version && pytest -s` |
-| Configuration profiles | `jq -r '.[] | select(.disabled != true) | [.name, .[\"generate-args\"]] | @tsv' ci/config-profiles.json`; for each row run `fprime-util generate <generate-args> && fprime-util build --all -j<N>`, then run the same `generate` and `build -j<N>` in `TestDeploymentsProject`; run `fprime-util generate --ut` and `build --all --ut`/`check --all` similarly. |
-| External repository overlay | `git clone --recurse-submodules <target-url> target && mv target/lib/fprime target/lib/fprime.pinned && ln -s \"$PWD\" target/lib/fprime && (cd target && pip install -r lib/fprime/requirements.txt && fprime-util version-check --all-submodules)`; use the target's actual `fprime_location` when it is not `lib/fprime`. |
+| CMake tests | `cd cmake/test && export CMAKE_INSTALL_DIRECTORY="$PWD/../../tools-override" && export PATH="$CMAKE_INSTALL_DIRECTORY/bin:$PATH" && cmake --version && pytest -s` |
+| Configuration profiles | `jq -r '.[] | select(.disabled != true) | [.name, .["generate-args"]] | @tsv' ci/config-profiles.json`; for each row run `fprime-util generate <generate-args> && fprime-util build --all -j<N>`, then run the same `generate` and `build -j<N>` in `TestDeploymentsProject`; run `fprime-util generate --ut` and `build --all --ut`/`check --all` similarly. |
+| External repository overlay | `git clone --recurse-submodules <target-url> target && mv target/lib/fprime target/lib/fprime.pinned && ln -s "$PWD" target/lib/fprime && (cd target && pip install -r lib/fprime/requirements.txt && fprime-util version-check --all-submodules)`; use the target's actual `fprime_location` when it is not `lib/fprime`. |
 | `fprime-ci` integration | From the target repository root, run `fprime-ci -c <config> --add-stage build`, then after obtaining `archive.tar.gz` run `fprime-ci -c <config> --skip-stage build`. |
 
 The active configuration profiles are `no-object-names`,

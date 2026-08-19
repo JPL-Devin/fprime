@@ -1,4 +1,4 @@
-# See [How F´ CI works](README.md) for external-repository overlays, branch selection, and local reproduction.
+# See README.md in this directory for external-repository overlays, branch selection, and local reproduction.
 # Builds and runs UTs on https://github.com/fprime-community/fprime-workshop-led-blinker
 
 name: "External Repo: Tutorial: LedBlinker"

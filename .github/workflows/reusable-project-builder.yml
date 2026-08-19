@@ -1,4 +1,4 @@
-# See [How F´ CI works](README.md) for external-repository overlays, branch selection, and local reproduction.
+# See README.md in this directory for external-repository overlays, branch selection, and local reproduction.
 # This workflow is intended for reuse by other workflows and will not run directly (no triggers).
 # The behavior is to build an external F´ project (e.g. fprime-community/system-reference) using
 # the current F´ version.

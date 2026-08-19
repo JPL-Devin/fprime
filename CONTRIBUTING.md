@@ -192,8 +192,11 @@ of a local result differing from CI. To match a tool branch explicitly:
 ```bash
 pip install -U "git+https://github.com/nasa/fprime-gds@devel"
 pip install -U "git+https://github.com/fprime-community/fprime-tools@devel"
-pip install -U "git+https://github.com/nasa/fpp@devel"
 ```
+
+This is what CI does when a matching `pr-<PR_NUMBER>` branch exists on a tool
+repository. FPP is not installed this way; see
+[Development with modified FPP version](#development-with-modified-fpp-version).
 
 Use `fprime-util version-check --all-submodules` to check synchronization.
 `-DFPRIME_SKIP_TOOLS_VERSION_CHECK=1` is appropriate only while intentionally
