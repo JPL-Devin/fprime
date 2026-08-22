@@ -377,6 +377,15 @@ Users are encouraged to look through the header for the component of interest as
 `false`, events containing command opcodes remain enabled, but their opcode fields are set to the maximum
 `FwOpcodeType` value before downlink.
 
+It also provides `Svc::CmdDispatcherCfg::MaskCommandOpcodesInEvents`. When this setting is `true` (and opcodes are
+included in events), opcodes are passed through a keyed Feistel permutation (`maskOpcode`) before being placed in
+event arguments, hiding raw opcode values on the downlink while remaining recoverable on the ground. Projects
+enabling this must replace `OpcodeMaskKeys` with mission-specific random constants and configure the same keys in
+their ground system, which applies the inverse permutation (`unmaskOpcode`) to display real opcodes. Because the
+permutation is a bijection, distinct opcodes always map to distinct masked values. Note this is obfuscation, not
+encryption: the mapping is static and the keys reside in the flight binary, so it does not replace downlink
+encryption where a real adversary is in the threat model.
+
 ## Conclusion
 
 The user should now have a very detailed understanding of how to configure F´. Although there are some automatic checks

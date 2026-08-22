@@ -21,7 +21,7 @@ static_assert(CMD_DISPATCHER_SEQUENCER_TABLE_SIZE + 1 <= std::numeric_limits<U32
 
 namespace {
 constexpr FwOpcodeType getExpectedEventOpcode(const FwOpcodeType opcode) {
-    return Svc::CmdDispatcherCfg::IncludeCommandOpcodesInEvents ? opcode : std::numeric_limits<FwOpcodeType>::max();
+    return Svc::CmdDispatcherCfg::getEventOpcode(opcode);
 }
 }  // namespace
 

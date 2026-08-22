@@ -10,6 +10,9 @@
 #include <Fw/Test/UnitTest.hpp>
 #include <Svc/CmdDispatcher/CommandDispatcherImpl.hpp>
 #include <Svc/CmdDispatcher/test/ut/CommandDispatcherTester.hpp>
+#include <config/CommandDispatcherImplCfg.hpp>
+
+#include <limits>
 
 void connectPorts(Svc::CommandDispatcherImpl& impl, Svc::CommandDispatcherTester& tester) {
     // Fw::SimpleObjRegistry simpleReg;
@@ -225,6 +228,52 @@ TEST(CmdDispTestOffNominal, CommandQueueOverflow) {
     connectPorts(impl, tester);
 
     tester.runCommandQueueOverflow();
+}
+
+TEST(CmdDispOpcodeMasking, RoundTrip) {
+    TEST_CASE(102.3.1, "Opcode Mask Round Trip");
+    COMMENT("Verify the opcode masking permutation is invertible over edge and sampled values.");
+
+    const FwOpcodeType edges[] = {0, 1, std::numeric_limits<FwOpcodeType>::max(),
+                                  std::numeric_limits<FwOpcodeType>::max() - 1};
+    for (FwOpcodeType edge : edges) {
+        const FwOpcodeType masked = Svc::CmdDispatcherCfg::maskOpcode(edge);
+        ASSERT_EQ(Svc::CmdDispatcherCfg::unmaskOpcode(masked), edge);
+    }
+
+    // Sweep pseudo-random opcodes via a linear congruential generator (Numerical Recipes constants)
+    FwOpcodeType opcode = 0x12345678 & std::numeric_limits<FwOpcodeType>::max();
+    constexpr U32 NUM_SAMPLES = 10000;
+    for (U32 i = 0; i < NUM_SAMPLES; i++) {
+        opcode = static_cast<FwOpcodeType>(static_cast<U64>(opcode) * 1664525 + 1013904223);
+        const FwOpcodeType masked = Svc::CmdDispatcherCfg::maskOpcode(opcode);
+        ASSERT_EQ(Svc::CmdDispatcherCfg::unmaskOpcode(masked), opcode);
+    }
+}
+
+TEST(CmdDispOpcodeMasking, DistinctMaskedValues) {
+    TEST_CASE(102.3.2, "Opcode Mask Bijectivity Spot Check");
+    COMMENT("Verify a contiguous opcode range maps to distinct masked values.");
+
+    constexpr U32 RANGE = 4096;
+    for (U32 i = 0; i < RANGE; i++) {
+        for (U32 j = i + 1; j < RANGE; j += 97) {  // stride keeps the check O(n^2/97)
+            ASSERT_NE(Svc::CmdDispatcherCfg::maskOpcode(static_cast<FwOpcodeType>(i)),
+                      Svc::CmdDispatcherCfg::maskOpcode(static_cast<FwOpcodeType>(j)));
+        }
+    }
+}
+
+TEST(CmdDispOpcodeMasking, GetEventOpcodeDefaultPassthrough) {
+    TEST_CASE(102.3.3, "Default Event Opcode Passthrough");
+    COMMENT("Verify getEventOpcode passes opcodes through unchanged in the default configuration.");
+
+    static_assert(Svc::CmdDispatcherCfg::IncludeCommandOpcodesInEvents, "Test expects the default configuration");
+    static_assert(!Svc::CmdDispatcherCfg::MaskCommandOpcodesInEvents, "Test expects the default configuration");
+    const FwOpcodeType samples[] = {0, 1, 0x100, std::numeric_limits<FwOpcodeType>::max()};
+    for (FwOpcodeType sample : samples) {
+        ASSERT_EQ(Svc::CmdDispatcherCfg::getEventOpcode(sample), sample);
+    }
 }
 
 #ifndef TGT_OS_TYPE_VXWORKS
