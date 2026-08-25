@@ -16,6 +16,9 @@ module ComCfg {
     @ Upper Bound on Fixed size of CCSDS AOS frames
     constant AosMaxFrameFixedSize = 1536
 
+    @ Fixed size of CCSDS USLP downlink frames
+    dictionary constant UslpFrameFixedSize = 1024  # Needs to be at least COM_BUFFER_MAX_SIZE + primary header (7) + VCF count (4) + TFDF header (3) + FECF (2)
+
     @ Aggregation buffer for ComAggregator component
     constant AggregationSize = TmFrameFixedSize - 6 - 6 - 1 - 2  # 2 header (6) + 1 idle byte + 2 trailer bytes
 
@@ -54,7 +57,7 @@ module ComCfg {
         hasSecHdr: bool             @< Secondary header flag for SpacePacketFramer
         sequenceFlags: U8           @< 2 bit Sequence flags (0b00=continuation, 0b01=first, 0b10=last, 0b11=unsegmented)
         sequenceCount: U16          @< 14 bit Sequence count - sequence count is incremented per APID
-        vcId: U8                    @< 6 bit Virtual Channel ID - used for AOS, TC, and TM Protocols
+        vcId: U8                    @< 6 bit Virtual Channel ID - used for AOS, TC, TM, and USLP Protocols
         pvn: Pvn                    @< Packet Version Number - used for AOS deframing to identify packet type
         sendNow: bool               @< Flag to AOS Framer that the Frame this packet goes into should be sent ASAP
         saIndex: U16                @< Security Association Index - set by SDLS deframers, read by SDLS framers

@@ -18,6 +18,14 @@ module Ccsds {
         AOS_INVALID_EPP = 11      @< CCSDS 133.1-B-3: Encapsulation Packet Protocol error
         AOS_VC_FRAME_COUNT_GAP = 12 @< CCSDS 732.0-B-5: AOS VC frame count discontinuity detected
         SDLS_DECRYPTION_FAILURE = 13 @< SDLS decryption failed
+        USLP_INVALID_SCID = 14    @< CCSDS 732.1-B-3: Spacecraft ID mismatch (4.1.2.3)
+        USLP_INVALID_LENGTH = 15  @< CCSDS 732.1-B-3: Frame Length field inconsistent with received frame (4.1.2.7)
+        USLP_INVALID_VCID = 16    @< CCSDS 732.1-B-3: Virtual Channel ID mismatch (4.1.2.4)
+        USLP_INVALID_MAP = 17     @< CCSDS 732.1-B-3: MAP ID mismatch (4.1.2.5)
+        USLP_INVALID_CRC = 18     @< CCSDS 732.1-B-3: Frame Error Control Field CRC mismatch (4.1.6)
+        USLP_INVALID_VERSION = 19 @< CCSDS 732.1-B-3: Transfer Frame Version Number mismatch (4.1.2.2)
+        USLP_INVALID_TFDF = 20    @< CCSDS 732.1-B-3: Unsupported TFDF Header construction rule or pointer (4.1.4.2)
+        USLP_INVALID_HEADER = 21  @< CCSDS 732.1-B-3: Unsupported primary header field (EOFPH/OCF/protocol-command/spares) (4.1.2)
     }
 
     @ Status of an SDLS (Space Data Link Security) encryption/decryption request
@@ -201,6 +209,84 @@ module Ccsds {
     @ Describes the frame trailer format for a Advanced Orbiting Systems (AOS) Space Data Link (SDL) Transfer Frame
     struct AOSTrailer {
         fecf: U16             @< 16 bit Frame Error Control Field (CRC16)
+    }
+
+    # ------------------------------------------------
+    # USLP
+    # ------------------------------------------------
+    @ Describes the non-truncated primary header format for a Unified Space Data Link Protocol (USLP)
+    @ Transfer Frame, per CCSDS 732.1-B-3 Section 4.1.2. The variable-length VCF Count field
+    @ (0-7 octets, per the VCF Count Length subfield) follows this fixed 7-octet header and is
+    @ serialized separately.
+    struct USLPHeader {
+        tfvnScidVcidMap: U32,  @< 4 bits TFVN (0b1100) | 16 bits spacecraft ID | 1 bit source-or-destination |
+            @< 6 bits virtual channel ID | 4 bits MAP ID | 1 bit end-of-frame-primary-header flag
+        frameLength: U16,      @< 16 bits: total frame octets minus 1 (4.1.2.7)
+        flags: U8              @< 1 bit bypass/sequence-control | 1 bit protocol-control-command |
+            @< 2 bits spare | 1 bit OCF flag | 3 bits VCF count length
+    }
+
+    @ Describes the Transfer Frame Data Field (TFDF) header first octet for a USLP Transfer Frame
+    @ Per CCSDS 732.1-B-3 Section 4.1.4.2. The optional 16-bit First Header/Last Valid Octet
+    @ Pointer (rules 000/001/010 only) is serialized separately.
+    struct USLPTfdfHeader {
+        rulesAndUpid: U8       @< 3 bits TFDZ construction rules | 5 bits USLP protocol identifier (UPID)
+    }
+
+    @ Describes the frame trailer format for a USLP Transfer Frame
+    struct USLPTrailer {
+        fecf: U16             @< 16 bit Frame Error Control Field (CRC16, annex B)
+    }
+
+    @ Offsets and masks for serializing/deserializing individual sub-fields in USLP headers
+    @ Per CCSDS 732.1-B-3 Section 4.1.2
+    module USLPHeaderSubfields {
+        # tfvnScidVcidMap offsets and masks (32 bits)
+        constant frameVersionOffset      = 28
+        constant spacecraftIdOffset      = 12
+        constant sourceOrDestOffset      = 11
+        constant virtualChannelIdOffset  = 5
+        constant mapIdOffset             = 1
+        constant eofphOffset             = 0
+
+        constant frameVersionMask        = 0xF0000000  @< bits [31:28] - TFVN
+        constant spacecraftIdMask        = 0x0FFFF000  @< bits [27:12] - 16 bit spacecraft ID
+        constant sourceOrDestMask        = 0x00000800  @< bit  [11]    - source (0) or destination (1)
+        constant virtualChannelIdMask    = 0x000007E0  @< bits [10:5]  - 6 bit virtual channel ID
+        constant mapIdMask               = 0x0000001E  @< bits [4:1]   - 4 bit MAP ID
+        constant eofphMask               = 0x00000001  @< bit  [0]     - end of frame primary header flag
+
+        @ On-the-wire TFVN nibble for USLP (0b1100); note Tfvn.USLP enum value is 0x3 (see Tfvn comment)
+        constant frameVersionValue       = 0xC
+
+        # flags octet offsets and masks (8 bits)
+        constant bypassFlagOffset        = 7
+        constant protocolCommandOffset   = 6
+        constant spareOffset             = 4
+        constant ocfFlagOffset           = 3
+        constant vcfCountLengthOffset    = 0
+
+        constant bypassFlagMask          = 0x80  @< 0b10000000 - bypass/sequence control flag
+        constant protocolCommandMask     = 0x40  @< 0b01000000 - protocol control command flag
+        constant spareMask               = 0x30  @< 0b00110000 - reserved spares (must be 00)
+        constant ocfFlagMask             = 0x08  @< 0b00001000 - operational control field flag
+        constant vcfCountLengthMask      = 0x07  @< 0b00000111 - VCF count length in octets (0-7)
+    }
+
+    @ Masks, offsets, and values for the USLP TFDF header
+    @ Per CCSDS 732.1-B-3 Section 4.1.4.2
+    module USLPTfdfSubfields {
+        constant rulesMask  = 0xE0  @< 0b11100000 - 3 bit TFDZ construction rules
+        constant upidMask   = 0x1F  @< 0b00011111 - 5 bit USLP protocol identifier
+        constant rulesOffset = 5
+
+        # TFDZ construction rules (table 4-3)
+        constant RULE_PACKETS_SPANNING = 0x0  @< 0b000 - fixed TFDZ, packets spanning frames (FHP present)
+        constant RULE_NO_SEGMENTATION  = 0x7  @< 0b111 - variable TFDZ, no segmentation
+
+        # UPID values per SANA USLP Protocol Identifier registry
+        constant UPID_SPACE_PACKETS = 0x00  @< Space Packets or Encapsulation packets in TFDZ
+        constant UPID_IDLE          = 0x1F  @< Entire fixed-length TFDZ contains idle data (OID frames)
     }
 
     # ------------------------------------------------
