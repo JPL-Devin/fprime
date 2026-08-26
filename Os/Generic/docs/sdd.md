@@ -228,6 +228,25 @@ The static configuration system allows per-component, per-priority queue sizing.
 
 If a configuration is not provided for a given queue instance ID, then create() will use the message max size and depth arguments for priority Os::Queue::DEFAULT_PRIORITY (0).
 
+#### Generic `Os::Queue` Per-Priority Configuration Table
+
+In addition to `PriorityMemQueue::configure()`, PriorityMemQueue consumes the implementation-agnostic per-priority configuration table registered via `Os::Queue::setPriorityConfig()`. This allows generated code (e.g. FPP topology autocode) to express per-priority sizing without referencing `Os::Generic::PriorityMemQueue` directly:
+
+```cpp
+static const Os::QueueInterface::PriorityConfig cmdDispPriorities[] = {
+    // {priority, maxMessageSize, depth}
+    {2, 128, 20},
+    {3, 128, 20},
+    {10, 64, 4},
+};
+static const Os::QueueInterface::InstancePriorityConfig instanceConfigs[] = {
+    {Deployment::InstanceIds::CdhCore_cmdDisp, FW_NUM_ARRAY_ELEMENTS(cmdDispPriorities), cmdDispPriorities},
+};
+Os::Queue::setPriorityConfig(instanceConfigs, FW_NUM_ARRAY_ELEMENTS(instanceConfigs));
+```
+
+Lookup order in `create()`: a `PriorityMemQueue::configure()` entry for the instance ID takes precedence; otherwise the generic `Os::Queue` table is consulted; otherwise the default single-priority configuration is used. The table is stored by reference and must have static storage duration; it must be registered before any queue that consults it is created. Queue implementations without per-priority storage ignore the table.
+
 #### Using `priority_buffer_analyzer.py` for Message Size Calculation
 
 F´ provides `priority_buffer_analyzer.py` to automatically calculate the maximum message sizes for each priority level based on the topology's port connections. This eliminates manual calculation and ensures correct buffer sizing.

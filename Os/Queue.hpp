@@ -42,6 +42,25 @@ class QueueInterface {
         UNKNOWN_ERROR       //!<  Unexpected error; can't match with returns
     };
 
+    //! \brief per-priority sizing for a queue instance
+    //!
+    //! Describes the maximum message size and depth (in messages) reserved for one
+    //! message priority of one queue instance. Consumed by queue implementations that
+    //! support per-priority storage (e.g. Os::Generic::PriorityMemQueue); other
+    //! implementations ignore it.
+    struct PriorityConfig {
+        FwQueuePriorityType priority;  //!< message priority this entry applies to
+        FwSizeType maxMessageSize;     //!< maximum message size for this priority
+        FwSizeType depth;              //!< depth in messages for this priority
+    };
+
+    //! \brief per-instance priority configuration table entry
+    struct InstancePriorityConfig {
+        FwEnumStoreType instanceId;             //!< queue instance id as passed to create()
+        FwSizeType numPriorities;               //!< number of entries in priorityConfigs
+        const PriorityConfig* priorityConfigs;  //!< per-priority sizing entries
+    };
+
     //! \brief message type
     enum BlockingType {
         BLOCKING,    //!< Message will block until space is available
@@ -295,15 +314,42 @@ class Queue final : public QueueInterface {
     //! \brief get number of queues system-wide
     static FwSizeType getNumQueues();
 
+    //! \brief register a per-priority configuration table for queue instances
+    //!
+    //! Registers a table of per-instance, per-priority queue sizing. The table is stored by
+    //! reference: the caller must guarantee that the supplied data has static storage duration.
+    //! Queue implementations that support per-priority storage may consult this table in
+    //! create(); implementations without per-priority support ignore it.
+    //!
+    //! \warning This function must be called before any queue consulting the table is created
+    //! \warning May only be called once, except in test environments after resetPriorityConfig()
+    //!
+    //! \param configs: table of per-instance configurations (may be nullptr iff numConfigs is 0)
+    //! \param numConfigs: number of entries in configs
+    static void setPriorityConfig(const QueueInterface::InstancePriorityConfig* configs, FwSizeType numConfigs);
+
+    //! \brief look up the per-priority configuration for a queue instance
+    //!
+    //! \param instanceId: queue instance id as passed to create()
+    //! \return pointer to the matching entry, or nullptr if none is registered
+    static const QueueInterface::InstancePriorityConfig* findPriorityConfig(FwEnumStoreType instanceId);
+
+    //! \brief reset the per-priority configuration table (test environments only)
+    //!
+    //! \warning Only call this in test harnesses after all queues are destroyed
+    static void resetPriorityConfig();
+
     //! \brief get static mutex
     static Os::Mutex& getStaticMutex();
 
   private:
-    QueueString m_name;              //!< queue name
-    FwSizeType m_depth;              //!< Queue depth
-    FwSizeType m_size;               //!< Maximum message size
-    static Os::Mutex s_countLock;    //!< Lock the count
-    static FwSizeType s_queueCount;  //!< Count of the number of queues
+    QueueString m_name;                                                      //!< queue name
+    FwSizeType m_depth;                                                      //!< Queue depth
+    FwSizeType m_size;                                                       //!< Maximum message size
+    static Os::Mutex s_countLock;                                            //!< Lock the count
+    static FwSizeType s_queueCount;                                          //!< Count of the number of queues
+    static const QueueInterface::InstancePriorityConfig* s_priorityConfigs;  //!< Per-priority configuration table
+    static FwSizeType s_numPriorityConfigs;  //!< Number of per-priority configuration entries
 
 #if FW_QUEUE_REGISTRATION
   public:

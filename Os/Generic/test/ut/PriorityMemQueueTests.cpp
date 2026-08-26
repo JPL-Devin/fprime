@@ -562,6 +562,72 @@ TEST_F(PriorityMemQueueTestFixture, PriorityOrdering) {
     queue.teardown();
 }
 
+// Per-priority sizing supplied through the generic Os::Queue configuration table
+TEST_F(PriorityMemQueueTestFixture, GenericOsQueuePriorityConfig) {
+    PriorityMemQueueTestHelper::resetConfig();
+    Os::Queue::resetPriorityConfig();
+
+    static const Os::QueueInterface::PriorityConfig priorityCfgs[] = {{0, 64, 5}, {1, 32, 6}, {2, 48, 7}};
+    static const Os::QueueInterface::InstancePriorityConfig instanceCfgs[] = {{110, 3, priorityCfgs}};
+    Os::Queue::setPriorityConfig(instanceCfgs, 1);
+
+    Os::Generic::PriorityMemQueue queue;
+    ASSERT_EQ(Os::QueueInterface::Status::OP_OK, queue.create(110, Fw::String("Q"), 10, 128));
+
+    auto* handle = static_cast<Os::Generic::PriorityMemQueueHandle*>(queue.getHandle());
+    for (FwQueuePriorityType p = 0; p < 3; ++p)
+        handle->enablePriority(p);
+
+    // Send to all priorities, verify per-priority size limits and priority order on receive
+    U8 data[64];
+    for (FwQueuePriorityType p = 0; p < 3; ++p) {
+        data[0] = static_cast<U8>(p * 10);
+        ASSERT_EQ(Os::QueueInterface::Status::OP_OK,
+                  queue.send(data, priorityCfgs[p].maxMessageSize, p, Os::QueueInterface::BlockingType::NONBLOCKING));
+        ASSERT_EQ(Os::QueueInterface::Status::SIZE_MISMATCH, queue.send(data, priorityCfgs[p].maxMessageSize + 1, p,
+                                                                        Os::QueueInterface::BlockingType::NONBLOCKING));
+    }
+
+    // Receive in priority order (highest first)
+    FwSizeType actualSize;
+    FwQueuePriorityType priority;
+    for (FwSizeType i = 0; i < 3; ++i) {
+        FwQueuePriorityType expectedPriority = static_cast<FwQueuePriorityType>(2 - i);
+        ASSERT_EQ(Os::QueueInterface::Status::OP_OK,
+                  queue.receive(data, 128, Os::QueueInterface::BlockingType::NONBLOCKING, actualSize, priority));
+        ASSERT_EQ(expectedPriority, priority);
+    }
+
+    queue.teardown();
+    Os::Queue::resetPriorityConfig();
+}
+
+// PriorityMemQueue::configure() takes precedence over the generic Os::Queue table
+TEST_F(PriorityMemQueueTestFixture, ConfigurePrecedesGenericTable) {
+    PriorityMemQueueTestHelper::resetConfig();
+    Os::Queue::resetPriorityConfig();
+
+    static const Os::QueueInterface::PriorityConfig genericPriorityCfgs[] = {{0, 16, 2}};
+    static const Os::QueueInterface::InstancePriorityConfig genericCfgs[] = {{111, 1, genericPriorityCfgs}};
+    Os::Queue::setPriorityConfig(genericCfgs, 1);
+
+    Os::Generic::PriorityMemQueue::QueuePriorityConfig ownCfgs[] = {{0, 64, 5}};
+    Os::Generic::PriorityMemQueue::QueueConfig qCfgs[] = {{111, 1, ownCfgs}};
+    Os::Generic::PriorityMemQueue::configure(qCfgs, 1, false,
+                                             Fw::MemoryAllocation::MemoryAllocatorType::OS_GENERIC_PRIORITY_QUEUE);
+
+    Os::Generic::PriorityMemQueue queue;
+    ASSERT_EQ(Os::QueueInterface::Status::OP_OK, queue.create(111, Fw::String("Q"), 10, 128));
+
+    // configure() sizing (64) wins over the generic table sizing (16)
+    U8 data[64] = {1};
+    ASSERT_EQ(Os::QueueInterface::Status::OP_OK,
+              queue.send(data, 64, 0, Os::QueueInterface::BlockingType::NONBLOCKING));
+
+    queue.teardown();
+    Os::Queue::resetPriorityConfig();
+}
+
 // Default configuration (zero queue configs)
 TEST_F(PriorityMemQueueTestFixture, ZeroQueues) {
     PriorityMemQueueTestHelper::resetConfig();

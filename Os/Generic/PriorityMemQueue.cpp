@@ -405,6 +405,27 @@ QueueInterface::Status PriorityMemQueue::create(FwEnumStoreType id,
     // Find a matching configuration if one exists
     QueueConfig* queueConfig = findMatchingConfig(id);
 
+    // Fall back to the generic Os::Queue per-priority configuration table
+    QueuePriorityConfig genericPriorityConfigs[Os::Generic::Queue::MAX_PRIORITIES];
+    QueueConfig genericConfig = {0, 0, nullptr};
+    if (queueConfig == nullptr) {
+        const QueueInterface::InstancePriorityConfig* generic = Os::Queue::findPriorityConfig(id);
+        if (generic != nullptr) {
+            FW_ASSERT(generic->numPriorities <= Os::Generic::Queue::MAX_PRIORITIES, id,
+                      static_cast<FwAssertArgType>(generic->numPriorities));
+            for (FwSizeType i = 0; i < generic->numPriorities; ++i) {
+                genericPriorityConfigs[i].priority = generic->priorityConfigs[i].priority;
+                genericPriorityConfigs[i].maxMsgSize = generic->priorityConfigs[i].maxMessageSize;
+                genericPriorityConfigs[i].numMsgs = generic->priorityConfigs[i].depth;
+            }
+            genericConfig.instanceId = id;
+            genericConfig.numPriorities = generic->numPriorities;
+            genericConfig.priorityConfigs = &genericPriorityConfigs[0];
+            validateQueueConfigs(&genericConfig, 1);
+            queueConfig = &genericConfig;
+        }
+    }
+
     // Build priority map from configuration
     if (queueConfig != nullptr) {
         // Map each configured priority to array index

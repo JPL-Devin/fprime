@@ -9,6 +9,8 @@
 namespace Os {
 
 FwSizeType Queue::s_queueCount = 0;
+const QueueInterface::InstancePriorityConfig* Queue::s_priorityConfigs = nullptr;
+FwSizeType Queue::s_numPriorityConfigs = 0;
 #if FW_QUEUE_REGISTRATION
 QueueRegistry* Queue::s_queueRegistry = nullptr;
 #endif
@@ -144,6 +146,49 @@ FwSizeType Queue::getNumQueues() {
 Os::Mutex& Queue::getStaticMutex() {
     static Os::Mutex s_mutex;
     return s_mutex;
+}
+
+void Queue::setPriorityConfig(const QueueInterface::InstancePriorityConfig* configs, FwSizeType numConfigs) {
+    // Accept a null pointer if and only if numConfigs is 0
+    FW_ASSERT((configs != nullptr) || (numConfigs == 0), static_cast<FwAssertArgType>(numConfigs));
+    ScopeLock lock(Queue::getStaticMutex());
+    // Registering a second table is not a supported use case
+    FW_ASSERT(Queue::s_priorityConfigs == nullptr);
+    // Validate table entries: unique instance ids, non-null entry arrays, nonzero sizing
+    for (FwSizeType i = 0; i < numConfigs; ++i) {
+        const QueueInterface::InstancePriorityConfig& config = configs[i];
+        FW_ASSERT((config.priorityConfigs != nullptr) && (config.numPriorities > 0), config.instanceId);
+        for (FwSizeType j = i + 1; j < numConfigs; ++j) {
+            FW_ASSERT(config.instanceId != configs[j].instanceId, config.instanceId);
+        }
+        for (FwSizeType p = 0; p < config.numPriorities; ++p) {
+            const QueueInterface::PriorityConfig& priorityConfig = config.priorityConfigs[p];
+            FW_ASSERT((priorityConfig.maxMessageSize > 0) && (priorityConfig.depth > 0), config.instanceId,
+                      priorityConfig.priority);
+            for (FwSizeType q = p + 1; q < config.numPriorities; ++q) {
+                FW_ASSERT(priorityConfig.priority != config.priorityConfigs[q].priority, config.instanceId,
+                          priorityConfig.priority);
+            }
+        }
+    }
+    Queue::s_priorityConfigs = configs;
+    Queue::s_numPriorityConfigs = numConfigs;
+}
+
+const QueueInterface::InstancePriorityConfig* Queue::findPriorityConfig(FwEnumStoreType instanceId) {
+    ScopeLock lock(Queue::getStaticMutex());
+    for (FwSizeType i = 0; i < Queue::s_numPriorityConfigs; ++i) {
+        if (Queue::s_priorityConfigs[i].instanceId == instanceId) {
+            return &Queue::s_priorityConfigs[i];
+        }
+    }
+    return nullptr;
+}
+
+void Queue::resetPriorityConfig() {
+    ScopeLock lock(Queue::getStaticMutex());
+    Queue::s_priorityConfigs = nullptr;
+    Queue::s_numPriorityConfigs = 0;
 }
 
 #if FW_QUEUE_REGISTRATION
