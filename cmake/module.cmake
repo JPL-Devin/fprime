@@ -203,6 +203,46 @@ function(fprime__process_module_setup FPRIME_MODULE_TYPE ADDITIONAL_CONTROL_SETS
 endfunction()
 
 ####
+# Function `fprime_validate_all_module_dependencies`:
+#
+# Validates that all declared DEPENDS across every registered F Prime module resolve to a known
+# CMake target (or are an acceptable non-target dependency such as a linker flag, generator
+# expression, or existing file/library path).
+#
+# This function is called from `register_fprime_deployment` which is the last registration step
+# in a project, guaranteeing that all module targets have been created by that point.
+####
+function(fprime_validate_all_module_dependencies)
+    # Sub-builds use a reduced set of target plugins so not all targets (e.g. "version")
+    # are available. The main build has all targets created, so the check is only meaningful there.
+    if (FPRIME_IS_SUB_BUILD)
+        return()
+    endif()
+    get_property(ALL_MODULES GLOBAL PROPERTY FPRIME_MODULES)
+    foreach(MODULE IN LISTS ALL_MODULES)
+        get_target_property(DEPS "${MODULE}" FPRIME_DEPENDENCIES)
+        if (NOT DEPS)
+            continue()
+        endif()
+        foreach(DEP IN LISTS DEPS)
+            # Skip file dependencies (existing libraries/objects)
+            if (EXISTS "${DEP}" AND NOT IS_DIRECTORY "${DEP}")
+            # Skip linker flags (e.g. -lm) and generator expressions (e.g. $<...>)
+            elseif("${DEP}" MATCHES "^[-$].*")
+            # Everything else must be a valid CMake target
+            elseif(NOT TARGET "${DEP}")
+                fprime_cmake_fatal_error(
+                    "'${MODULE}' depends on '${DEP}', but '${DEP}' is not a registered F Prime module or CMake target.\n"
+                    "Ensure that:\n"
+                    "    1. '${DEP}' is spelled correctly\n"
+                    "    2. The module providing '${DEP}' is included via `add_fprime_subdirectory`"
+                )
+            endif()
+        endforeach()
+    endforeach()
+endfunction()
+
+####
 # Function `fprime__internal_add_build_target_helper`:
 #
 # Helper to add the target and set target properties.
