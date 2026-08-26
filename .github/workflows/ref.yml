@@ -111,11 +111,15 @@ jobs:
         run: brew install coreutils
       - name: "Integration Tests"
         uses: nasa/fprime-actions/run-integration-tests@devel
+        env:
+          # Load the USLP framing plugin used by the Ref fprime-gds.yml framing selection
+          FPRIME_GDS_EXTRA_PLUGINS: "uslp_framing:SpacePacketUslpFramerDeframer"
+          PYTHONPATH: ${{ github.workspace }}/TestDeploymentsProject/Ref/gds-plugins
         with:
           gds-working-directory: "TestDeploymentsProject"
           test-working-directory: "TestDeploymentsProject"
           binary: "build-artifacts/*/Ref/bin/Ref"
-          gds-args: "--dictionary build-artifacts/*/Ref/dict/RefTopologyDictionary.json"
+          gds-args: "--dictionary build-artifacts/*/Ref/dict/RefTopologyDictionary.json --config Ref/fprime-gds.yml"
           pytest-args: "Ref --deployment-config ${{ github.workspace }}/TestDeploymentsProject/Ref/test/int/int_config.json"
           valgrind: ${{ runner.os == 'Linux' && 'true' || 'false' }}
 

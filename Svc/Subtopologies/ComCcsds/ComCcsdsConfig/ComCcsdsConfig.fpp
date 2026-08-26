@@ -35,6 +35,13 @@ module ComCcsdsConfig {
         constant file        = 1                   
     }
 
+    # USLP framing configuration constants
+    module USLP {
+        constant vcId = 1                   # Virtual Channel ID (6 bits) used for both uplink and downlink
+        constant mapId = 0                  # MAP ID (4 bits) used for both uplink and downlink
+        constant uplinkVcfCountLength = 0   # Expected VCF Count field length in octets on uplink frames
+    }
+
     # Buffer management constants
     module BuffMgr {
         constant frameAccumulatorSize  = 2048     

@@ -113,6 +113,48 @@ module ComCcsds {
 
     instance comStub: Svc.ComStub base id ComCcsdsConfig.BASE_ID + 0x0A000
 
+    instance uslpFramer: Svc.Ccsds.UslpFramer base id ComCcsdsConfig.BASE_ID + 0x0B000 \
+    {
+        phase Fpp.ToCpp.Phases.configComponents """
+        ComCcsds::uslpFramer.configure(
+            ComCcsdsConfig::USLP::vcId,
+            ComCcsdsConfig::USLP::mapId
+        );
+        """
+    }
+
+    instance uslpDeframer: Svc.Ccsds.UslpDeframer base id ComCcsdsConfig.BASE_ID + 0x0C000 \
+    {
+        phase Fpp.ToCpp.Phases.configComponents """
+        ComCcsds::uslpDeframer.configure(
+            ComCcsdsConfig::USLP::vcId,
+            ComCfg::SpacecraftId,
+            ComCcsdsConfig::USLP::mapId,
+            ComCcsdsConfig::USLP::uplinkVcfCountLength,
+            false
+        );
+        """
+    }
+
+    instance uslpFrameAccumulator: Svc.FrameAccumulator base id ComCcsdsConfig.BASE_ID + 0x0D000 \
+    {
+        phase Fpp.ToCpp.Phases.configObjects """
+        Svc::FrameDetectors::CcsdsUslpFrameDetector frameDetector;
+        """
+        phase Fpp.ToCpp.Phases.configComponents """
+        ComCcsds::uslpFrameAccumulator.configure(
+            ConfigObjects::ComCcsds_uslpFrameAccumulator::frameDetector,
+            1,
+            ComCcsds::Allocation::memAllocator,
+            ComCcsdsConfig::BuffMgr::frameAccumulatorSize
+        );
+        """
+
+        phase Fpp.ToCpp.Phases.tearDownComponents """
+        ComCcsds::uslpFrameAccumulator.cleanup();
+        """
+    }
+
     # This subtopology boxes the Space Packet packet layer: router, ComQueue, space packet
     # framer/deframer, APID manager, aggregator, and comms buffer manager.
     topology SpacePacketFraming {
@@ -348,6 +390,68 @@ module ComCcsds {
         port bufferDeallocate = frameAccumulator.bufferDeallocate
     } # end TmTcFraming
 
+    # This subtopology boxes the CCSDS USLP transfer frame layer: the USLP framer (downlink),
+    # and the frame accumulator + USLP deframer (uplink).
+    topology UslpFraming {
+        # Usage Note:
+        #
+        # When importing this subtopology, users shall establish the same external connections
+        # as documented for the TmTcFraming subtopology, substituting UslpFraming for TmTcFraming.
+
+        instance uslpFramer
+        instance uslpDeframer
+        instance uslpFrameAccumulator
+
+        connections Uplink {
+            # FrameAccumulator <-> UslpDeframer
+            uslpFrameAccumulator.dataOut -> uslpDeframer.dataIn
+            uslpDeframer.dataReturnOut   -> uslpFrameAccumulator.dataReturnIn
+        }
+
+        # ----------------------------------------------------------------------
+        # Topology ports
+        # ----------------------------------------------------------------------
+
+        # Upstream boundary (packet layer)
+        @ Input port receiving space packets from the packet layer for USLP framing
+        port dataIn        = uslpFramer.dataIn
+
+        @ Output port returning ownership of downlinked buffers to the packet layer
+        port dataReturnOut = uslpFramer.dataReturnOut
+
+        @ Output port forwarding com status to the packet layer
+        port comStatusOut  = uslpFramer.comStatusOut
+
+        @ Output port sending USLP-deframed data to the packet layer
+        port dataOut       = uslpDeframer.dataOut
+
+        @ Input port receiving back ownership of uplinked buffers from the packet layer
+        port dataReturnIn  = uslpDeframer.dataReturnIn
+
+        # Downstream boundary (Svc.Com interface)
+        @ Output port sending USLP transfer frames to the com interface
+        port framedDataOut       = uslpFramer.dataOut
+
+        @ Input port receiving back ownership of transmitted frame buffers from the com interface
+        port framedDataReturnIn  = uslpFramer.dataReturnIn
+
+        @ Input port receiving com status from the com interface
+        port framedComStatusIn   = uslpFramer.comStatusIn
+
+        @ Input port receiving raw uplink data from the com interface
+        port framedDataIn        = uslpFrameAccumulator.dataIn
+
+        @ Output port returning ownership of received uplink buffers to the com interface
+        port framedDataReturnOut = uslpFrameAccumulator.dataReturnOut
+
+        # Buffer management boundary
+        @ Output port for allocating accumulation buffers
+        port bufferAllocate   = uslpFrameAccumulator.bufferAllocate
+
+        @ Output port for deallocating accumulation buffers
+        port bufferDeallocate = uslpFrameAccumulator.bufferDeallocate
+    } # end UslpFraming
+
     # This subtopology composes the SpacePacketFraming packet layer with the TmTcFraming
     # TM/TC transfer frame layer to form the full CCSDS communications stack.
     topology FramingSubtopology {
@@ -409,6 +513,60 @@ module ComCcsds {
         @ Output port returning ownership of received uplink buffers to the com interface
         port dataReturnOut = frameAccumulator.dataReturnOut
     } # end FramingSubtopology
+
+    # This subtopology composes the SpacePacketFraming packet layer with the UslpFraming
+    # USLP transfer frame layer to form the full CCSDS USLP communications stack.
+    topology UslpFramingSubtopology {
+        # Usage Note:
+        #
+        # When importing this subtopology, users shall establish the same 5 external
+        # Svc.Com connections as documented for the FramingSubtopology.
+
+        # Packet layer (router, ComQueue, space packet framer/deframer, buffer manager)
+        import SpacePacketFraming
+
+        # USLP transfer frame layer (USLP framer, frame accumulator, USLP deframer)
+        import UslpFraming
+
+        connections Downlink {
+            # SpacePacketFraming <-> UslpFraming
+            SpacePacketFraming.dataOut -> UslpFraming.dataIn
+            UslpFraming.dataReturnOut  -> SpacePacketFraming.dataReturnIn
+
+            # ComStatus
+            UslpFraming.comStatusOut -> SpacePacketFraming.comStatusIn
+            # (Outgoing) UslpFraming <-> ComInterface connections shall be established by the user
+        }
+
+        connections Uplink {
+            # (Incoming) ComInterface <-> UslpFraming connections shall be established by the user
+            # UslpFraming buffer allocations
+            UslpFraming.bufferDeallocate -> SpacePacketFraming.bufferSendIn
+            UslpFraming.bufferAllocate   -> SpacePacketFraming.bufferGetCallee
+            # UslpFraming <-> SpacePacketFraming
+            UslpFraming.dataOut               -> SpacePacketFraming.dataIn
+            SpacePacketFraming.dataReturnOut  -> UslpFraming.dataReturnIn
+        }
+
+        # ----------------------------------------------------------------------
+        # Topology ports (Svc.Com boundary)
+        # ----------------------------------------------------------------------
+
+        @ Output port sending USLP transfer frames to the com interface
+        port dataOut       = uslpFramer.dataOut
+
+        @ Input port receiving back ownership of transmitted frame buffers from the com interface
+        port dataReturnIn  = uslpFramer.dataReturnIn
+
+        @ Input port receiving com status from the com interface
+        port comStatusIn   = uslpFramer.comStatusIn
+
+        @ Input port receiving raw uplink data from the com interface
+        port dataIn        = uslpFrameAccumulator.dataIn
+
+        @ Output port returning ownership of received uplink buffers to the com interface
+        port dataReturnOut = uslpFrameAccumulator.dataReturnOut
+    } # end UslpFramingSubtopology
 
     # This subtopology uses FramingSubtopology with a ComStub component for Com Interface
     topology Subtopology {
@@ -485,5 +643,81 @@ module ComCcsds {
         port bufferManagerSchedIn = commsBufferManager.schedIn
 
     } # end Subtopology
+
+    # This subtopology uses UslpFramingSubtopology with a ComStub component for Com Interface
+    topology UslpSubtopology {
+        import UslpFramingSubtopology
+
+        instance comStub
+
+        connections ComStub {
+            # UslpFramingSubtopology <-> ComStub (Downlink)
+            UslpFramingSubtopology.dataOut -> comStub.dataIn
+            comStub.dataReturnOut          -> UslpFramingSubtopology.dataReturnIn
+            comStub.comStatusOut           -> UslpFramingSubtopology.comStatusIn
+
+            # ComStub <-> UslpFramingSubtopology (Uplink)
+            comStub.dataOut -> UslpFramingSubtopology.dataIn
+            UslpFramingSubtopology.dataReturnOut -> comStub.dataReturnIn
+        }
+
+        # ----------------------------------------------------------------------
+        # Topology ports
+        # ----------------------------------------------------------------------
+
+        # Command routing
+        @ Output port sending routed command packets to the command dispatcher
+        port commandOut         = fprimeRouter.commandOut
+
+        @ Input port receiving command response messages back into the router
+        port cmdResponseIn      = fprimeRouter.cmdResponseIn
+
+        @ Output port sending uplinked file packets to the file handling stack
+        port fileUplinkOut          = fprimeRouter.fileOut
+
+        @ Input port receiving back buffer ownership from the file handling stack
+        port fileUplinkReturnIn = fprimeRouter.fileBufferReturnIn
+
+        # Telemetry/events/file queuing (array ports - index at connection site)
+        @ Input port array for queueing Fw::ComBuffers
+        port comPacketQueueIn = comQueue.comPacketQueueIn
+
+        @ Input port array for queueing Fw::Buffers
+        port bufferQueueIn    = comQueue.bufferQueueIn
+
+        @ Output port array returning ownership of Fw::Buffers to their original sender after dequeuing
+        port bufferReturnOut  = comQueue.bufferReturnOut
+
+        # ComDriver interface (via ComStub)
+        @ Input port receiving data read from the ByteStream driver
+        port drvReceiveIn        = comStub.drvReceiveIn
+
+        @ Output port returning ownership of the buffer that came in on drvReceiveIn back to the driver
+        port drvReceiveReturnOut = comStub.drvReceiveReturnOut
+
+        @ Output port sending framed data to the ByteStream driver for transmission
+        port drvSendOut          = comStub.drvSendOut
+
+        @ Input port receiving the ready signal when the ByteStream driver has connected
+        port drvConnected        = comStub.drvConnected
+
+        # Buffer management for ComDriver
+        @ Input port for requesting (allocating) a new Fw::Buffer from the comms buffer pool
+        port commsBufferGetCallee = commsBufferManager.bufferGetCallee
+
+        @ Input port for deallocating Fw::Buffers back into the comms buffer pool
+        port commsBufferSendIn    = commsBufferManager.bufferSendIn
+
+        # Scheduling
+        @ Input port for scheduling ComQueue telemetry output
+        port comQueueRun          = comQueue.run
+
+        @ Rate-group driven timeout to flush the ComAggregator buffer
+        port aggregatorTimeout    = aggregator.timeout
+
+        @ Input port triggering commsBufferManager telemetry output
+        port bufferManagerSchedIn = commsBufferManager.schedIn
+
+    } # end UslpSubtopology
 
 } # end ComCcsds

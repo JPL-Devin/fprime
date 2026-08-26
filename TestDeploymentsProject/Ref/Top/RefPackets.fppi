@@ -289,4 +289,6 @@ telemetry packets RefPackets {
 } omit {
   CdhCore.cmdDisp.CommandErrors
   cmdSeq.CS_CurrentSequence
+  ComCcsds.uslpDeframer.FramesProcessed
+  ComCcsds.uslpDeframer.CrcErrorCount
 }
