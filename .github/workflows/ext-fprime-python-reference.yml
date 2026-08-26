@@ -1,0 +1,77 @@
+# Build https://github.com/fprime-community/fprime-python-reference
+# Builds the python reference against the current F´ revision and runs integration tests
+
+name: "External Repo: Python Reference"
+
+on:
+  push:
+    branches: [ devel, release/** ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ devel, release/** ]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/actions/spelling/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/agents/**'
+# Cancel in-progress runs if a newer run is started on a given PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ !contains(github.ref, 'devel') && !contains(github.ref, 'release/')}}
+
+permissions:
+  contents: read
+
+jobs:
+  get-branch:
+    name: "Get target branch"
+    uses: ./.github/workflows/reusable-get-pr-branch.yml
+    with:
+      target_repository: fprime-community/fprime-python-reference
+      default_target_ref: main
+
+  build-and-test:
+    name: "Python Reference Build and Integration Tests"
+    runs-on: ubuntu-22.04
+    needs: get-branch
+    steps:
+      - name: "Make Space"
+        uses: nasa/fprime-actions/make-space@devel
+      - name: "Set up target repository"
+        uses: nasa/fprime-actions/external-repository-setup@devel
+        with:
+          target_repository: fprime-community/fprime-python-reference
+          fprime_location: ./lib/fprime
+          target_ref: ${{ needs.get-branch.outputs.target-branch }}
+      # Upgrade GDS to a matching pr-xxxx branch if it exists; never fall back to devel
+      - name: "Upgrade fprime-gds to pr-xxxx (if it exists)"
+        if: github.event_name == 'pull_request'
+        uses: nasa/fprime-actions/upgrade-package@devel
+        with:
+          repository: nasa/fprime-gds
+          pr-branch-only: true
+      - name: "Generate build cache"
+        run: |
+          fprime-util generate
+      - name: "Build Python Reference"
+        run: |
+          fprime-util build -j4
+      - name: "Run Integration Tests"
+        uses: nasa/fprime-actions/run-integration-tests@devel
+        with:
+          gds-working-directory: .
+          test-working-directory: test/int
+          binary: fprime-python-runner
+          binary-args: ""
+          gds-args: >-
+            --dictionary ${{ github.workspace }}/build-artifacts/Linux/FprimePythonReference_ReferenceDeployment/dict/ReferenceDeploymentTopologyDictionary.json
+          pytest-args: >-
+            --dictionary ${{ github.workspace }}/build-artifacts/Linux/FprimePythonReference_ReferenceDeployment/dict/ReferenceDeploymentTopologyDictionary.json
+      - name: "Archive logs"
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: python-reference-logs
+          path: gds-logs
+          retention-days: 5
