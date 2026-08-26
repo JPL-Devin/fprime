@@ -12,14 +12,15 @@
 namespace Svc {
 
 struct FileDispatcherEntry {
-    Fw::String fileExt;                             // file extension for dispatch
-    Svc::FileDispatcherCfg::FileDispatchPort port;  // port to dispatch to
-    bool enabled;                                   // whether dispatching is enabled for this type
+    Fw::String fileExt;  // file extension for dispatch
+    Svc::FileDispatcherCfg::FileDispatchPort port =
+        Svc::FileDispatcherCfg::FileDispatchPort::SEQUENCE_FILE_PORT;  // port to dispatch to
+    bool enabled = false;                                              // whether dispatching is enabled for this type
 };
 
 struct FileDispatcherTable {
     FileDispatcherEntry entries[Svc::FileDispatcherCfg::FILE_DISPATCHER_MAX_TABLE_SIZE];
-    FwSizeType numEntries;
+    FwSizeType numEntries = 0;
 };
 
 class FileDispatcher final : public FileDispatcherComponentBase {
