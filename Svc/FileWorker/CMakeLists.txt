@@ -28,7 +28,7 @@ register_fprime_ut(
     "${CMAKE_CURRENT_LIST_DIR}/test/ut/FileWorkerTestMain.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/test/ut/FileWorkerTester.cpp"
   CHOOSES_IMPLEMENTATIONS
-    Os_File
+    Os_File_Posix
   DEPENDS
     STest
   UT_AUTO_HELPERS
