@@ -37,7 +37,8 @@ void UslpFramer ::configure(U8 vcId, U8 mapId) {
 // ----------------------------------------------------------------------
 
 void UslpFramer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, const ComCfg::FrameContext& context) {
-    // Unreachable given the static_asserts on UslpPayloadCapacity - programming error only
+    // Unreachable given the static_asserts on UslpPayloadCapacity (com, file, and
+    // aggregation buffer bounds) - programming error only
     FW_ASSERT(data.getSize() <= UslpPayloadCapacity, static_cast<FwAssertArgType>(data.getSize()));
     FW_ASSERT(this->m_bufferState == BufferOwnershipState::OWNED, static_cast<FwAssertArgType>(this->m_bufferState));
 
@@ -50,7 +51,7 @@ void UslpFramer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, const Co
     // Transfer Frame Version Number: 0b1100 on the wire (Standard 4.1.2.2)
     tfvnScidVcidMap |= static_cast<U32>(USLPHeaderSubfields::frameVersionValue)
                        << USLPHeaderSubfields::frameVersionOffset;
-    // Spacecraft ID (Standard 4.1.2.3)
+    // Spacecraft ID (Standard 4.1.2.2.3)
     tfvnScidVcidMap |= static_cast<U32>(ComCfg::SpacecraftId) << USLPHeaderSubfields::spacecraftIdOffset;
     // Source-or-destination identifier: 0 = source (Standard 4.1.2.3.4)
     tfvnScidVcidMap |= 0x0 << USLPHeaderSubfields::sourceOrDestOffset;
@@ -64,13 +65,13 @@ void UslpFramer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, const Co
     U8 flags = 0;
     // Bypass/Sequence Control flag: 1 = Expedited (Standard 4.1.2.8)
     flags |= 0x1 << USLPHeaderSubfields::bypassFlagOffset;
-    // Protocol Control Command flag: 0 = user data (Standard 4.1.2.9)
+    // Protocol Control Command flag: 0 = user data (Standard 4.1.2.8.2)
     flags |= 0x0 << USLPHeaderSubfields::protocolCommandOffset;
-    // Spares: 00 (Standard 4.1.2.10)
+    // Spares: 00 (Standard 4.1.2.9)
     flags |= 0x0 << USLPHeaderSubfields::spareOffset;
-    // OCF flag: 0 = no Operational Control Field (Standard 4.1.2.11.2)
+    // OCF flag: 0 = no Operational Control Field (Standard 4.1.2.10)
     flags |= 0x0 << USLPHeaderSubfields::ocfFlagOffset;
-    // VCF Count Length: 4 octets (Standard 4.1.2.11.4)
+    // VCF Count Length: 4 octets (Standard 4.1.2.11)
     flags |= static_cast<U8>(VCF_COUNT_LENGTH) << USLPHeaderSubfields::vcfCountLengthOffset;
 
     header.set_tfvnScidVcidMap(tfvnScidVcidMap);
@@ -102,7 +103,7 @@ void UslpFramer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, const Co
     status = frameSerializer.serializeFrom(tfdfHeader);
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, status);
 
-    // First Header Pointer: always 0, the packet is aligned to the start of the TFDZ (Standard 4.1.4.2.3)
+    // First Header Pointer: always 0, the packet is aligned to the start of the TFDZ (Standard 4.1.4.2.4)
     status = frameSerializer.serializeFrom(static_cast<U16>(0));
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, status);
 
@@ -143,9 +144,10 @@ void UslpFramer ::comStatusIn_handler(FwIndexType portNum, Fw::Success& conditio
 void UslpFramer ::dataReturnIn_handler(FwIndexType portNum,
                                        Fw::Buffer& frameBuffer,
                                        const ComCfg::FrameContext& context) {
-    // Assert that the returned buffer is the member, and set ownership state
-    FW_ASSERT(frameBuffer.getData() >= &this->m_frameBuffer[0]);
-    FW_ASSERT(frameBuffer.getData() < &this->m_frameBuffer[0] + sizeof(this->m_frameBuffer));
+    // Assert that the returned buffer is the member frame buffer, and set ownership state
+    FW_ASSERT(frameBuffer.getData() == this->m_frameBuffer);
+    FW_ASSERT(frameBuffer.getSize() == sizeof(this->m_frameBuffer),
+              static_cast<FwAssertArgType>(frameBuffer.getSize()));
     this->m_bufferState = BufferOwnershipState::OWNED;
 }
 

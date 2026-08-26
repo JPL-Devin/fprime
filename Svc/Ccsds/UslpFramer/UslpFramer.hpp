@@ -22,7 +22,7 @@ class UslpFramer final : public UslpFramerComponentBase {
 
     //! Length in octets of the Virtual Channel Frame Count field (4.1.2.11.4)
     static constexpr FwSizeType VCF_COUNT_LENGTH = sizeof(U32);
-    //! Length in octets of the First Header Pointer field of the TFDF header (4.1.4.2.3)
+    //! Length in octets of the First Header Pointer field of the TFDF header (4.1.4.2.4)
     static constexpr FwSizeType FHP_LENGTH = sizeof(U16);
     //! Total overhead: primary header (7) + VCF count (4) + TFDF header (3) + FECF (2)
     static constexpr FwSizeType FRAME_OVERHEAD = USLPHeader::SERIALIZED_SIZE + VCF_COUNT_LENGTH +
@@ -32,6 +32,9 @@ class UslpFramer final : public UslpFramerComponentBase {
     static_assert(ComCfg::UslpFrameFixedSize > FRAME_OVERHEAD,
                   "USLP Frame Fixed Size must be at least large enough to hold header, VCF count, "
                   "TFDF header and trailer");
+    // The Frame Length field carries total octets minus 1 in 16 bits (4.1.2.7)
+    static_assert(ComCfg::UslpFrameFixedSize <= 0x10000,
+                  "USLP Frame Fixed Size must fit in the 16-bit Frame Length field (total octets minus 1)");
 
     static constexpr FwSizeType UslpPayloadCapacity = ComCfg::UslpFrameFixedSize - FRAME_OVERHEAD;
 
@@ -41,6 +44,8 @@ class UslpFramer final : public UslpFramerComponentBase {
                   "USLP Frame Fixed Size must be at least large enough to hold frame overhead and a full com buffer");
     static_assert(UslpPayloadCapacity >= FW_FILE_BUFFER_MAX_SIZE,
                   "USLP Frame Fixed Size must be at least large enough to hold frame overhead and a full file buffer");
+    static_assert(UslpPayloadCapacity >= ComCfg::AggregationSize,
+                  "USLP payload capacity must hold a full ComAggregator buffer");
 
     static constexpr U8 IDLE_DATA_PATTERN = 0x55;
 

@@ -78,6 +78,7 @@ class UslpDeframerTester final : public UslpDeframerGTestBase {
     void testInvalidSpares();
     void testOcfFlag();
     void testInvalidVcfCountLength();
+    void testStructuralLengthUnderflow();
     void testInvalidCrc();
     void testInvalidTfdfRule();
 

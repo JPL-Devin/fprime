@@ -6,6 +6,8 @@
 - [F Prime Protocol SDD](https://github.com/nasa/fprime/blob/devel/Svc/FprimeProtocol/docs/sdd.md)
 - [F Prime Framer SDD](https://github.com/nasa/fprime/blob/devel/Svc/FprimeFramer/docs/sdd.md)
 - [F Prime Deframer SDD](https://github.com/nasa/fprime/blob/devel/Svc/FprimeDeframer/docs/sdd.md)
+- [CCSDS USLP Framer SDD](https://github.com/nasa/fprime/blob/devel/Svc/Ccsds/UslpFramer/docs/sdd.md)
+- [CCSDS USLP Deframer SDD](https://github.com/nasa/fprime/blob/devel/Svc/Ccsds/UslpDeframer/docs/sdd.md)
 - [F Prime Router SDD](https://github.com/nasa/fprime/blob/devel/Svc/FprimeRouter/docs/sdd.md)
 - [F Prime FrameAccumulator SDD](https://github.com/nasa/fprime/blob/devel/Svc/FrameAccumulator/docs/sdd.md)
 - [F Prime ComQueue SDD](https://github.com/nasa/fprime/blob/devel/Svc/ComQueue/docs/sdd.md)
@@ -34,7 +36,7 @@ Outgoing data flows through the following stages:
 
 1. **Queuing** — [ComQueue](https://github.com/nasa/fprime/blob/devel/Svc/ComQueue/docs/sdd.md) receives data from multiple sources (telemetry, events, file packets) and prioritizes them for transmission. The queue supports configurable depth and priority levels, sending the highest-priority data first. Flow control is managed through a ready signal from downstream components — the queue only sends the next item when the downstream path signals readiness.
 
-2. **Framing** — The framer (e.g. [FprimeFramer](https://github.com/nasa/fprime/blob/devel/Svc/FprimeFramer/docs/sdd.md) or a CCSDS framer) wraps each outgoing packet in a protocol-specific frame. The framing interface is pluggable, allowing different protocols to be selected per mission.
+2. **Framing** — The framer (e.g. [FprimeFramer](https://github.com/nasa/fprime/blob/devel/Svc/FprimeFramer/docs/sdd.md) or a CCSDS framer such as [UslpFramer](https://github.com/nasa/fprime/blob/devel/Svc/Ccsds/UslpFramer/docs/sdd.md)) wraps each outgoing packet in a protocol-specific frame. The framing interface is pluggable, allowing different protocols to be selected per mission.
 
 3. **Transmission** — The framed data is passed to a communication adapter that implements the [Communication Adapter Interface](https://github.com/nasa/fprime/blob/devel/docs/reference/communication-adapter-interface.md) for physical transmission. For ground testing, [ComStub](https://github.com/nasa/fprime/blob/devel/Svc/ComStub/docs/sdd.md) wraps a byte stream driver to present this interface. For flight, missions replace ComStub with a mission-specific adapter (e.g. a radio driver) of the same interface. The adapter reports success or failure back through the communication status protocol.
 
@@ -44,7 +46,7 @@ Incoming data flows through the following stages:
 
 1. **Accumulation** — [FrameAccumulator](https://github.com/nasa/fprime/blob/devel/Svc/FrameAccumulator/docs/sdd.md) receives a stream of byte buffers from the communication adapter and extracts complete frames.
 
-2. **Deframing** — The deframer (e.g. [FprimeDeframer](https://github.com/nasa/fprime/blob/devel/Svc/FprimeDeframer/docs/sdd.md) or a CCSDS deframer) validates the frame (checking CRC and structure) and extracts the payload.
+2. **Deframing** — The deframer (e.g. [FprimeDeframer](https://github.com/nasa/fprime/blob/devel/Svc/FprimeDeframer/docs/sdd.md) or a CCSDS deframer such as [UslpDeframer](https://github.com/nasa/fprime/blob/devel/Svc/Ccsds/UslpDeframer/docs/sdd.md)) validates the frame (checking CRC and structure) and extracts the payload.
 
 3. **Routing** — [FprimeRouter](https://github.com/nasa/fprime/blob/devel/Svc/FprimeRouter/docs/sdd.md) (or [PassThroughRouter](https://github.com/nasa/fprime/blob/devel/Svc/PassThroughRouter/docs/sdd.md)) examines the extracted packet and forwards it to the appropriate destination. Command packets are sent to the command dispatcher and file packets are sent to file uplink.
 

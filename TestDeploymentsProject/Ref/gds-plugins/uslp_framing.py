@@ -5,7 +5,10 @@ rule 0b111, no segmentation) and deframes fixed-length downlink USLP frames
 (TFDF construction rule 0b000, packets spanning frames) as produced by the
 Svc.Ccsds.UslpFramer flight component. See CCSDS 732.1-B-3.
 
-Load with:
+Load with (as done by the Ref CI workflows; registering the composite is
+sufficient for the `space-packet-uslp` selection):
+    FPRIME_GDS_EXTRA_PLUGINS="uslp_framing:SpacePacketUslpFramerDeframer"
+or, to also expose the bare `uslp` selection:
     FPRIME_GDS_EXTRA_PLUGINS="uslp_framing:UslpFramerDeframer;uslp_framing:SpacePacketUslpFramerDeframer"
 """
 
@@ -46,7 +49,9 @@ class UslpFramerDeframer(FramerDeframer):
 
     # For backwards compatibility if not found in dictionary (loaded by ConfigManager)
     FALLBACK_SCID = 0x44
-    FALLBACK_FRAME_SIZE = 1024
+    FALLBACK_FRAME_SIZE = 1025
+    # Minimum sensible fixed frame size: header (7) + VCF count (4) + TFDF header (3) + FECF (2) + 1 octet TFDZ
+    MIN_FRAME_SIZE = 17
 
     def __init__(self, scid=None, vcid=None, map_id=0, frame_size=None):
         dict_scid = None
@@ -71,11 +76,15 @@ class UslpFramerDeframer(FramerDeframer):
                 f" loaded from the dictionary. CLI={frame_size}, Dictionary={dict_frame_size}",
                 file=sys.stderr,
             )
-        # Priority order: command line arg > dictionary value > fallback value
-        self.scid = scid or dict_scid or self.FALLBACK_SCID
+        # Priority order: command line arg > dictionary value > fallback value (0 is a legal value)
+        self.scid = scid if scid is not None else (dict_scid if dict_scid is not None else self.FALLBACK_SCID)
         self.vcid = 1 if vcid is None else vcid
         self.map_id = map_id
-        self.frame_size = frame_size or dict_frame_size or self.FALLBACK_FRAME_SIZE
+        self.frame_size = (
+            frame_size
+            if frame_size is not None
+            else (dict_frame_size if dict_frame_size is not None else self.FALLBACK_FRAME_SIZE)
+        )
 
     def _primary_header(self, source_or_dest, total_length, flags):
         """Build the 7-octet USLP transfer frame primary header"""
@@ -93,7 +102,8 @@ class UslpFramerDeframer(FramerDeframer):
     def frame(self, data):
         """Frame the supplied data in a variable-length USLP transfer frame"""
         total_length = self.HEADER_SIZE + 1 + len(data) + self.TRAILER_SIZE
-        assert total_length <= 0x10000, "Data too large for USLP frame"
+        if total_length > 0x10000:
+            raise ValueError(f"Data too large for USLP frame: {len(data)} octets")
         # Flags: bypass/expedited (1) | protocol command (0) | spares (00) |
         #        OCF (0) | VCF count length (000 = no VCF count on uplink)
         flags = 0x80
@@ -116,8 +126,11 @@ class UslpFramerDeframer(FramerDeframer):
                 break
             # Space packet: data length field is total data octets minus 1
             data_length = struct.unpack_from(">H", zone, offset + 4)[0]
+            if offset + 6 + data_length + 1 > len(zone):
+                # Corrupt/overshooting packet length: return only the packets walked so far
+                break
             offset += 6 + data_length + 1
-        return zone[:offset] if offset <= len(zone) else zone
+        return zone[:offset]
 
     def deframe(self, data, no_copy=False):
         """Deframe fixed-length USLP transfer frames"""
@@ -192,6 +205,8 @@ class UslpFramerDeframer(FramerDeframer):
             raise TypeError(f"Virtual Channel ID {vcid} out of range [0, {0x3F}]")
         if map_id is None or not (0 <= map_id <= 0xF):
             raise TypeError(f"MAP ID {map_id} out of range [0, {0xF}]")
+        if frame_size is not None and not (cls.MIN_FRAME_SIZE <= frame_size <= 0x10000):
+            raise TypeError(f"USLP frame size {frame_size} out of range [{cls.MIN_FRAME_SIZE}, {0x10000}]")
 
     @classmethod
     @gds_plugin_implementation

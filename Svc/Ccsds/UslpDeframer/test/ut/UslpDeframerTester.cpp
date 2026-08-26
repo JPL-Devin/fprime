@@ -254,6 +254,28 @@ void UslpDeframerTester::testInvalidVcfCountLength() {
     ASSERT_EVENTS_InvalidVcfCountLength(0, 2, 0);
 }
 
+void UslpDeframerTester::testStructuralLengthUnderflow() {
+    // A frame whose length field matches the buffer size and passes the minimum-size check
+    // (which excludes the VCF count) but is too short to hold header + VCF count (7) +
+    // TFDF header + trailer must be rejected by the structural length guard
+    const FwSizeType frameSize = 11;  // > minFrameSize (10), < 7 + 7 + 1 + 2 = 17
+    const U8 vcfCountLength = 7;
+    ::memset(this->m_frameData, 0, sizeof(this->m_frameData));
+    const U32 idWord = (static_cast<U32>(0xC) << 28) | (static_cast<U32>(0x0044) << 12) | (1u << 11);
+    this->m_frameData[0] = static_cast<U8>(idWord >> 24);
+    this->m_frameData[1] = static_cast<U8>(idWord >> 16);
+    this->m_frameData[2] = static_cast<U8>(idWord >> 8);
+    this->m_frameData[3] = static_cast<U8>(idWord & 0xFF);
+    this->m_frameData[4] = 0;
+    this->m_frameData[5] = static_cast<U8>(frameSize - 1);  // Frame Length field: total octets minus 1
+    this->m_frameData[6] = vcfCountLength;                  // flags: only the VCF Count Length bits set
+    Fw::Buffer buffer(this->m_frameData, static_cast<Fw::Buffer::SizeType>(frameSize));
+    this->component.configure(0, 0x0044, 0, vcfCountLength, false);
+    this->assertReject(buffer, Svc::Ccsds::FrameError::USLP_INVALID_LENGTH);
+    ASSERT_EVENTS_InvalidFrameLength_SIZE(1);
+    ASSERT_EVENTS_InvalidFrameLength(0, static_cast<U16>(frameSize - 1), frameSize);
+}
+
 void UslpDeframerTester::testInvalidCrc() {
     FrameParams params;
     params.corruptCrc = true;

@@ -91,6 +91,11 @@ TEST(UslpDeframer, testInvalidVcfCountLength) {
     tester.testInvalidVcfCountLength();
 }
 
+TEST(UslpDeframer, testStructuralLengthUnderflow) {
+    Svc::Ccsds::UslpDeframerTester tester;
+    tester.testStructuralLengthUnderflow();
+}
+
 TEST(UslpDeframer, testInvalidCrc) {
     Svc::Ccsds::UslpDeframerTester tester;
     tester.testInvalidCrc();
