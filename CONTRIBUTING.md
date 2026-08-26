@@ -132,6 +132,8 @@ Because of this pattern, users who submit a pull request which introduces breaki
 
 The checks are configured to run on the `devel` branch of each external repository, but will prioritize the branch `pr-<PR_NUMBER>` if it exists, with `PR_NUMBER` being the number of the pull request that has been opened in nasa/fprime.
 
+These checks build the external project against the fprime revision under test (the pull request's changes), not against the revision recorded in its pinned `lib/fprime` submodule. The pin is kept current by per-repository fprime submodule bump automation.
+
 Maintainers will gladly help you in this process.
 
 ### Final Approval and Submission
