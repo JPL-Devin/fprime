@@ -1,3 +1,4 @@
+# See README.md in this directory for external-repository overlays, branch selection, and local reproduction.
 # Scheduled soak test for the Zephyr Reference deployment on Raspberry Pi Pico 2.
 #
 # Analyzes captured ComLogger telemetry for FATALs and degradation trends, then runs the integration tests.

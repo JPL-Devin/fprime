@@ -1,3 +1,4 @@
+# See README.md in this directory for external-repository overlays, branch selection, and local reproduction.
 # This workflow is intended for reuse by other workflows and will not run directly (no triggers).
 # The behavior is to run the steps of fprime-ci.
 name: "F´ CI - Reusable Workflow"

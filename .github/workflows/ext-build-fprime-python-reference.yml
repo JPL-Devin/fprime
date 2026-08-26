@@ -1,3 +1,4 @@
+# See README.md in this directory for external-repository overlays, branch selection, and local reproduction.
 # Builds and runs integration tests on https://github.com/fprime-community/fprime-python-reference
 
 name: "External Repo: fprime-python-reference"

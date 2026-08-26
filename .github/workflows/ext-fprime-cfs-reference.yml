@@ -1,3 +1,4 @@
+# See README.md in this directory for external-repository overlays, branch selection, and local reproduction.
 # Build https://github.com/fprime-community/fprime_cfs_reference
 # Builds the CFS reference against the current F´ revision and runs integration tests
 
