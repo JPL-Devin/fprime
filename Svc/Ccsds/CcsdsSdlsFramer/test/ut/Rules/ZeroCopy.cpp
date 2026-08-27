@@ -39,7 +39,8 @@ void CcsdsSdlsFramerTester::ZeroCopy__InPlace__action() {
     zone.advance(static_cast<FwSignedSizeType>(headroom));
     zone.setSize(static_cast<Fw::Buffer::SizeType>(zoneSize));
 
-    const U16 sa = static_cast<U16>(STest::Pick::lowerUpper(0, 0xFFFF));
+    // Exclude the SaIndexUnset sentinel: it would make the component substitute the SA_INDEX parameter
+    const U16 sa = static_cast<U16>(STest::Pick::lowerUpper(0, ComCfg::SaIndexUnset - 1));
     ComCfg::FrameContext context;
     context.set_saIndex(sa);
     context.set_zeroCopyFrame(true);
@@ -96,7 +97,8 @@ void CcsdsSdlsFramerTester::ZeroCopy__Fallback__action() {
     zone.advance(static_cast<FwSignedSizeType>(headroom));
     zone.setSize(static_cast<Fw::Buffer::SizeType>(zoneSize));
 
-    const U16 sa = static_cast<U16>(STest::Pick::lowerUpper(0, 0xFFFF));
+    // Exclude the SaIndexUnset sentinel: it would make the component substitute the SA_INDEX parameter
+    const U16 sa = static_cast<U16>(STest::Pick::lowerUpper(0, ComCfg::SaIndexUnset - 1));
     ComCfg::FrameContext context;
     context.set_saIndex(sa);
     context.set_zeroCopyFrame(true);
