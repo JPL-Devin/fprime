@@ -55,6 +55,7 @@ class SppZonePacker final : public SppZonePackerComponentBase {
         U16 payloadOffset = 0;              //!< Bytes packed into the zone under construction
         bool pastFirstFreshPacket = false;  //!< A fresh packet header was placed in this zone
         U16 fhp = 0;                        //!< Offset of the first fresh packet header (valid when past flag set)
+        bool realDataInZone = false;        //!< The zone under construction holds non-idle bytes
 
         OutstandingPacket outstanding;
 

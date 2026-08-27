@@ -158,6 +158,7 @@ void SppZonePacker ::comStatusIn_handler(FwIndexType portNum, Fw::Success& condi
     if (condition == Fw::Success::FAILURE) {
         // FAILURE always passes through so ComQueue enters retry; pending credits are void
         vc.creditOwed = 0;
+        vc.packetCreditPending = false;
         em.sendStatus = true;
         em.status = Fw::Success::FAILURE;
     } else if (vc.creditOwed > 0) {
@@ -242,6 +243,7 @@ void SppZonePacker ::packBytes(ZoneVc& vc,
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, status);
 
     vc.payloadOffset = static_cast<U16>(vc.payloadOffset + dataSize);
+    vc.realDataInZone = vc.realDataInZone || !isIdle;
     vc.outstanding.context = context;
     vc.lastContext = context;
 
@@ -288,8 +290,15 @@ void SppZonePacker ::prepareZoneSend(ZoneVc& vc, Emission& em) {
     em.sendZone = true;
     em.zone = this->zoneWindow(vc);
     em.zoneContext = vc.lastContext;
-    em.zoneContext.set_firstHeaderPointer(
-        vc.pastFirstFreshPacket ? vc.fhp : static_cast<U16>(ComCfg::FhpValues::FHP_NO_PACKET_START));
+    // An idle-only zone carries the idle-data sentinel; a pure continuation zone the
+    // no-packet-start sentinel; otherwise the offset of the first packet header
+    U16 fhp = static_cast<U16>(ComCfg::FhpValues::FHP_NO_PACKET_START);
+    if (!vc.realDataInZone) {
+        fhp = static_cast<U16>(ComCfg::FhpValues::FHP_IDLE_DATA_ONLY);
+    } else if (vc.pastFirstFreshPacket) {
+        fhp = vc.fhp;
+    }
+    em.zoneContext.set_firstHeaderPointer(fhp);
     em.zoneContext.set_zeroCopyFrame(true);
     em.zoneContext.set_sendNow(false);
 
@@ -301,6 +310,7 @@ void SppZonePacker ::prepareZoneSend(ZoneVc& vc, Emission& em) {
     vc.payloadOffset = 0;
     vc.pastFirstFreshPacket = false;
     vc.fhp = 0;
+    vc.realDataInZone = false;
     vc.sendPendingFull = false;
 
     this->m_zonesSent++;

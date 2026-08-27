@@ -210,8 +210,9 @@ void SppZonePackerTester ::testIdleStriping() {
     // Return zone 1: the idle tail lands in zone 2, which is then idle-filled and sent
     this->returnZone(0);
     ASSERT_from_dataOut_SIZE(2);
-    // Zone 2 starts with continuation (idle tail): FHP is the tail length (4 bytes of 7-byte idle packet)
-    ASSERT_EQ(this->getZoneContext(1).get_firstHeaderPointer(), 4);
+    // Zone 2 holds only idle data (idle tail plus idle fill): idle-data-only sentinel
+    ASSERT_EQ(this->getZoneContext(1).get_firstHeaderPointer(),
+              static_cast<U16>(ComCfg::FhpValues::FHP_IDLE_DATA_ONLY));
 }
 
 void SppZonePackerTester ::testExactFill() {
