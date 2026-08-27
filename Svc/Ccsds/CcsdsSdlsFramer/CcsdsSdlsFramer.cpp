@@ -66,9 +66,13 @@ void CcsdsSdlsFramer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, con
 void CcsdsSdlsFramer ::dataReturnIn_handler(FwIndexType portNum,
                                             Fw::Buffer& data,
                                             const ComCfg::FrameContext& context) {
-    if ((this->m_zeroCopyFrame != nullptr) && (data.getData() == this->m_zeroCopyFrame)) {
+    // The downstream framer may return the buffer at a different window offset (e.g. advanced
+    // to the frame start), so match against the backing allocation region rather than an exact pointer
+    if ((this->m_zeroCopyBacking != nullptr) && (data.getData() >= this->m_zeroCopyBacking) &&
+        (data.getData() < this->m_zeroCopyBacking + this->m_zeroCopyBackingCapacity)) {
         // The frame is the upstream-owned zero-copy zone buffer: forward ownership back upstream
-        this->m_zeroCopyFrame = nullptr;
+        this->m_zeroCopyBacking = nullptr;
+        this->m_zeroCopyBackingCapacity = 0;
         this->dataReturnOut_out(0, data, context);
     } else {
         // dataReturnIn is a self-allocated frame buffer coming back from the dataOut port
@@ -100,8 +104,9 @@ void CcsdsSdlsFramer ::encryptIn_handler(FwIndexType portNum,
         FW_ASSERT(serializeStatus == Fw::FW_SERIALIZE_OK, serializeStatus);
 
         // Only one zero-copy zone can be in flight: the packer holds pool ownership until return
-        FW_ASSERT(this->m_zeroCopyFrame == nullptr);
-        this->m_zeroCopyFrame = data.getData();
+        FW_ASSERT(this->m_zeroCopyBacking == nullptr);
+        this->m_zeroCopyBacking = data.getOriginalData();
+        this->m_zeroCopyBackingCapacity = data.getCapacity();
         this->m_zeroCopyData = nullptr;
         this->m_zeroCopySize = 0;
         this->dataOut_out(0, data, context);

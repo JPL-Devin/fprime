@@ -65,8 +65,12 @@ void CcsdsSdlsFramerTester::ZeroCopy__InPlace__action() {
     ASSERT_EQ(frameEntry.data.getData()[1], static_cast<U8>(sa & 0xFF));
     ASSERT_TRUE(frameEntry.context.get_zeroCopyFrame());
 
-    // Returning the frame forwards ownership upstream instead of deallocating
+    // Returning the frame forwards ownership upstream instead of deallocating. The downstream
+    // framer returns the buffer advanced to the frame start (a different window offset), so the
+    // return must be matched by backing region, not by exact data pointer
     Fw::Buffer frame = frameEntry.data;
+    frame.advance(-static_cast<FwSignedSizeType>(headroom - sizeof(U16)));
+    frame.setSize(static_cast<Fw::Buffer::SizeType>(TEST_BUFFER_SIZE));
     this->invoke_to_dataReturnIn(0, frame, frameEntry.context);
     ASSERT_from_bufferDeallocate_SIZE(0);
     ASSERT_from_dataReturnOut_SIZE(1);

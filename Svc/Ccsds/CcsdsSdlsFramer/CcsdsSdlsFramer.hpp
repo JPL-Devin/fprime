@@ -80,9 +80,10 @@ class CcsdsSdlsFramer final : public CcsdsSdlsFramerComponentBase {
     // Members
     // ----------------------------------------------------------------------
 
-    const U8* m_zeroCopyData = nullptr;   //!< Data pointer of the zone sent for in-place encryption
-    FwSizeType m_zeroCopySize = 0;        //!< Size of the zone sent for in-place encryption
-    const U8* m_zeroCopyFrame = nullptr;  //!< Data pointer of the zero-copy frame in flight downstream
+    const U8* m_zeroCopyData = nullptr;        //!< Data pointer of the zone sent for in-place encryption
+    FwSizeType m_zeroCopySize = 0;             //!< Size of the zone sent for in-place encryption
+    const U8* m_zeroCopyBacking = nullptr;     //!< Backing allocation of the zero-copy frame in flight downstream
+    FwSizeType m_zeroCopyBackingCapacity = 0;  //!< Capacity of the above backing allocation
 };
 
 }  // namespace Ccsds
