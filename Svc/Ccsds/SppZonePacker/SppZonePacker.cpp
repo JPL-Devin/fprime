@@ -98,14 +98,14 @@ void SppZonePacker ::dataReturnIn_handler(FwIndexType portNum, Fw::Buffer& data,
     ZoneVc& vc = this->getVc(context);
 
     // Identify and reclaim the returned pool entry
-    FwIndexType poolIndex = -1;
-    for (FwIndexType i = 0; i < static_cast<FwIndexType>(POOL_DEPTH); i++) {
+    FwSizeType poolIndex = POOL_DEPTH;
+    for (FwSizeType i = 0; i < POOL_DEPTH; i++) {
         if (bufferBelongs(data, vc.pool[i].backer, sizeof(vc.pool[i].backer))) {
             poolIndex = i;
             break;
         }
     }
-    FW_ASSERT(poolIndex >= 0);
+    FW_ASSERT(poolIndex < POOL_DEPTH, static_cast<FwAssertArgType>(poolIndex));
     FW_ASSERT(vc.pool[poolIndex].state == BufferOwnershipState::NOT_OWNED,
               static_cast<FwAssertArgType>(vc.pool[poolIndex].state));
     vc.pool[poolIndex].state = BufferOwnershipState::OWNED;
