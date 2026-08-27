@@ -411,6 +411,69 @@ void ComQueueTester ::testContextData() {
     component.cleanup();
 }
 
+void ComQueueTester ::testQueueSendWithContext() {
+    U8 data[BUFFER_LENGTH] = BUFFER_DATA;
+    Fw::ComBuffer comBuffer(&data[0], sizeof(data));
+    Fw::Buffer buffer(&data[0], sizeof(data));
+    configure();
+
+    // Context-aware ports carry the APID explicitly; the packet data needs no descriptor
+    ComCfg::FrameContext context;
+    context.set_apid(ComCfg::Apid::INVALID_UNINITIALIZED);
+    context.set_sequenceCount(1234);
+    // comQueueIndex is owned by ComQueue and must be overwritten regardless of what the sender set
+    context.set_comQueueIndex(99);
+
+    for (FwIndexType portNum = 0; portNum < ComQueue::COM_PORT_COUNT; portNum++) {
+        invoke_to_comPacketQueueWithContextIn(portNum, comBuffer, context);
+        emitOneAndCheck(portNum, comBuffer.getBuffAddr(), comBuffer.getSize());
+        ComCfg::FrameContext emittedContext = this->fromPortHistory_dataOut->at(portNum).context;
+        ASSERT_EQ(emittedContext.get_apid(), context.get_apid());
+        ASSERT_EQ(emittedContext.get_sequenceCount(), context.get_sequenceCount());
+        ASSERT_EQ(emittedContext.get_comQueueIndex(), portNum);
+    }
+    clearFromPortHistory();
+
+    for (FwIndexType portNum = 0; portNum < ComQueue::BUFFER_PORT_COUNT; portNum++) {
+        invoke_to_bufferQueueWithContextIn(portNum, buffer, context);
+        emitOneAndCheck(portNum, buffer.getData(), buffer.getSize());
+        ComCfg::FrameContext emittedContext = this->fromPortHistory_dataOut->at(portNum).context;
+        ASSERT_EQ(emittedContext.get_apid(), context.get_apid());
+        ASSERT_EQ(emittedContext.get_sequenceCount(), context.get_sequenceCount());
+        ASSERT_EQ(emittedContext.get_comQueueIndex(), portNum + ComQueue::COM_PORT_COUNT);
+        ASSERT_from_bufferReturnOut(portNum, buffer);
+    }
+    ASSERT_from_bufferReturnOut_SIZE(ComQueue::BUFFER_PORT_COUNT);
+    clearFromPortHistory();
+    component.cleanup();
+}
+
+void ComQueueTester ::testQueueOverflowWithContext() {
+    ComQueue::QueueConfigurationTable configurationTable;
+    for (FwIndexType i = 0; i < ComQueue::TOTAL_PORT_COUNT; i++) {
+        configurationTable.entries[i].priority = i;
+        configurationTable.entries[i].depth = 1;
+    }
+    component.configure(configurationTable, 0, mallocAllocator);
+
+    U8 data[BUFFER_LENGTH] = BUFFER_DATA;
+    Fw::Buffer buffer(&data[0], sizeof(data));
+    ComCfg::FrameContext context;
+
+    // Fill the depth-1 buffer queue, then overflow it: the overflowed buffer must be returned
+    invoke_to_bufferQueueWithContextIn(0, buffer, context);
+    dispatchAll();
+    invoke_to_bufferQueueWithContextIn(0, buffer, context);
+    dispatchAll();
+    ASSERT_EVENTS_QueueOverflow_SIZE(1);
+    ASSERT_EVENTS_QueueOverflow(0, QueueType::BUFFER_QUEUE, 0);
+    ASSERT_from_bufferReturnOut_SIZE(1);
+    ASSERT_from_bufferReturnOut(0, buffer);
+
+    clearFromPortHistory();
+    component.cleanup();
+}
+
 void ComQueueTester ::from_dataOut_handler(FwIndexType portNum, Fw::Buffer& data, const ComCfg::FrameContext& context) {
     this->pushFromPortEntry_dataOut(data, context);
     this->invoke_to_dataReturnIn(0, data, context);

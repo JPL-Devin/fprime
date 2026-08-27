@@ -49,6 +49,16 @@ TEST(Nominal, ContextData) {
     tester.testContextData();
 }
 
+TEST(Nominal, SendWithContext) {
+    Svc::ComQueueTester tester;
+    tester.testQueueSendWithContext();
+}
+
+TEST(Nominal, OverflowWithContext) {
+    Svc::ComQueueTester tester;
+    tester.testQueueOverflowWithContext();
+}
+
 TEST(QueueModes, FIFOMode) {
     Svc::ComQueueTester tester;
     tester.testFIFOMode();

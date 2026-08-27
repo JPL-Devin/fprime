@@ -97,8 +97,10 @@ void ComQueue::configure(const QueueConfigurationTable& queueConfig,
                 entry.index = entryIndex;
                 // Message size is determined by the type of object being stored, which in turn is determined by the
                 // index of the entry. Those lower than COM_PORT_COUNT are Fw::ComBuffers and those larger Fw::Buffer.
+                // Each slot also stores the ComCfg::FrameContext associated with the queued data.
                 entry.msgSize = (entryIndex < COM_PORT_COUNT) ? static_cast<FwSizeType>(Fw::ComBuffer::SERIALIZED_SIZE)
                                                               : static_cast<FwSizeType>(Fw::Buffer::SERIALIZED_SIZE);
+                entry.msgSize += static_cast<FwSizeType>(ComCfg::FrameContext::SERIALIZED_SIZE);
                 // Overflow checks
                 FW_ASSERT((std::numeric_limits<FwSizeType>::max() / entry.depth) >= entry.msgSize,
                           static_cast<FwAssertArgType>(entry.depth), static_cast<FwAssertArgType>(entry.msgSize));
@@ -230,7 +232,17 @@ void ComQueue::SET_QUEUE_PRIORITY_cmdHandler(FwOpcodeType opCode,
 void ComQueue::comPacketQueueIn_handler(const FwIndexType portNum, Fw::ComBuffer& data, U32 context) {
     // Ensure that the port number of comPacketQueueIn is consistent with the expectation
     FW_ASSERT(portNum >= 0 && portNum < COM_PORT_COUNT, static_cast<FwAssertArgType>(portNum));
-    (void)this->enqueue(portNum, data);
+    // Legacy port: the APID is carried as the packet descriptor at the front of the data
+    const ComCfg::FrameContext frameContext = ComQueue::contextFromDescriptor(data.getBuffAddr(), data.getSize());
+    (void)this->enqueue(portNum, data, frameContext);
+}
+
+void ComQueue::comPacketQueueWithContextIn_handler(FwIndexType portNum,
+                                                   Fw::ComBuffer& data,
+                                                   const ComCfg::FrameContext& context) {
+    // Ensure that the port number of comPacketQueueWithContextIn is consistent with the expectation
+    FW_ASSERT(portNum >= 0 && portNum < COM_PORT_COUNT, static_cast<FwAssertArgType>(portNum));
+    (void)this->enqueue(portNum, data, context);
 }
 
 void ComQueue::bufferQueueIn_handler(const FwIndexType portNum, Fw::Buffer& fwBuffer) {
@@ -239,9 +251,25 @@ void ComQueue::bufferQueueIn_handler(const FwIndexType portNum, Fw::Buffer& fwBu
     // Ensure that the port number of bufferQueueIn is consistent with the expectation
     FW_ASSERT(portNum >= 0 && portNum < BUFFER_PORT_COUNT, static_cast<FwAssertArgType>(portNum));
     FW_ASSERT(queueNum < TOTAL_PORT_COUNT);
-    bool success = this->enqueue(queueNum, fwBuffer);
+    // Legacy port: the APID is carried as the packet descriptor at the front of the data
+    const ComCfg::FrameContext frameContext = ComQueue::contextFromDescriptor(fwBuffer.getData(), fwBuffer.getSize());
+    bool success = this->enqueue(queueNum, fwBuffer, frameContext);
     if (!success) {
         this->bufferReturnOut_out(portNum, fwBuffer);
+    }
+}
+
+void ComQueue::bufferQueueWithContextIn_handler(FwIndexType portNum,
+                                                Fw::Buffer& data,
+                                                const ComCfg::FrameContext& context) {
+    FW_ASSERT(std::numeric_limits<FwIndexType>::max() - COM_PORT_COUNT > portNum);
+    const FwIndexType queueNum = static_cast<FwIndexType>(portNum + COM_PORT_COUNT);
+    // Ensure that the port number of bufferQueueWithContextIn is consistent with the expectation
+    FW_ASSERT(portNum >= 0 && portNum < BUFFER_PORT_COUNT, static_cast<FwAssertArgType>(portNum));
+    FW_ASSERT(queueNum < TOTAL_PORT_COUNT);
+    bool success = this->enqueue(queueNum, data, context);
+    if (!success) {
+        this->bufferReturnOut_out(portNum, data);
     }
 }
 
@@ -318,20 +346,28 @@ void ComQueue::bufferQueueIn_overflowHook(FwIndexType portNum, Fw::Buffer& fwBuf
     this->bufferReturnOut_out(portNum, fwBuffer);
 }
 
+void ComQueue::bufferQueueWithContextIn_overflowHook(FwIndexType portNum,
+                                                     Fw::Buffer& data,
+                                                     const ComCfg::FrameContext& context) {
+    FW_ASSERT(portNum >= 0 && portNum < BUFFER_PORT_COUNT, static_cast<FwAssertArgType>(portNum));
+    this->bufferReturnOut_out(portNum, data);
+}
+
 // ----------------------------------------------------------------------
 // Private helper methods
 // ----------------------------------------------------------------------
 
-bool ComQueue::enqueue(const FwIndexType queueNum, const Fw::ComBuffer& data) {
+bool ComQueue::enqueue(const FwIndexType queueNum, const Fw::ComBuffer& data, const ComCfg::FrameContext& context) {
     // Enqueue the given message onto the matching queue. When no space is available then emit the queue overflow event,
     // set the appropriate throttle, and move on. Will assert if passed a message for a depth 0 queue.
     FW_ASSERT(queueNum >= 0 && queueNum < COM_PORT_COUNT, static_cast<FwAssertArgType>(queueNum));
 
-    const Fw::SerializeStatus status = this->m_queues[queueNum].enqueue(data);
+    const PairSerializer<Fw::ComBuffer> pair(data, context);
+    const Fw::SerializeStatus status = this->m_queues[queueNum].enqueue(pair);
     return this->handleEnqueueStatus(queueNum, QueueType::COM_QUEUE, queueNum, false, status);
 }
 
-bool ComQueue::enqueue(const FwIndexType queueNum, const Fw::Buffer& data) {
+bool ComQueue::enqueue(const FwIndexType queueNum, const Fw::Buffer& data, const ComCfg::FrameContext& context) {
     // Enqueue the given message onto the matching queue. When no space is available then emit the queue overflow event,
     // set the appropriate throttle, and move on. Will assert if passed a message for a depth 0 queue.
     FW_ASSERT(queueNum >= COM_PORT_COUNT && queueNum < TOTAL_PORT_COUNT, static_cast<FwAssertArgType>(queueNum));
@@ -350,7 +386,9 @@ bool ComQueue::enqueue(const FwIndexType queueNum, const Fw::Buffer& data) {
             // popFront() always removes from the front (oldest) regardless of queue mode,
             // matching the rotate-based removal that Queue::enqueue() uses for DROP_OLDEST.
             Fw::Buffer droppedBuffer;
-            Fw::SerializeStatus dequeueStatus = queue.popFront(droppedBuffer);
+            ComCfg::FrameContext droppedContext;
+            PairDeserializer<Fw::Buffer> droppedPair(droppedBuffer, droppedContext);
+            Fw::SerializeStatus dequeueStatus = queue.popFront(droppedPair);
             FW_ASSERT(dequeueStatus == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(dequeueStatus));
             this->bufferReturnOut_out(portNum, droppedBuffer);
             preEmptiveOverflow = true;
@@ -358,8 +396,21 @@ bool ComQueue::enqueue(const FwIndexType queueNum, const Fw::Buffer& data) {
         }
     }
 
-    const Fw::SerializeStatus status = this->m_queues[queueNum].enqueue(data);
+    const PairSerializer<Fw::Buffer> pair(data, context);
+    const Fw::SerializeStatus status = this->m_queues[queueNum].enqueue(pair);
     return this->handleEnqueueStatus(queueNum, QueueType::BUFFER_QUEUE, portNum, preEmptiveOverflow, status);
+}
+
+ComCfg::FrameContext ComQueue::contextFromDescriptor(const U8* data, FwSizeType size) {
+    ComCfg::FrameContext context;
+    FwPacketDescriptorType descriptor = 0;
+    Fw::ExternalSerializeBuffer peekBuffer(const_cast<U8*>(data), size);
+    Fw::SerializeStatus status = peekBuffer.setBuffLen(size);
+    FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
+    status = peekBuffer.deserializeTo(descriptor);
+    FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
+    context.set_apid(static_cast<ComCfg::Apid::T>(descriptor));
+    return context;
 }
 
 bool ComQueue::handleEnqueueStatus(const FwIndexType queueNum,
@@ -384,16 +435,11 @@ bool ComQueue::handleEnqueueStatus(const FwIndexType queueNum,
     return status != Fw::FW_SERIALIZE_NO_ROOM_LEFT;
 }
 
-void ComQueue::sendComBuffer(Fw::ComBuffer& comBuffer, FwIndexType queueIndex) {
+void ComQueue::sendComBuffer(Fw::ComBuffer& comBuffer, FwIndexType queueIndex, ComCfg::FrameContext& context) {
     FW_ASSERT(this->m_state == READY);
     Fw::Buffer outBuffer(comBuffer.getBuffAddr(), static_cast<Fw::Buffer::SizeType>(comBuffer.getSize()));
 
-    // Context value is used to determine what to do when the buffer returns on the dataReturnIn port
-    ComCfg::FrameContext context;
-    FwPacketDescriptorType descriptor = 0;
-    Fw::SerializeStatus status = comBuffer.deserializeTo(descriptor);
-    FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
-    context.set_apid(static_cast<ComCfg::Apid::T>(descriptor));
+    // comQueueIndex is owned by ComQueue and determines what to do when the buffer returns on dataReturnIn
     context.set_comQueueIndex(queueIndex);
     const BufferState previousState = this->m_buffer_state.exchange(UNOWNED);
     FW_ASSERT(previousState == OWNED, static_cast<FwAssertArgType>(previousState));
@@ -402,16 +448,11 @@ void ComQueue::sendComBuffer(Fw::ComBuffer& comBuffer, FwIndexType queueIndex) {
     this->m_state = WAITING;
 }
 
-void ComQueue::sendBuffer(Fw::Buffer& buffer, FwIndexType queueIndex) {
+void ComQueue::sendBuffer(Fw::Buffer& buffer, FwIndexType queueIndex, ComCfg::FrameContext& context) {
     // Retry buffer expected to be cleared as we are either transferring ownership or have already deallocated it.
     FW_ASSERT(this->m_state == READY);
 
-    // Context value is used to determine what to do when the buffer returns on the dataReturnIn port
-    ComCfg::FrameContext context;
-    FwPacketDescriptorType descriptor;
-    Fw::SerializeStatus status = buffer.getDeserializer().deserializeTo(descriptor);
-    FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
-    context.set_apid(static_cast<ComCfg::Apid::T>(descriptor));
+    // comQueueIndex is owned by ComQueue and determines what to do when the buffer returns on dataReturnIn
     context.set_comQueueIndex(queueIndex);
     const BufferState previousState = this->m_buffer_state.exchange(UNOWNED);
     FW_ASSERT(previousState == OWNED, static_cast<FwAssertArgType>(previousState));
@@ -429,14 +470,18 @@ void ComQueue::drainQueue(FwIndexType index) {
     const FwSizeType available = queue.getQueueSize();
     for (FwSizeType i = 0; (i < available) && (status == Fw::FW_SERIALIZE_OK); i++) {
         if (index < COM_PORT_COUNT) {
-            // Dequeueing deserializes the persisted Fw::ComBuffer from the queue's storage
+            // Dequeueing deserializes the persisted Fw::ComBuffer and its context from the queue's storage
             Fw::ComBuffer comBuffer;
-            status = queue.dequeue(comBuffer);
+            ComCfg::FrameContext context;
+            PairDeserializer<Fw::ComBuffer> pair(comBuffer, context);
+            status = queue.dequeue(pair);
         } else {
             // For buffer queues, if the buffer requires ownership return, return it via the bufferReturnOut port
-            // Dequeueing deserializes the persisted Fw::Buffer from the queue's storage
+            // Dequeueing deserializes the persisted Fw::Buffer and its context from the queue's storage
             Fw::Buffer buffer;
-            status = queue.dequeue(buffer);
+            ComCfg::FrameContext context;
+            PairDeserializer<Fw::Buffer> pair(buffer, context);
+            status = queue.dequeue(pair);
             this->bufferReturnOut_out(static_cast<FwIndexType>(index - COM_PORT_COUNT), buffer);
         }
     }
@@ -461,18 +506,22 @@ void ComQueue::processQueue() {
 
         // Send out the message based on the type
         if (entry.index < COM_PORT_COUNT) {
-            // Dequeue deserializes the persisted Fw::ComBuffer from the queue's storage
+            // Dequeue deserializes the persisted Fw::ComBuffer and its context from the queue's storage
             FW_ASSERT(this->m_buffer_state.load() == OWNED);
-            auto dequeue_status = queue.dequeue(this->m_dequeued_com_buffer);
+            ComCfg::FrameContext context;
+            PairDeserializer<Fw::ComBuffer> pair(this->m_dequeued_com_buffer, context);
+            auto dequeue_status = queue.dequeue(pair);
             FW_ASSERT(dequeue_status == Fw::SerializeStatus::FW_SERIALIZE_OK,
                       static_cast<FwAssertArgType>(dequeue_status));
-            this->sendComBuffer(this->m_dequeued_com_buffer, entry.index);
+            this->sendComBuffer(this->m_dequeued_com_buffer, entry.index, context);
         } else {
             Fw::Buffer buffer;
-            auto dequeue_status = queue.dequeue(buffer);
+            ComCfg::FrameContext context;
+            PairDeserializer<Fw::Buffer> pair(buffer, context);
+            auto dequeue_status = queue.dequeue(pair);
             FW_ASSERT(dequeue_status == Fw::SerializeStatus::FW_SERIALIZE_OK,
                       static_cast<FwAssertArgType>(dequeue_status));
-            this->sendBuffer(buffer, entry.index);
+            this->sendBuffer(buffer, entry.index, context);
         }
 
         // Update the throttle and the index that was just sent

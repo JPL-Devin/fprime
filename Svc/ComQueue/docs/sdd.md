@@ -50,9 +50,19 @@ The diagram below shows the `Svc::ComQueue` component.
 | `output`      | `dataOut`         | `Svc.ComDataWithContext`              | Port emitting queued messages                            |
 | `sync input`  | `dataReturnIn`    | `Svc.ComDataWithContext`              | Port retrieving back ownership buffers sent on dataOut   |
 | `async input` | `comStatusIn`     | `Fw.SuccessCondition`                 | Port for receiving the status signal                     |
-| `async input` | `comPacketQueueIn`| `[ComQueueComPorts] Fw.Com`           | Port array for receiving Fw::ComBuffers                  |
-| `async input` | `bufferQueueIn`   | `[ComQueueBufferPorts] Fw.BufferSend` | Port array for receiving Fw::Buffers                     |
-| `output`      | `bufferReturnOut` | `[ComQueueBufferPorts] Fw.BufferSend` | Port array returning ownership of buffers received on bufferQueueIn |
+| `async input` | `comPacketQueueIn`| `[ComQueueComPorts] Fw.Com`           | Port array for receiving Fw::ComBuffers (deprecated: use `comPacketQueueWithContextIn`) |
+| `async input` | `comPacketQueueWithContextIn`| `[ComQueueComPorts] Svc.ComPacketWithContext` | Port array for receiving Fw::ComBuffers along with a `ComCfg.FrameContext` |
+| `async input` | `bufferQueueIn`   | `[ComQueueBufferPorts] Fw.BufferSend` | Port array for receiving Fw::Buffers (deprecated: use `bufferQueueWithContextIn`) |
+| `async input` | `bufferQueueWithContextIn` | `[ComQueueBufferPorts] Svc.ComDataWithContext` | Port array for receiving Fw::Buffers along with a `ComCfg.FrameContext` |
+| `output`      | `bufferReturnOut` | `[ComQueueBufferPorts] Fw.BufferSend` | Port array returning ownership of buffers received on bufferQueueIn or bufferQueueWithContextIn |
+
+Each queued message is stored together with a `ComCfg.FrameContext`, which is emitted with the data on `dataOut`.
+On the legacy `comPacketQueueIn`/`bufferQueueIn` ports, the context's APID is derived from the
+`FwPacketDescriptorType` value at the front of the data. On the context-aware
+`comPacketQueueWithContextIn`/`bufferQueueWithContextIn` ports, the sender supplies the context (e.g. carrying a
+project-specific APID), so the data does not need to carry a packet descriptor. Port index N of a legacy array and its
+context-aware counterpart feed the same queue N. The `comQueueIndex` field of the context is owned by `Svc::ComQueue`
+and is overwritten before emission. The legacy ports are deprecated and will be removed in a future release.
 
 > [!NOTE]
 > ComQueue also has the port instances for autocoded functionality for events, telemetry and time.
