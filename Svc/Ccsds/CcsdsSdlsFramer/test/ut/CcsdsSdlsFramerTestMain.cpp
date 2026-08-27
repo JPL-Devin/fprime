@@ -79,6 +79,28 @@ TEST(CcsdsSdlsFramer, DataFlowPaths) {
     ruleComStatus.apply(tester);
 }
 
+// Verify the zero-copy zone path: in-place encryption frames without allocation
+// and the frame return is forwarded upstream.
+TEST(CcsdsSdlsFramer, ZeroCopyInPlace) {
+    COMMENT("Frame an in-place-encrypted zero-copy zone without allocation; forward the frame return upstream.");
+    REQUIREMENT("SVC-CCSDS-SDLS-FRAMER-003");
+    REQUIREMENT("SVC-CCSDS-SDLS-FRAMER-005");
+    CcsdsSdlsFramerTester tester;
+    CcsdsSdlsFramerTester::ZeroCopy__InPlace rule;
+    rule.apply(tester);
+}
+
+// Verify the zero-copy fallback: a different encryptor buffer falls back to
+// allocate-and-copy and the frame return is deallocated.
+TEST(CcsdsSdlsFramer, ZeroCopyFallback) {
+    COMMENT("Fall back to allocate-and-copy when the encryptor does not encrypt in place.");
+    REQUIREMENT("SVC-CCSDS-SDLS-FRAMER-003");
+    REQUIREMENT("SVC-CCSDS-SDLS-FRAMER-005");
+    CcsdsSdlsFramerTester tester;
+    CcsdsSdlsFramerTester::ZeroCopy__Fallback rule;
+    rule.apply(tester);
+}
+
 // Randomized test: apply rules in a random sequence for a large number of iterations
 TEST(CcsdsSdlsFramer, RandomizedTesting) {
     COMMENT("Apply all rules in a randomized order to exercise interleaved framing and data flow.");
@@ -100,10 +122,13 @@ TEST(CcsdsSdlsFramer, RandomizedTesting) {
     CcsdsSdlsFramerTester::DataFlow__DataReturn ruleReturn;
     CcsdsSdlsFramerTester::DataFlow__BufferReturn ruleBufferReturn;
     CcsdsSdlsFramerTester::DataFlow__ComStatus ruleComStatus;
+    CcsdsSdlsFramerTester::ZeroCopy__InPlace ruleZeroCopyInPlace;
+    CcsdsSdlsFramerTester::ZeroCopy__Fallback ruleZeroCopyFallback;
 
     STest::Rule<CcsdsSdlsFramerTester>* rules[] = {
-        &ruleContextSa,  &ruleParameterSa, &ruleFailure,      &ruleData,
-        &ruleAllocation, &ruleReturn,      &ruleBufferReturn, &ruleComStatus,
+        &ruleContextSa,       &ruleParameterSa,      &ruleFailure,      &ruleData,
+        &ruleAllocation,      &ruleReturn,           &ruleBufferReturn, &ruleComStatus,
+        &ruleZeroCopyInPlace, &ruleZeroCopyFallback,
     };
     STest::RandomScenario<CcsdsSdlsFramerTester> randomScenario("RandomScenario", rules, FW_NUM_ARRAY_ELEMENTS(rules));
     STest::BoundedScenario<CcsdsSdlsFramerTester> boundedScenario("BoundedScenario", randomScenario, numRulesToApply);

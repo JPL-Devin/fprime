@@ -37,7 +37,7 @@ By default, APIDs are assigned based on the F Prime data descriptor type (comman
 
 ### TM Space Data Link Protocol
 
-The TM Framer implements the CCSDS Telemetry (TM) Space Data Link Protocol (132.0-B-3) for downlink. It wraps payload data (such as Space Packets) into TM Transfer Frames for transmission over the space link. The current implementation supports a single Virtual Channel Identifier (VCID).
+The TM Framer implements the CCSDS Telemetry (TM) Space Data Link Protocol (132.0-B-3) for downlink. It wraps payload data (such as Space Packets) into TM Transfer Frames for transmission over the space link. The current implementation supports a single Virtual Channel Identifier (VCID). By default one packet is wrapped per frame with idle fill; when combined with the Spp Zone Packer (below), frames instead carry packed data zones with a First Header Pointer.
 
 ### TC Space Data Link Protocol
 
@@ -46,6 +46,10 @@ The TC Deframer implements the CCSDS Telecommand (TC) Space Data Link Protocol (
 ### AOS Space Data Link Protocol
 
 The AOS Framer implements the CCSDS Advanced Orbiting Systems (AOS) Space Data Link Protocol (732.0-B-5). AOS provides an alternative to TM for missions requiring more flexible virtual channel management.
+
+### Space Packet Zone Packing (packet spanning)
+
+The [Spp Zone Packer](https://github.com/nasa/fprime/blob/devel/Svc/Ccsds/SppZonePacker/docs/sdd.md) packs multiple Space Packets into fixed-size frame data zones and splits packets across consecutive frames, using the CCSDS First Header Pointer (FHP) rather than padding every frame with an Idle Packet. It sits between the Space Packet Framer and the transfer-frame framer (TM, AOS, or fixed-length USLP), with the optional SDLS layer in between, and passes the FHP through the frame context for the downstream framer to encode. Ground systems must perform FHP-aware packet reassembly when the packer is in use. This applies to downlink only; TC uplink segmentation is not provided.
 
 ### Space Data Link Security (SDLS)
 

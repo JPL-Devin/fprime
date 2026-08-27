@@ -8,6 +8,7 @@
 #include "Svc/Ccsds/Types/SpacePacketHeaderSerializableAc.hpp"
 #include "Svc/Ccsds/Types/TMHeaderSerializableAc.hpp"
 #include "Svc/Ccsds/Types/TMTrailerSerializableAc.hpp"
+#include "Svc/Ccsds/Utils/CRC16.hpp"
 
 namespace Svc {
 
@@ -152,6 +153,98 @@ void TmFramerTester ::testBufferOwnershipState() {
     ASSERT_EQ(this->component.m_bufferState, TmFramer::BufferOwnershipState::NOT_OWNED);
 }
 
+void TmFramerTester ::testZeroCopyFraming() {
+    // Build a full-frame-sized buffer with headroom for the TM header and reserve for the trailer,
+    // as SppZonePacker would
+    U8 backer[ComCfg::TmFrameFixedSize];
+    Fw::Buffer zone(backer, sizeof(backer));
+    zone.advance(static_cast<FwSignedSizeType>(TMHeader::SERIALIZED_SIZE));
+    zone.setSize(TmFramer::TmPayloadCapacity);
+    for (U32 i = 0; i < TmFramer::TmPayloadCapacity; ++i) {
+        zone.getData()[i] = static_cast<U8>(i);
+    }
+
+    ComCfg::FrameContext context;
+    context.set_firstHeaderPointer(0);
+    context.set_zeroCopyFrame(true);
+
+    this->invoke_to_dataIn(0, zone, context);
+
+    // Frame sent in place: same backing memory, full frame size, no immediate return upstream
+    ASSERT_from_dataOut_SIZE(1);
+    ASSERT_from_dataReturnOut_SIZE(0);
+    Fw::Buffer outBuffer = this->fromPortHistory_dataOut->at(0).data;
+    ASSERT_EQ(outBuffer.getData(), &backer[0]);
+    ASSERT_EQ(outBuffer.getSize(), ComCfg::TmFrameFixedSize);
+    ASSERT_EQ(this->getFrameFhp(outBuffer.getData()), 0);
+    // Payload bytes are untouched
+    for (U32 i = 0; i < TmFramer::TmPayloadCapacity; ++i) {
+        ASSERT_EQ(outBuffer.getData()[TMHeader::SERIALIZED_SIZE + i], static_cast<U8>(i));
+    }
+    this->checkFrameCrc(outBuffer.getData());
+
+    // Returning the frame forwards ownership back upstream
+    this->invoke_to_dataReturnIn(0, outBuffer, context);
+    ASSERT_from_dataReturnOut_SIZE(1);
+    ASSERT_EQ(this->fromPortHistory_dataReturnOut->at(0).data.getData(), &backer[0]);
+}
+
+void TmFramerTester ::testFhpSentinelMapping() {
+    U8 backer[ComCfg::TmFrameFixedSize];
+    const U16 canonicalValues[3] = {static_cast<U16>(ComCfg::FhpValues::FHP_NO_PACKET_START),
+                                    static_cast<U16>(ComCfg::FhpValues::FHP_IDLE_DATA_ONLY), 42};
+    const U16 wireValues[3] = {TMSubfields::FHP_NO_PACKET_START, TMSubfields::FHP_IDLE_DATA_ONLY, 42};
+
+    for (U32 i = 0; i < 3; ++i) {
+        Fw::Buffer zone(backer, sizeof(backer));
+        zone.advance(static_cast<FwSignedSizeType>(TMHeader::SERIALIZED_SIZE));
+        zone.setSize(TmFramer::TmPayloadCapacity);
+
+        ComCfg::FrameContext context;
+        context.set_firstHeaderPointer(canonicalValues[i]);
+        context.set_zeroCopyFrame(true);
+
+        this->invoke_to_dataIn(0, zone, context);
+        ASSERT_from_dataOut_SIZE(i + 1);
+        Fw::Buffer outBuffer = this->fromPortHistory_dataOut->at(i).data;
+        ASSERT_EQ(this->getFrameFhp(outBuffer.getData()), wireValues[i]);
+        this->invoke_to_dataReturnIn(0, outBuffer, context);
+    }
+}
+
+void TmFramerTester ::testPackedCopyFraming() {
+    // An exactly payload-sized zone without reserves (e.g. SDLS allocate-and-copy fallback)
+    U8 backer[TmFramer::TmPayloadCapacity];
+    Fw::Buffer zone(backer, sizeof(backer));
+    for (U32 i = 0; i < sizeof(backer); ++i) {
+        backer[i] = static_cast<U8>(i);
+    }
+
+    ComCfg::FrameContext context;
+    context.set_firstHeaderPointer(5);
+    context.set_zeroCopyFrame(false);
+
+    this->invoke_to_dataIn(0, zone, context);
+
+    // Frame copied into the member buffer, zone returned immediately
+    ASSERT_from_dataOut_SIZE(1);
+    ASSERT_from_dataReturnOut_SIZE(1);
+    Fw::Buffer outBuffer = this->fromPortHistory_dataOut->at(0).data;
+    ASSERT_EQ(outBuffer.getData(), &this->component.m_frameBuffer[0]);
+    ASSERT_EQ(outBuffer.getSize(), ComCfg::TmFrameFixedSize);
+    ASSERT_EQ(this->getFrameFhp(outBuffer.getData()), 5);
+    for (U32 i = 0; i < sizeof(backer); ++i) {
+        ASSERT_EQ(outBuffer.getData()[TMHeader::SERIALIZED_SIZE + i], static_cast<U8>(i));
+    }
+    this->checkFrameCrc(outBuffer.getData());
+    ASSERT_EQ(this->fromPortHistory_dataReturnOut->at(0).data.getData(), &backer[0]);
+
+    // Member buffer return restores ownership
+    ASSERT_EQ(this->component.m_bufferState, TmFramer::BufferOwnershipState::NOT_OWNED);
+    this->invoke_to_dataReturnIn(0, outBuffer, context);
+    ASSERT_EQ(this->component.m_bufferState, TmFramer::BufferOwnershipState::OWNED);
+}
+
 // ----------------------------------------------------------------------
 // Helper functions
 // ----------------------------------------------------------------------
@@ -167,6 +260,15 @@ U8 TmFramerTester::getFrameMcCount(U8* frameData) {
 }
 U8 TmFramerTester::getFrameVcCount(U8* frameData) {
     return frameData[3];
+}
+U16 TmFramerTester::getFrameFhp(U8* frameData) {
+    return static_cast<U16>(((frameData[4] << 8) | frameData[5]) & TMSubfields::firstHeaderPtrMask);
+}
+void TmFramerTester::checkFrameCrc(U8* frameData) {
+    constexpr FwSizeType fecfStart = ComCfg::TmFrameFixedSize - TMTrailer::SERIALIZED_SIZE;
+    const U16 expectedCrc = Ccsds::Utils::CRC16::compute(frameData, fecfStart);
+    const U16 actualCrc = static_cast<U16>((frameData[fecfStart] << 8) | frameData[fecfStart + 1]);
+    ASSERT_EQ(actualCrc, expectedCrc);
 }
 
 }  // namespace Ccsds
