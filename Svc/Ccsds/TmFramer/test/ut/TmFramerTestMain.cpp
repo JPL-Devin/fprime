@@ -36,6 +36,21 @@ TEST(TmFramer, testBufferOwnershipState) {
     tester.testBufferOwnershipState();
 }
 
+TEST(TmFramer, testZeroCopyFraming) {
+    Svc::Ccsds::TmFramerTester tester;
+    tester.testZeroCopyFraming();
+}
+
+TEST(TmFramer, testFhpSentinelMapping) {
+    Svc::Ccsds::TmFramerTester tester;
+    tester.testFhpSentinelMapping();
+}
+
+TEST(TmFramer, testPackedCopyFraming) {
+    Svc::Ccsds::TmFramerTester tester;
+    tester.testPackedCopyFraming();
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

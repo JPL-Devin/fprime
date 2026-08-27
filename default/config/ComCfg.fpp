@@ -16,6 +16,17 @@ module ComCfg {
     @ Upper Bound on Fixed size of CCSDS AOS frames
     constant AosMaxFrameFixedSize = 1536
 
+    @ Compile-time upper bound on any fixed transfer frame size in the deployment.
+    @ Sizes member buffer pools in components that assemble frames in place (e.g. SppZonePacker)
+    constant MaxTransferFrameSize = 1536
+
+    @ Enables the legacy one-packet-per-frame TmFramer path (1 = enabled, 0 = disabled).
+    @ When enabled, TmFrameFixedSize must be large enough to hold the largest packet plus
+    @ idle-fill overhead (enforced by static assertions in TmFramer). Packer-only
+    @ deployments (Svc.Ccsds.SppZonePacker upstream) may set 0 to decouple the frame size
+    @ from the largest packet size
+    constant TmFramerLegacyPathEnabled = 1
+
     @ Aggregation buffer for ComAggregator component
     constant AggregationSize = TmFrameFixedSize - 6 - 6 - 1 - 2  # 2 header (6) + 1 idle byte + 2 trailer bytes
 
@@ -47,6 +58,15 @@ module ComCfg {
     @ Reserved SA index sentinel meaning "unset"; SA index 0xFFFF cannot be selected via context
     constant SaIndexUnset = 0xFFFF
 
+    @ Canonical First Header Pointer values carried in FrameContext.firstHeaderPointer.
+    @ A packer component (e.g. Svc.Ccsds.SppZonePacker) sets a byte offset or one of these
+    @ sentinels; the downstream frame-layer framer maps them to its protocol wire encoding
+    module FhpValues {
+        constant FHP_UNSET           = 0xFFFF  @< No packer in the chain: framer keeps its legacy behavior
+        constant FHP_NO_PACKET_START = 0xFFFE  @< No packet starts in this data zone (continuation only)
+        constant FHP_IDLE_DATA_ONLY  = 0xFFFD  @< Data zone contains only idle data (reserved for OID frames)
+    }
+
     @ Type used to pass context info between components during framing/deframing
     struct FrameContext {
         comQueueIndex: FwIndexType  @< Queue Index used by the ComQueue, other components shall not modify
@@ -58,6 +78,8 @@ module ComCfg {
         pvn: Pvn                    @< Packet Version Number - used for AOS deframing to identify packet type
         sendNow: bool               @< Flag to AOS Framer that the Frame this packet goes into should be sent ASAP
         saIndex: U16                @< Security Association Index - set by SDLS deframers, read by SDLS framers
+        firstHeaderPointer: U16     @< Canonical First Header Pointer from a packer; FhpValues.FHP_UNSET when absent
+        zeroCopyFrame: bool         @< Buffer carries headroom/trailer reserve for in-place framing
     } default {
         comQueueIndex = 0
         apid = Apid.FW_PACKET_UNKNOWN
@@ -68,6 +90,8 @@ module ComCfg {
         pvn = Pvn.INVALID_UNINITIALIZED
         sendNow = false
         saIndex = SaIndexUnset
+        firstHeaderPointer = FhpValues.FHP_UNSET
+        zeroCopyFrame = false
     }
 
 }

@@ -28,11 +28,15 @@ class TmFramer final : public TmFramerComponentBase {
     static constexpr FwSizeType SppOverhead = (2 * SpacePacketHeader::SERIALIZED_SIZE) + 1;
 
     // These are to ensure the frame can hold the packet buffer, its SP header and an idle packet of 1 byte
-    // This is because TM specifies a frame to be padded with an idle packet of at least 1 byte of idle data
-    static_assert(TmPayloadCapacity >= FW_COM_BUFFER_MAX_SIZE + SppOverhead,
+    // This is because TM specifies a frame to be padded with an idle packet of at least 1 byte of idle data.
+    // They only constrain the legacy one-packet-per-frame path: packer-driven deployments
+    // (Svc.Ccsds.SppZonePacker upstream) may disable them via ComCfg.TmFramerLegacyPathEnabled
+    static_assert((ComCfg::TmFramerLegacyPathEnabled == 0) ||
+                      (TmPayloadCapacity >= FW_COM_BUFFER_MAX_SIZE + SppOverhead),
                   "TM Frame Fixed Size must be at least large enough to hold Tm Header + Footer, a full com buffer, 2 "
                   "SP headers, and 1 idle byte");
-    static_assert(TmPayloadCapacity >= FW_FILE_BUFFER_MAX_SIZE + SppOverhead,
+    static_assert((ComCfg::TmFramerLegacyPathEnabled == 0) ||
+                      (TmPayloadCapacity >= FW_FILE_BUFFER_MAX_SIZE + SppOverhead),
                   "TM Frame Fixed Size must be at least large enough to hold Tm Header + Footer, a full file buffer, 2 "
                   "SP headers, and 1 idle byte");
 
@@ -94,6 +98,24 @@ class TmFramer final : public TmFramerComponentBase {
     //! start_index index of the frame buffer, and fills it up to the end minus CRC
     void fill_with_idle_packet(Fw::SerialBufferBase& serializer);
 
+    //! Build the TM primary header for the next frame with the given wire First Header Pointer
+    TMHeader build_header(const ComCfg::FrameContext& context, U16 wireFhp);
+
+    //! Map a canonical FrameContext First Header Pointer to the 11-bit TM wire encoding
+    static U16 map_fhp(U16 canonicalFhp);
+
+    //! Legacy path: wrap a single whole packet into the member frame buffer with idle fill
+    void frame_legacy(Fw::Buffer& data, const ComCfg::FrameContext& context);
+
+    //! Zero-copy packer path: frame in place around the received data zone
+    void frame_zero_copy(Fw::Buffer& data, const ComCfg::FrameContext& context);
+
+    //! Copy packer path: wrap an exactly-sized data zone into the member frame buffer
+    void frame_packed_copy(Fw::Buffer& data, const ComCfg::FrameContext& context);
+
+    //! Compute the FECF over the frame and serialize it into the trailer position
+    static void inject_fecf(Fw::Buffer& frameBuffer);
+
     // ----------------------------------------------------------------------
     // Members
     // ----------------------------------------------------------------------
@@ -102,6 +124,7 @@ class TmFramer final : public TmFramerComponentBase {
     // ComInterface at a time, we can use a member fixed-size buffer to hold the frame data
     U8 m_frameBuffer[ComCfg::TmFrameFixedSize];                        //!< Buffer to hold the frame data
     BufferOwnershipState m_bufferState = BufferOwnershipState::OWNED;  //!< whether m_frameBuffer is owned by TmFramer
+    bool m_zeroCopyInFlight = false;  //!< an upstream-owned zero-copy frame is held downstream
 
     // Current implementation uses a single virtual channel, so we can use a single virtual frame count
     U8 m_masterFrameCount;   //!< Master Frame Count - 8 bits - wraps around at 255

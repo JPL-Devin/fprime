@@ -145,6 +145,11 @@ module Ccsds {
         constant spacecraftIdOffset = 4
         constant virtualChannelIdOffset = 1
         constant segLengthOffset = 11
+        # First Header Pointer: 11 least significant bits of dataFieldStatus
+        # Per CCSDS 132.0-B-3 Section 4.1.3.5
+        constant firstHeaderPtrMask = 0x07FF      @< 0b0000011111111111 - bits [10:0]
+        constant FHP_NO_PACKET_START = 0x07FF     @< No packet starts in this frame (4.1.3.5.4)
+        constant FHP_IDLE_DATA_ONLY = 0x07FE      @< Frame contains only idle data (4.1.3.5.5)
     }
 
     # ------------------------------------------------

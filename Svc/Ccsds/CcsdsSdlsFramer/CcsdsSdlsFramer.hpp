@@ -72,6 +72,18 @@ class CcsdsSdlsFramer final : public CcsdsSdlsFramerComponentBase {
 
     //! Send a ready-for-more com status when a frame is dropped
     void sendComStatusOnDrop();
+
+    //! Legacy path: allocate a frame buffer, prepend the SA index, and send
+    void frame_allocate_and_copy(Fw::Buffer& data, const ComCfg::FrameContext& context);
+
+    // ----------------------------------------------------------------------
+    // Members
+    // ----------------------------------------------------------------------
+
+    const U8* m_zeroCopyData = nullptr;        //!< Data pointer of the zone sent for in-place encryption
+    FwSizeType m_zeroCopySize = 0;             //!< Size of the zone sent for in-place encryption
+    const U8* m_zeroCopyBacking = nullptr;     //!< Backing allocation of the zero-copy frame in flight downstream
+    FwSizeType m_zeroCopyBackingCapacity = 0;  //!< Capacity of the above backing allocation
 };
 
 }  // namespace Ccsds
