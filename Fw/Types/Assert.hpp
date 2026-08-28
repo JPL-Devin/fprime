@@ -8,6 +8,37 @@
 // Return all the arguments of the macro, but the first one
 #define FW_ASSERT_NO_FIRST_ARG(ARG_0, ...) __VA_ARGS__
 
+// Define FW_UNREACHABLE to hint to the compiler that a code path is unreachable.
+// Falls back to a no-op on compilers that do not support __builtin_unreachable.
+//
+// Two-tier detection:
+//   1. __has_builtin — the modern check, available in Clang and GCC >= 10.
+//   2. defined(__GNUC__) — catches older GCC (4.5–9) which support the builtin
+//      but lack __has_builtin.  The #ifndef guard ensures only one definition wins.
+#ifdef __has_builtin
+#if __has_builtin(__builtin_unreachable)
+#define FW_UNREACHABLE() __builtin_unreachable()
+#endif
+#endif
+
+#ifndef FW_UNREACHABLE
+#if defined(__GNUC__)
+#define FW_UNREACHABLE() __builtin_unreachable()
+#else
+#define FW_UNREACHABLE() ((void)0)  // no-op fallback for unknown compilers
+#endif
+#endif
+
+// FW_ASSERT_UNREACHABLE is the hint used inside FW_ASSERT macros.
+// Only active when FW_ASSERTIONS_ALWAYS_ABORT is enabled, because SwAssert
+// can legally return when it is disabled (the default). Using __builtin_unreachable
+// after a call that returns is undefined behavior.
+#if FW_ASSERTIONS_ALWAYS_ABORT
+#define FW_ASSERT_UNREACHABLE() FW_UNREACHABLE()
+#else
+#define FW_ASSERT_UNREACHABLE() ((void)0)
+#endif
+
 #if FW_ASSERT_LEVEL == FW_NO_ASSERT
 // Users may override the NO_ASSERT case should they choose
 #ifndef FW_ASSERT
@@ -23,24 +54,27 @@
 #define FW_ASSERT(...)                     \
     ((FW_ASSERT_FIRST_ARG(__VA_ARGS__, 0)) \
          ? ((void)0)                       \
-         : (Fw::SwAssert(ASSERT_FILE_ID, FW_ASSERT_NO_FIRST_ARG(__VA_ARGS__, __LINE__))))
+         : (Fw::SwAssert(ASSERT_FILE_ID, FW_ASSERT_NO_FIRST_ARG(__VA_ARGS__, __LINE__)), FW_ASSERT_UNREACHABLE()))
 #elif FW_ASSERT_LEVEL == FW_FILEID_ASSERT && !defined ASSERT_FILE_ID
 #define FILE_NAME_ARG U32
-#define FW_ASSERT(...)                     \
-    ((FW_ASSERT_FIRST_ARG(__VA_ARGS__, 0)) \
-         ? ((void)0)                       \
-         : (Fw::SwAssert(static_cast<U32>(0), FW_ASSERT_NO_FIRST_ARG(__VA_ARGS__, __LINE__))))
+#define FW_ASSERT(...)                                                                        \
+    ((FW_ASSERT_FIRST_ARG(__VA_ARGS__, 0))                                                    \
+         ? ((void)0)                                                                          \
+         : (Fw::SwAssert(static_cast<U32>(0), FW_ASSERT_NO_FIRST_ARG(__VA_ARGS__, __LINE__)), \
+            FW_ASSERT_UNREACHABLE()))
 #elif FW_ASSERT_LEVEL == FW_RELATIVE_PATH_ASSERT && defined ASSERT_RELATIVE_PATH
 #define FILE_NAME_ARG const CHAR*
+#define FW_ASSERT(...)                                                                         \
+    ((FW_ASSERT_FIRST_ARG(__VA_ARGS__, 0))                                                     \
+         ? ((void)0)                                                                           \
+         : (Fw::SwAssert(ASSERT_RELATIVE_PATH, FW_ASSERT_NO_FIRST_ARG(__VA_ARGS__, __LINE__)), \
+            FW_ASSERT_UNREACHABLE()))
+#else
+#define FILE_NAME_ARG const CHAR*
 #define FW_ASSERT(...)                     \
     ((FW_ASSERT_FIRST_ARG(__VA_ARGS__, 0)) \
          ? ((void)0)                       \
-         : (Fw::SwAssert(ASSERT_RELATIVE_PATH, FW_ASSERT_NO_FIRST_ARG(__VA_ARGS__, __LINE__))))
-#else
-#define FILE_NAME_ARG const CHAR*
-#define FW_ASSERT(...)                                 \
-    ((FW_ASSERT_FIRST_ARG(__VA_ARGS__, 0)) ? ((void)0) \
-                                           : (Fw::SwAssert(__FILE__, FW_ASSERT_NO_FIRST_ARG(__VA_ARGS__, __LINE__))))
+         : (Fw::SwAssert(__FILE__, FW_ASSERT_NO_FIRST_ARG(__VA_ARGS__, __LINE__)), FW_ASSERT_UNREACHABLE()))
 #endif
 #endif  // if ASSERT is defined
 
