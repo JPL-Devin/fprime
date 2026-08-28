@@ -147,9 +147,15 @@ of component is defined below:
 **Passive component:** has no thread and cannot support asynchronous port invocations nor asynchronous commands. Port
 invocations call into the developer class but execution context is supplied from the invoking component.
 
+> [!IMPORTANT]
+> **Design Rule:** Passive components must not block. Since they execute on the caller's thread, any blocking operation (e.g., waiting on I/O, sleeping) will stall the caller and potentially cause rate group slips or system hangs. Keep passive handlers fast and deterministic.
+
 **Active component:** has a thread of execution as well as a queue. The thread dispatches port calls from the queue
 as on the execution context of the thread. Active components may define use port kinds. **Caution:** Synchronous and
 guarded port invocations still execute in the execution context of the invoker.
+
+> [!IMPORTANT]
+> **Design Rule:** Active components define concurrency domains. Each active component's thread is an independent unit of concurrent execution. Use active components to isolate work that may block or take variable time, keeping it off the caller's thread.
 
 **Queued component:** has no thread but does have a queue. Thus it handles asynchronous commands and port invocations;
 however, the user must implement at least one synchronous port invocation that unloads and handles the messages on the
@@ -227,6 +233,9 @@ topology. Alternate implementations can therefore easily be swapped, for example
 ![Example Topology](../../img/core13.png)
 
 **Figure 13. Example of a topology.**
+
+> [!TIP]
+> **New to F'?** For a quick overview of how these constructs work together at runtime, see the [Execution Model Primer](execution-model.md). To understand which thread runs your code, consult the [Thread-Context Matrix](thread-context.md).
 
 ## Conclusion
 
