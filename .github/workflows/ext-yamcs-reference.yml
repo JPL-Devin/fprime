@@ -70,19 +70,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # Single resolver pass so the fprime-gds pin is honored by fprime-yamcs' own requirement,
-      # and transitive dependencies with a history of breaking releases are bounded explicitly
-      # (websocket-client 1.9.1 crashed on subscription teardown in every run of 2026-08-29..31).
-      - name: "Setup Python environment"
-        run: |
-          pip install --upgrade pip setuptools wheel
-          pip install \
-            "yamcs-client>=1.12.1,<2.0.0" \
-            "websocket-client>=1.8.0,!=1.9.1,<2.0.0" \
-            "fprime-gds==4.2.2a4" \
-            "fprime-xtce>=0.1.3" \
-            "fprime-yamcs>=0.1.4"
-
       # Upgrade GDS to a matching pr-xxxx branch if it exists; never fall back to devel
       - name: "Upgrade fprime-gds to pr-xxxx (if it exists)"
         if: github.event_name == 'pull_request'
