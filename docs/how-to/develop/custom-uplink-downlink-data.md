@@ -33,14 +33,14 @@ The descriptor tells the stack (and the ground system) how to interpret the user
 | `FW_PACKET_FILE` | `[file packet: START/DATA/END/CANCEL]` |
 | `MY_PROJECT_DATA` (custom) | `[project-defined fields]` |
 
-For a custom APID, the user data format is entirely up to the project — the framework only reads the leading descriptor and passes the rest through opaquely.
+For a custom APID, the user data format is entirely up to the project. When using the context-aware `Svc.ComQueue` input ports (see below), the APID travels in the `ComCfg::FrameContext` alongside the buffer and the leading descriptor may be omitted entirely — the framework passes the payload through opaquely. Only the deprecated legacy queue ports read the leading descriptor from the buffer.
 
 When the CCSDS stack is used, each such packet is carried as the payload of a CCSDS Space Packet ([CCSDS 133.0-B-2](https://ccsds.org/Pubs/133x0b2e2.pdf)), whose 6-byte primary header carries the APID and a per-APID sequence count:
 
 ```
 +--------------------------------------+---------------------------------------------+
 | Space Packet Header (6 bytes)        | Packet Data Field                          |
-| (version, type, APID, sequence,      | F´ packet: APID / descriptor + user data   |
+| (version, type, APID, sequence,      | F´ packet or project payload               |
 |  length, and other CCSDS fields)     |                                             |
 +--------------------------------------+---------------------------------------------+
 ```
@@ -78,18 +78,30 @@ Notes:
 
 ### How the framework identifies outgoing data
 
-`Svc.ComQueue` determines the APID of outgoing data by deserializing the first `FwPacketDescriptorType` bytes of each queued buffer and storing the value in the `ComCfg::FrameContext` passed down the framing stack. The `Svc.Ccsds.SpacePacketFramer` then uses `context.apid` to fill the Space Packet header.
+`Svc.ComQueue` stores a `ComCfg::FrameContext` with each queued message and passes it down the framing stack; the `Svc.Ccsds.SpacePacketFramer` uses `context.apid` to fill the Space Packet header. The APID enters that context in one of two ways, depending on which input port the producer uses:
 
-Therefore, a custom downlink producer must serialize its APID at the very start of the data buffer:
+- **Context-aware ports (recommended)** — `comPacketQueueWithContextIn` (`Svc.ComPacketWithContext`) and `bufferQueueWithContextIn` (`Svc.ComDataWithContext`) receive the `FrameContext` directly from the sender. The producer sets the APID in the context, and the data buffer carries only the payload — no leading packet descriptor is required:
 
-```cpp
-Fw::Buffer buffer = /* allocated from a buffer manager */;
-auto serializer = buffer.getSerializer();
-Fw::SerializeStatus status = serializer.serializeFrom(
-    static_cast<FwPacketDescriptorType>(ComCfg::Apid::MY_PROJECT_DATA));
-// ... serialize payload data ...
-this->dataOut_out(0, buffer);
-```
+  ```cpp
+  Fw::Buffer buffer = /* allocated from a buffer manager */;
+  // ... serialize payload data (no descriptor needed) ...
+  ComCfg::FrameContext context;
+  context.set_apid(ComCfg::Apid::MY_PROJECT_DATA);
+  this->dataOut_out(0, buffer, context);
+  ```
+
+- **Legacy ports (deprecated)** — `comPacketQueueIn` (`Fw.Com`) and `bufferQueueIn` (`Fw.BufferSend`) derive the APID by deserializing the first `FwPacketDescriptorType` bytes of each queued buffer. A producer using these ports must serialize its APID at the very start of the data buffer:
+
+  ```cpp
+  Fw::Buffer buffer = /* allocated from a buffer manager */;
+  auto serializer = buffer.getSerializer();
+  Fw::SerializeStatus status = serializer.serializeFrom(
+      static_cast<FwPacketDescriptorType>(ComCfg::Apid::MY_PROJECT_DATA));
+  // ... serialize payload data ...
+  this->dataOut_out(0, buffer);
+  ```
+
+  These ports are deprecated and will be removed in a future release. The standard F´ data types continue to carry their packet descriptor as part of their packet format, which remains valid (the descriptor is simply redundant with the context APID on the context-aware ports).
 
 ### Add a queue input port
 
@@ -102,14 +114,16 @@ constant ComQueueBufferPorts = 2
 
 ### Wire the producer into the topology
 
-Give your producer component an `Fw.BufferSend` output port (and an `Fw.BufferSend` input port to receive buffer ownership back), then connect it to the free `ComQueue` port index. When using the `Svc.ComCcsds` subtopology, the queue's port arrays are exposed as topology ports:
+Give your producer component a `Svc.ComDataWithContext` output port (and an `Fw.BufferSend` input port to receive buffer ownership back), then connect it to the free `ComQueue` port index. When using the `Svc.ComCcsds` subtopology, the queue's port arrays are exposed as topology ports:
 
 ```fpp
 connections MyProjectDownlink {
-    myProducer.dataOut -> ComCcsds.Subtopology.bufferQueueIn[1]
+    myProducer.dataOut -> ComCcsds.Subtopology.bufferQueueWithContextIn[1]
     ComCcsds.Subtopology.bufferReturnOut[1] -> myProducer.dataReturnIn
 }
 ```
+
+A legacy producer with an `Fw.BufferSend` output port connects to `bufferQueueIn[1]` instead; both arrays at the same index feed the same queue.
 
 ### Configure queue depth and priority
 
