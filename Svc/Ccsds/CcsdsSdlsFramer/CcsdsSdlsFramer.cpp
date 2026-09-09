@@ -51,14 +51,33 @@ void CcsdsSdlsFramer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, con
     ComCfg::FrameContext newContext = context;
     newContext.set_saIndex(saIndex);
 
+    if (context.get_zeroCopyFrame()) {
+        // Record the zone identity so the in-place encryption contract can be checked on encryptIn
+        this->m_zeroCopyData = data.getData();
+        this->m_zeroCopySize = data.getSize();
+    } else {
+        this->m_zeroCopyData = nullptr;
+        this->m_zeroCopySize = 0;
+    }
+
     this->encryptOut_out(0, saIndex, data, newContext);
 }
 
 void CcsdsSdlsFramer ::dataReturnIn_handler(FwIndexType portNum,
                                             Fw::Buffer& data,
                                             const ComCfg::FrameContext& context) {
-    // dataReturnIn is the allocated frame buffer coming back from the dataOut port
-    this->bufferDeallocate_out(0, data);
+    // The downstream framer may return the buffer at a different window offset (e.g. advanced
+    // to the frame start), so match against the backing allocation region rather than an exact pointer
+    if ((this->m_zeroCopyBacking != nullptr) && (data.getData() >= this->m_zeroCopyBacking) &&
+        (data.getData() < this->m_zeroCopyBacking + this->m_zeroCopyBackingCapacity)) {
+        // The frame is the upstream-owned zero-copy zone buffer: forward ownership back upstream
+        this->m_zeroCopyBacking = nullptr;
+        this->m_zeroCopyBackingCapacity = 0;
+        this->dataReturnOut_out(0, data, context);
+    } else {
+        // dataReturnIn is a self-allocated frame buffer coming back from the dataOut port
+        this->bufferDeallocate_out(0, data);
+    }
 }
 
 void CcsdsSdlsFramer ::encryptIn_handler(FwIndexType portNum,
@@ -73,6 +92,33 @@ void CcsdsSdlsFramer ::encryptIn_handler(FwIndexType portNum,
         return;
     }
 
+    // In-place zero-copy path: the encryptor returned the same buffer (encrypted in place,
+    // ciphertext length equal to plaintext length) and the buffer carries headroom for the
+    // SA index. Ownership stays with this framer (no encryptReturnOut): the buffer flows
+    // downstream and is returned upstream when the frame comes back on dataReturnIn
+    if (context.get_zeroCopyFrame() && (data.getData() == this->m_zeroCopyData) &&
+        (data.getSize() == this->m_zeroCopySize) && (data.getOffset() >= sizeof(U16))) {
+        data.advance(-static_cast<FwSignedSizeType>(sizeof(U16)));
+        auto frameSerializer = data.getSerializer();
+        Fw::SerializeStatus serializeStatus = frameSerializer.serializeFrom(context.get_saIndex());
+        FW_ASSERT(serializeStatus == Fw::FW_SERIALIZE_OK, serializeStatus);
+
+        // Only one zero-copy zone can be in flight: the packer holds pool ownership until return
+        FW_ASSERT(this->m_zeroCopyBacking == nullptr);
+        this->m_zeroCopyBacking = data.getOriginalData();
+        this->m_zeroCopyBackingCapacity = data.getCapacity();
+        this->m_zeroCopyData = nullptr;
+        this->m_zeroCopySize = 0;
+        this->dataOut_out(0, data, context);
+        return;
+    }
+
+    // The in-place contract could not be met (new/resized buffer or no headroom):
+    // fall back to allocate-and-copy
+    this->frame_allocate_and_copy(data, context);
+}
+
+void CcsdsSdlsFramer ::frame_allocate_and_copy(Fw::Buffer& data, const ComCfg::FrameContext& context) {
     FW_ASSERT(data.getSize() <= std::numeric_limits<Fw::Buffer::SizeType>::max() - sizeof(U16),
               static_cast<FwAssertArgType>(data.getSize()));
     const Fw::Buffer::SizeType frameSize = static_cast<Fw::Buffer::SizeType>(data.getSize() + sizeof(U16));
@@ -99,9 +145,13 @@ void CcsdsSdlsFramer ::encryptIn_handler(FwIndexType portNum,
     // Trim to actual frame size in case the allocator returned a larger buffer
     frameBuffer.setSize(frameSize);
 
+    // The allocated frame carries no headroom/trailer reserve: downstream must copy
+    ComCfg::FrameContext frameContext = context;
+    frameContext.set_zeroCopyFrame(false);
+
     // Return ownership of the encrypted data buffer to the encryption helper, then send the frame
     this->encryptReturnOut_out(0, data, context);
-    this->dataOut_out(0, frameBuffer, context);
+    this->dataOut_out(0, frameBuffer, frameContext);
 }
 
 // ----------------------------------------------------------------------

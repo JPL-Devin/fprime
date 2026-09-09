@@ -27,6 +27,7 @@ register_fprime_ut(
         "${CMAKE_CURRENT_LIST_DIR}/test/ut/CcsdsSdlsFramerTester.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/test/ut/Rules/Frame.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/test/ut/Rules/DataFlow.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/test/ut/Rules/ZeroCopy.cpp"
     DEPENDS
         STest # For rules-based testing
     UT_AUTO_HELPERS

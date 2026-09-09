@@ -10,6 +10,14 @@ The `Svc::Ccsds::TmFramer` is designed to work in the common F Prime telemetry s
 
 The TM protocol specifies a fixed frame size. This can be configured in the `config/ComCfg.fpp` file.
 
+The TmFramer selects one of three framing paths based on the received `FrameContext`:
+
+1. **Legacy (default)**: when `context.firstHeaderPointer` is `ComCfg.FhpValues.FHP_UNSET`, one whole packet is wrapped per frame at offset 0 (FHP = 0) with idle fill, as described below. This path can be disabled (and its packet-size static assertions with it) via `ComCfg.TmFramerLegacyPathEnabled` in packer-only deployments.
+2. **Zero-copy packer path**: when a [`Svc::Ccsds::SppZonePacker`](../../SppZonePacker/docs/sdd.md) upstream provides an exactly payload-sized data zone with `context.zeroCopyFrame` set, the TmFramer writes the TM primary header into the buffer headroom and the FECF into the trailer reserve, in place, and holds the upstream buffer until the frame returns on `dataReturnIn` (the return is then forwarded upstream).
+3. **Packed-copy path**: an exactly payload-sized zone without reserves (e.g. after the SDLS allocate-and-copy fallback) is copied into the member frame buffer.
+
+On the packer paths the canonical `context.firstHeaderPointer` is mapped to the 11-bit TM wire encoding: byte offsets pass through, `FHP_NO_PACKET_START` maps to `0x7FF` and `FHP_IDLE_DATA_ONLY` to `0x7FE` (CCSDS 132.0-B-3 4.1.2.7.6). Ground systems must then perform FHP-aware packet reassembly.
+
 The `Svc::Ccsds::TmFramer` uses an internal (member) buffer to hold the fixed size frame. The buffer **must** be returned to the TmFramer via the `dataReturnIn` port once it has been used or consumed. When the buffer returns to the TmFramer it will reuse the buffer for the next frame. Should a component want to use the frame data past the time it is returned to the TmFramer, data should be copied before the original buffer is returned to the TmFramer via the `dataReturnIn` port. 
 
 ## Usage Examples
@@ -32,7 +40,7 @@ For each frame generated, the `Svc::Ccsds::TmFramer` will populate the CCSDS TM 
 | Synchronization Flag | 0 | 0 as Packets are inserted |
 | Packet Order Flag | 0 | As per protocol 4.1.2.7.4 |
 | Segment Length Identifier | 0b11 | As per protocol 4.1.2.7.5 |
-| First Header Pointer | 0 | F Prime packets are limited in length and always sent in a single frame, aligned to the start of the frame. |
+| First Header Pointer | 0, or mapped from `context.firstHeaderPointer` | 0 on the legacy path (one whole packet per frame at offset 0); on packer paths, the canonical context value mapped to the 11-bit wire encoding. |
 
 ## Port Descriptions
 
@@ -63,3 +71,5 @@ For each frame generated, the `Svc::Ccsds::TmFramer` will populate the CCSDS TM 
 | SVC-Ccsds-TM-FRAMER-011 | The TmFramer shall use the Virtual Channel Identifier passed in the `context` object on `dataIn`. | Unit Test |
 | SVC-Ccsds-TM-FRAMER-012 | The TmFramer shall manage Master Channel Frame Count and Virtual Channel Frame Count. | Unit Test |
 | SVC-Ccsds-TM-FRAMER-013 | The TmFramer shall fill the data field of the TM Transfer Frame with the payload data received on `dataIn`, and fill up the rest of the fixed-size frame with a single Idle Packet as defined by the protocol. | Unit Test |
+| SVC-Ccsds-TM-FRAMER-014 | The TmFramer shall write the First Header Pointer from `context.firstHeaderPointer`, mapping canonical sentinels to the TM wire encoding, when a packer provides the data zone. | Unit Test |
+| SVC-Ccsds-TM-FRAMER-015 | The TmFramer shall frame zero-copy data zones in place using the buffer headroom and trailer reserve, and forward the frame return to the upstream owner. | Unit Test |

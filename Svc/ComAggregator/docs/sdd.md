@@ -5,6 +5,9 @@ Aggregates buffers in the downlink chain. This is for use with systems that have
 > [!CAUTION]
 > `Svc::ComAggregator` does not preserve context.
 
+> [!NOTE]
+> `Svc::ComAggregator` concatenates whole buffers and never splits one, so fixed-size frames may still require idle padding. In CCSDS fixed-frame stacks (TM, AOS, fixed-length USLP) the [`Svc::Ccsds::SppZonePacker`](../../Ccsds/SppZonePacker/docs/sdd.md) supersedes it: it additionally splits Space Packets across frames using the First Header Pointer. `Svc::ComAggregator` remains for generic, non-CCSDS aggregation.
+
 ## Requirements
 
 | ID                    | Description                                                                                                                                                   | Verification |

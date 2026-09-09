@@ -105,6 +105,10 @@ class CcsdsSdlsFramerTester : public CcsdsSdlsFramerGTestBase {
     FW_RBT_DEFINE_RULE(CcsdsSdlsFramerTester, DataFlow, DataReturn);
     FW_RBT_DEFINE_RULE(CcsdsSdlsFramerTester, DataFlow, BufferReturn);
     FW_RBT_DEFINE_RULE(CcsdsSdlsFramerTester, DataFlow, ComStatus);
+
+    //! Rules for the zero-copy zone path (in-place encryption and fallback)
+    FW_RBT_DEFINE_RULE(CcsdsSdlsFramerTester, ZeroCopy, InPlace);
+    FW_RBT_DEFINE_RULE(CcsdsSdlsFramerTester, ZeroCopy, Fallback);
 };
 
 }  // namespace Ccsds
