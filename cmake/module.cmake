@@ -57,8 +57,12 @@ endfunction()
 # Function `fprime__process_module_setup`:
 #
 # This function is used to process the module setup. It takes a list of arguments and sorts them into
-# SOURCES, HEADERS, and DEPENDS. It also sets the module name based on the first argument or the
-# FPRIME_CURRENT_MODULE variable. If neither is provided, it will throw an error.
+# SOURCES, HEADERS, and DEPENDS using `cmake_parse_arguments`. It also sets the module name based on the
+# first argument or the FPRIME_CURRENT_MODULE variable. If neither is provided, it will throw an error.
+#
+# Control directives fall into three categories: flags taking no arguments (e.g. INTERFACE, BASE_CONFIG),
+# single-value directives (IMPLEMENTS, TESTED_MODULE), and list directives (everything else). Each
+# directive may be supplied at most once.
 #
 # It handles the backwards compatibility with the old structure where users set SOURCE_FILES, MOD_DEPS,
 # etc. variables.
@@ -74,12 +78,12 @@ function(fprime__process_module_setup FPRIME_MODULE_TYPE ADDITIONAL_CONTROL_SETS
     list(LENGTH INPUT_ARGUMENTS INPUT_COUNT)
 
     # List of control words, file-based control words, and CMAKE control words from (add_library and add_executable)
-    set(FPRIME_CONTROL_SETS)
     set(CONTROL_SETS ${FPRIME__INTERNAL_BASE_CONTROL_SETS} ${ADDITIONAL_CONTROL_SETS})
     set(FILE_CONTROL_SETS "HEADERS" "SOURCES" "AUTOCODER_INPUTS" "LINK_DEPENDS")
     set(FPRIME_CMAKE_ADD_OPTIONS "WIN32" "MACOSX_BUNDLE" "OBJECT" "INTERFACE" "IMPORTED" "ALIAS" "GLOBAL"
         "STATIC" "SHARED" "MODULE" "EXCLUDE_FROM_ALL")
     set(FPRIME_FLAG_CONTROL_SETS ${FPRIME_CMAKE_ADD_OPTIONS} "BASE_CONFIG" "UT_AUTO_HELPERS" "INCLUDE_GTEST")
+    set(FPRIME_SINGLE_VALUE_CONTROL_SETS "IMPLEMENTS" "TESTED_MODULE")
     # Set module name as passed in, then defaulting to FPRIME_CURRENT_MODULE
     if (${INPUT_COUNT} GREATER 0 AND NOT FIRST_ARGUMENT IN_LIST CONTROL_SETS)
         list(POP_FRONT INPUT_ARGUMENTS MODULE_NAME)
@@ -137,46 +141,9 @@ function(fprime__process_module_setup FPRIME_MODULE_TYPE ADDITIONAL_CONTROL_SETS
     elseif (DEFINED UT_AUTO_HELPERS)
         fprime_cmake_fatal_error("Cannot both set UT_AUTO_HELPERS and supply use new-style register_fprime_ut")
     else()
-        # Unset all the control lists so the module can track what controls were passed in along with their arguments
-        # allowing signal control sets that do not take arguments.
-        foreach(CONTROL_SET IN LISTS CONTROL_SETS)
-            unset("${CONTROL_SET}")
-        endforeach()
-    endif()
-    unset(CURRENT_LIST_NAME)
-    # Process all arguments and fill in the module sources
-    foreach (ARGUMENT IN LISTS INPUT_ARGUMENTS)
-        # EXISTS only defined for resolved absolute paths
-        set(RESOLVED_ARGUMENT "${ARGUMENT}")
-        resolve_path_variables(RESOLVED_ARGUMENT)
-        # If the argument is one of our control tokens, and the list is already defined, this means the user has specified
-        # the argument twice. This is likely an error.
-        if (ARGUMENT IN_LIST CONTROL_SETS AND DEFINED "${ARGUMENT}")
-            fprime_cmake_fatal_error("${ARGUMENT} supplied multiple times in call to register_fprime_module")
-        # Now update the current list and define the backing store for it. This will allow us to capture arguments
-        # between this and other control words.
-        elseif(ARGUMENT IN_LIST CONTROL_SETS)
-            # Check for control words that are zero-argument (flags) and set them to true
-            if (DEFINED CURRENT_LIST_NAME AND CURRENT_LIST_NAME IN_LIST FPRIME_FLAG_CONTROL_SETS AND NOT DEFINED "LIST_${CURRENT_LIST_NAME}")
-                set("LIST_${CURRENT_LIST_NAME}" TRUE)
-            endif()
-            set(CURRENT_LIST_NAME "${ARGUMENT}")
-            set("LIST_${CURRENT_LIST_NAME}")
-        # Check that file types' files exist
-        elseif(DEFINED CURRENT_LIST_NAME AND CURRENT_LIST_NAME IN_LIST FILE_CONTROL_SETS AND NOT EXISTS "${RESOLVED_ARGUMENT}")
-            fprime_cmake_fatal_error("${ARGUMENT} does not exist but was specified as a ${CURRENT_LIST_NAME}")
-        # Add in an element to the active control list
-        elseif(DEFINED CURRENT_LIST_NAME)
-            list(APPEND "LIST_${CURRENT_LIST_NAME}" "${ARGUMENT}")
-        # Handle arguments supplied before any control word
-        else()
-            string(REPLACE ";" " " CONTROL_SETS_STRING "${CONTROL_SETS}")
-            fprime_cmake_fatal_error("One of ${CONTROL_SETS_STRING} must be specified before list elements: ${ARGUMENT}")
-        endif()
-    endforeach()
-    # Check for control words that are zero-argument (flags) and set them to true
-    if (DEFINED CURRENT_LIST_NAME AND CURRENT_LIST_NAME IN_LIST FPRIME_FLAG_CONTROL_SETS AND NOT DEFINED "LIST_${CURRENT_LIST_NAME}")
-        set("LIST_${CURRENT_LIST_NAME}" TRUE)
+        fprime__internal_parse_control_sets("${CONTROL_SETS}" "${FPRIME_FLAG_CONTROL_SETS}"
+                                            "${FPRIME_SINGLE_VALUE_CONTROL_SETS}" "${FILE_CONTROL_SETS}"
+                                            ${INPUT_ARGUMENTS})
     endif()
     # Update caller scope with the new variables
     set(INTERNAL_CMAKE_ADD_OPTIONS)
@@ -187,7 +154,7 @@ function(fprime__process_module_setup FPRIME_MODULE_TYPE ADDITIONAL_CONTROL_SETS
             list(APPEND INTERNAL_CMAKE_ADD_OPTIONS "${CONTROL_SET}")
         # Otherwise define listed argument in parent scope only when they were defined within this file. This will
         # unused control words to be undefined lists in parent scope distinguishing them from empty words.
-        elseif (DEFINED "LIST_${CONTROL_SET}")
+        elseif (DEFINED "LIST_${CONTROL_SET}" AND NOT CONTROL_SET IN_LIST FPRIME_CMAKE_ADD_OPTIONS)
             # FPP, Python, and other non-native (virtualized) tooling deal in absolute resolved paths. This is a
             # function of how the virtual machines underpinning these technologies work.
             #
@@ -200,6 +167,73 @@ function(fprime__process_module_setup FPRIME_MODULE_TYPE ADDITIONAL_CONTROL_SETS
     # Set rolled-up CMAKE_ADD_OPTIONS
     set(INTERNAL_CMAKE_ADD_OPTIONS "${INTERNAL_CMAKE_ADD_OPTIONS}" PARENT_SCOPE)
     clear_historical_variables(PARENT_SCOPE)
+endfunction()
+
+####
+# Function `fprime__internal_parse_control_sets`:
+#
+# Parses the new-style `register_fprime_*` arguments with `cmake_parse_arguments`, setting `LIST_<DIRECTIVE>`
+# in the caller's scope for each directive supplied. Flags are set to TRUE/FALSE, single-value directives
+# to their value, and list directives to their (path-resolved) list of arguments. Directives not supplied
+# are left undefined. Fatal errors are raised for: a directive supplied more than once, arguments not
+# preceded by a directive, and file directives naming files that do not exist.
+#
+# - **CONTROL_SETS**: all directives accepted by this call
+# - **FLAG_CONTROL_SETS**: directives taking no arguments
+# - **SINGLE_VALUE_CONTROL_SETS**: directives taking exactly one argument
+# - **FILE_CONTROL_SETS**: list directives whose arguments must be existing files
+# - **ARGN**: arguments to parse (module name already removed)
+####
+function(fprime__internal_parse_control_sets CONTROL_SETS FLAG_CONTROL_SETS SINGLE_VALUE_CONTROL_SETS FILE_CONTROL_SETS)
+    string(REPLACE ";" " " CONTROL_SETS_STRING "${CONTROL_SETS}")
+    # Sort the directives into the categories understood by cmake_parse_arguments
+    set(OPTION_KEYWORDS)
+    set(ONE_VALUE_KEYWORDS)
+    set(MULTI_VALUE_KEYWORDS)
+    foreach(CONTROL_SET IN LISTS CONTROL_SETS)
+        if (CONTROL_SET IN_LIST FLAG_CONTROL_SETS)
+            list(APPEND OPTION_KEYWORDS "${CONTROL_SET}")
+        elseif (CONTROL_SET IN_LIST SINGLE_VALUE_CONTROL_SETS)
+            list(APPEND ONE_VALUE_KEYWORDS "${CONTROL_SET}")
+        else()
+            list(APPEND MULTI_VALUE_KEYWORDS "${CONTROL_SET}")
+        endif()
+    endforeach()
+    # cmake_parse_arguments accumulates repeated directives; F Prime requires each be supplied at most once
+    set(SEEN_CONTROL_SETS)
+    foreach(ARGUMENT IN LISTS ARGN)
+        if (ARGUMENT IN_LIST SEEN_CONTROL_SETS)
+            fprime_cmake_fatal_error("${ARGUMENT} supplied multiple times in call to register_fprime_*")
+        elseif (ARGUMENT IN_LIST CONTROL_SETS)
+            list(APPEND SEEN_CONTROL_SETS "${ARGUMENT}")
+        endif()
+    endforeach()
+    cmake_parse_arguments(LIST "${OPTION_KEYWORDS}" "${ONE_VALUE_KEYWORDS}" "${MULTI_VALUE_KEYWORDS}" ${ARGN})
+    if (DEFINED LIST_UNPARSED_ARGUMENTS)
+        string(REPLACE ";" " " UNPARSED_STRING "${LIST_UNPARSED_ARGUMENTS}")
+        fprime_cmake_fatal_error("One of ${CONTROL_SETS_STRING} must be specified before list elements: ${UNPARSED_STRING}")
+    endif()
+    foreach(CONTROL_SET IN LISTS LIST_KEYWORDS_MISSING_VALUES)
+        if (CONTROL_SET IN_LIST SINGLE_VALUE_CONTROL_SETS)
+            fprime_cmake_fatal_error("Must supply exactly 1 argument to the ${CONTROL_SET} directive")
+        endif()
+    endforeach()
+    # Check that files supplied to file directives exist. EXISTS is only defined for resolved absolute paths.
+    foreach(FILE_CONTROL_SET IN LISTS FILE_CONTROL_SETS)
+        foreach(ARGUMENT IN LISTS LIST_${FILE_CONTROL_SET})
+            set(RESOLVED_ARGUMENT "${ARGUMENT}")
+            resolve_path_variables(RESOLVED_ARGUMENT)
+            if (NOT EXISTS "${RESOLVED_ARGUMENT}")
+                fprime_cmake_fatal_error("${ARGUMENT} does not exist but was specified as a ${FILE_CONTROL_SET}")
+            endif()
+        endforeach()
+    endforeach()
+    # Pass the parsed directives back to the caller
+    foreach(CONTROL_SET IN LISTS CONTROL_SETS)
+        if (DEFINED "LIST_${CONTROL_SET}")
+            set("LIST_${CONTROL_SET}" "${LIST_${CONTROL_SET}}" PARENT_SCOPE)
+        endif()
+    endforeach()
 endfunction()
 
 ####

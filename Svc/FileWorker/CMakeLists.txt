@@ -32,8 +32,6 @@ register_fprime_ut(
   DEPENDS
     STest
   UT_AUTO_HELPERS
-  WORKING_DIRECTORY
-    "${CMAKE_CURRENT_LIST_DIR}"
 )
 
 # FileTester is a test dependency and only supported on Posix platforms, therefore:
@@ -56,8 +54,6 @@ if (BUILD_TESTING AND NOT __FPRIME_NO_UT_GEN__)
         DEPENDS
           STest
         UT_AUTO_HELPERS
-        WORKING_DIRECTORY
-          "${CMAKE_CURRENT_LIST_DIR}"
       )
     else()
       # Only print message if we're in BUILD_TESTING *and* FileTester isn't available

@@ -711,10 +711,8 @@ function(register_fprime_implementation)
 
     #### Special implementation handling ####
 
-    # Validate the number of implementations passed to "IMPLEMENTS"
-    list(LENGTH INTERNAL_IMPLEMENTS INTERNAL_IMPLEMENTS_LENGTH)
-    if (NOT INTERNAL_IMPLEMENTS_LENGTH EQUAL 1 OR "${INTERNAL_IMPLEMENTS}" STREQUAL "TRUE")
-        fprime_cmake_fatal_error("Must supply exactly 1 argument to the IMPLEMENTS directive")
+    if (NOT DEFINED INTERNAL_IMPLEMENTS)
+        fprime_cmake_fatal_error("Must supply the IMPLEMENTS directive to register_fprime_implementation")
     endif()
     # Check implementation properties still in-sync before setting the target-driven equivalents
     get_property(OLD_IMPLEMENTS GLOBAL PROPERTY FPRIME_${INTERNAL_MODULE_NAME}_IMPLEMENTS)
