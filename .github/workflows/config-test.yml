@@ -1,12 +1,10 @@
-# Verify that F' builds and passes unit tests under the "minimal" configuration
-# profile from ci/config-profiles.json.  The remainder of the profile matrix
-# runs in the nightly "Config Test Nightly" workflow.
+# Verify that F' builds and passes unit tests under the "direct-port-calls"
+# configuration profile from ci/config-profiles.json.  The remainder of the
+# profile matrix runs in the nightly "Config Test Nightly" workflow.
 
 name: "Config Test"
 
 on:
-  schedule:
-    - cron: "0 21 * * *"  # Nightly at 2:00 PM US/Pacific (PDT)
   push:
     branches: [ release/** ]
   pull_request:
@@ -27,13 +25,14 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Generate the build matrix from ci/config-profiles.json (minimal profile only)
+  # Generate the build matrix from ci/config-profiles.json (one profile only)
   # ---------------------------------------------------------------------------
   generate-matrix:
     runs-on: ubuntu-22.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
-      empty: ${{ steps.set-matrix.outputs.empty }}
+    env:
+      PROFILE: "direct-port-calls"
     steps:
       - name: "Checkout repository"
         uses: actions/checkout@v4
@@ -45,9 +44,12 @@ jobs:
         id: set-matrix
         shell: bash
         run: |
-          MATRIX=$(cat ci/config-profiles.json | jq -c '[.[] | select(.disabled != true) | select(.name == "minimal")]')
+          MATRIX=$(jq -c --arg name "$PROFILE" '[.[] | select(.disabled != true) | select(.name == $name)]' ci/config-profiles.json)
+          if [ "$(echo "$MATRIX" | jq -r 'length')" -eq 0 ]; then
+            echo "::error::config profile '$PROFILE' is missing or disabled in ci/config-profiles.json"
+            exit 1
+          fi
           echo "matrix={\"include\":$MATRIX}" >> "$GITHUB_OUTPUT"
-          echo "empty=$(echo "$MATRIX" | jq -r 'length == 0')" >> "$GITHUB_OUTPUT"
 
   # ---------------------------------------------------------------------------
   # Build framework + Ref with each config profile
@@ -55,7 +57,6 @@ jobs:
   config-build:
     name: "Build [${{ matrix.name }}]"
     needs: generate-matrix
-    if: needs.generate-matrix.outputs.empty != 'true'
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
@@ -95,7 +96,6 @@ jobs:
   config-ut:
     name: "UTs [${{ matrix.name }}]"
     needs: generate-matrix
-    if: needs.generate-matrix.outputs.empty != 'true'
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}

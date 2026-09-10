@@ -3,7 +3,7 @@
 # of -D compile-definition overrides applied via generate-args.
 #
 # This workflow runs the full profile matrix nightly.  Pull requests run only
-# the "minimal" profile via the "Config Test" workflow.
+# the "direct-port-calls" profile via the "Config Test" workflow.
 
 name: "Config Test Nightly"
 
@@ -66,6 +66,10 @@ jobs:
             MATRIX=$(echo "$ALL_PROFILES" | jq -c \
               --arg sel "$SELECTED" \
               '[.[] | select(.name as $n | ($sel | split(",") | map(gsub("^ +| +$";"")) | index($n)))]')
+          fi
+          if [ "$(echo "$MATRIX" | jq -r 'length')" -eq 0 ]; then
+            echo "::error::no enabled config profile matches '$SELECTED' in ci/config-profiles.json"
+            exit 1
           fi
           echo "matrix={\"include\":$(echo "$MATRIX" | jq -c .)}" >> "$GITHUB_OUTPUT"
 
