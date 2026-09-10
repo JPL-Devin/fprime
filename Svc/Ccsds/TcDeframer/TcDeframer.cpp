@@ -115,7 +115,7 @@ void TcDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, const Co
     // Shrink size to that of the encapsulated data field ( header | data | trailer )
     data.setSize(total_frame_length - TCHeader::SERIALIZED_SIZE - TCTrailer::SERIALIZED_SIZE);
 
-    // Propagate the received VCID so downstream components (e.g. a router) can dispatch on it
+    // Carry the VC on in the context
     ComCfg::FrameContext contextCopy = context;
     contextCopy.set_vcId(vc_id);
 

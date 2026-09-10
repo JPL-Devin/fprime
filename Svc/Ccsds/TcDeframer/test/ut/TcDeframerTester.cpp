@@ -67,7 +67,9 @@ void TcDeframerTester::testNominalDeframing() {
     for (FwIndexType i = 0; i < payloadLength; i++) {
         ASSERT_EQ(outBuffer.getData()[i], payload[i]);
     }
-    // Output context carries the VCID from the frame header, other fields untouched
+    // The frame's VCID is carried on the emitted context (Svc.Ccsds.AesGcmDecryptor builds its
+    // AAD from this field, so a frame on VC != 0 fails its MAC check if it is not set here);
+    // all other context fields are passed through untouched
     ComCfg::FrameContext expectedContext = nullContext;
     expectedContext.set_vcId(vcId);
     ASSERT_EQ(this->fromPortHistory_dataOut->at(0).context, expectedContext);
