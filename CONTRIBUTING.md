@@ -127,12 +127,12 @@ get the submission moving forward.
 
 ### Automated Checks on Reference Repositories
 
-Some of the above-mentioned automated checks run on reference applications that are not part of the core F´ repository, such as our [tutorial repositories](https://github.com/fprime-community#tutorials). This serves two main purposes: running more tests, and making sure our suite of reference applications and tutorials do not go out-of-date.
-Because of this pattern, users who submit a pull request which introduces breaking changes on _how_ F´ is used in those external repositories will need to submit associated pull requests to introduce a fix on said external repositories.
-
-The checks are configured to run on the `devel` branch of each external repository, but will prioritize the branch `pr-<PR_NUMBER>` if it exists, with `PR_NUMBER` being the number of the pull request that has been opened in nasa/fprime.
-
-Maintainers will gladly help you in this process.
+Some automated checks build reference applications outside the core F´
+repository. See [How F´ CI works](.github/workflows/README.md) for the overlay,
+branch-resolution, tool-version, and local-reproduction details. If a change
+breaks an external repository, create a `pr-<PR_NUMBER>` branch there before
+the F´ check runs; that branch takes priority over the target repository's
+fallback branches.
 
 ### Final Approval and Submission
 
@@ -172,30 +172,52 @@ changes across many files.
 Keep in mind that editors that fix whitespace automatically can cause many small changes. Even with advanced GitHub
 tools this can increase the effort required to review a submission. Be careful with the changes you are submitting.
 
+### Installing the tool suite at `devel`
+
+The [release installation guide](docs/getting-started/installing-fprime.md)
+uses `fprime-bootstrap` and released versions. For development against
+`devel`, install the repository's pre-release pins in a virtual environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -Ur requirements.txt
+git submodule update --init --recursive
+```
+
+Re-run `pip install -Ur requirements.txt` after every `git pull` of `devel`.
+The pins can be pre-releases, and an older local tool suite is a common cause
+of a local result differing from CI. To match a tool branch explicitly:
+
+```bash
+pip install -U "git+https://github.com/nasa/fprime-gds@devel"
+pip install -U "git+https://github.com/fprime-community/fprime-tools@devel"
+```
+
+This is what CI does when a matching `pr-<PR_NUMBER>` branch exists on a tool
+repository. FPP is not installed this way; see
+[Development with modified FPP version](#development-with-modified-fpp-version).
+
+Use `fprime-util version-check --all-submodules` to check synchronization.
+`-DFPRIME_SKIP_TOOLS_VERSION_CHECK=1` is appropriate only while intentionally
+developing a modified FPP/tool version. See [How F´ CI works](.github/workflows/README.md)
+for the CI tool-resolution rules and local commands. For a modified FPP
+installation, use [Development with modified FPP version](#development-with-modified-fpp-version).
+
 ### Run Tests
 
 The automatic checking system will run all our unit tests and integration tests across several systems. However, this
 process will take time. Try to run the unit tests locally during development before submitting a PR and use the
 automatic checks as a safety net.
 
-Building and running the tests has the same Python virtual environment requirements as developing an F´ project, which
-is usually set up by fprime-bootstrap. Steps to set up the environment outside a project are included below.
+Follow [Installing the tool suite at `devel`](#installing-the-tool-suite-at-devel)
+for the Python environment and submodule setup before running these tests.
 
 The tests can be run using the following commands:
 
 ```bash
 # Go into the fprime directory
 cd MY_FPRIME_DIRECTORY
-
-# Set up and activate a Python virtual environment, if none already:
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Make sure Python packages from ./requirements.txt are installed and up-to-date:
-pip install -Ur requirements.txt
-
-# Initialize googletest submodule:
-git submodule update --init --recursive
 
 # Run the static analyzer with the basic configuration
 # Purge unit test directory

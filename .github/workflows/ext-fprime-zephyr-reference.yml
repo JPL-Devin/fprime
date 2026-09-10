@@ -1,3 +1,4 @@
+# See README.md in this directory for external-repository overlays, branch selection, and local reproduction.
 # Cross-compile https://github.com/fprime-community/fprime-zephyr-reference
 #
 # Builds every supported board (Pico 2, Teensy 4.1) as separate steps within a

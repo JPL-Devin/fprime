@@ -1,3 +1,4 @@
+# See README.md in this directory for external-repository overlays, branch selection, and local reproduction.
 # Will return a target branch in the following priority
 # - If the event that triggered this action is a PR and has a matching `pr-<number>` branch on
 # target_repository, then return the name of that branch. 
@@ -5,7 +6,7 @@
 # then return that branch name. (this is useful for example for release/ branches, to have a tracking release branch on the other repo)
 # - Otherwise, return default_target_ref.
 #
-# See the CONTRIBUTING.md for info on why this is used.
+# See README.md in this directory and CONTRIBUTING.md for why this is used.
 
 name: 'Get PR Branch'
 
@@ -57,4 +58,3 @@ jobs:
             echo "PR branch not found, using ${DEFAULT_TARGET_REF}"
           fi
         shell: bash
-
