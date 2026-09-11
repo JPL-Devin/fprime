@@ -146,10 +146,137 @@ jobs:
           working-directory: "TestDeploymentsProject"
           jobs: ${{ github.event.inputs.jobs || matrix.jobs }}
 
+  # Segmented TC uplink (Segment Header / MAP reassembly) coverage. Every build in this job
+  # lives under TestDeploymentsProject (the only project()), so each one gets its own
+  # --build-cache (bc-<name>) and install destination (art-<name>) under the workspace. The
+  # install destination is selected with DESTDIR at build time: fprime-util always passes
+  # FPRIME_INSTALL_DEST from settings.ini, so a -DFPRIME_INSTALL_DEST on the command line is
+  # overridden, whereas cmake/target/fprime_install.cmake honors a caller-provided DESTDIR.
+  ref-segmented:
+    name: "Ref segmented TC [ubuntu-22.04]"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    env:
+      OPENSSL_VERSION: "3.5.1"
+      OPENSSL_SHA256: "529043b15cffa5f36077a4d0af83f3de399807181d607441d734196d889b641f"
+    steps:
+      - name: "Checkout F' Repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          submodules: true
+      - name: "Setup F' Tools"
+        uses: nasa/fprime-actions/setup@devel
+        with:
+          location: ${{ github.workspace }}
+      - name: "Cache OpenSSL 3.5"
+        id: openssl-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/openssl-3.5
+          key: openssl-${{ env.OPENSSL_VERSION }}-ubuntu-22.04
+      - name: "Provision OpenSSL 3.5"
+        if: steps.openssl-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          SRC="$(mktemp -d)"
+          cd "${SRC}"
+          curl -fsSL -o "openssl-${OPENSSL_VERSION}.tar.gz" \
+            "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VERSION}/openssl-${OPENSSL_VERSION}.tar.gz"
+          echo "${OPENSSL_SHA256}  openssl-${OPENSSL_VERSION}.tar.gz" | sha256sum -c -
+          tar xzf "openssl-${OPENSSL_VERSION}.tar.gz"
+          cd "openssl-${OPENSSL_VERSION}"
+          ./Configure --prefix="$HOME/openssl-3.5" --libdir=lib no-tests
+          make -j"$(nproc)"
+          make install_sw
+      # Deliberately NOT exported as OPENSSL_ROOT_DIR: CMake's FindOpenSSL honors that environment
+      # variable, and the default Ref / no-SDLS builds below must not see OpenSSL 3.5.
+      - name: "Export OpenSSL 3.5 location"
+        run: echo "OPENSSL_35_ROOT=$HOME/openssl-3.5" >> "$GITHUB_ENV"
+      # PR 6 insertion point (step 4): "Build Ref segmented" with -DREF_TC_SEGMENTED=ON into
+      # bc-ref-seg / art-ref-seg, once TestDeploymentsProject/Ref/Top/CMakeLists.txt has the option.
+      - name: "Build Ref default"
+        working-directory: TestDeploymentsProject
+        run: |
+          set -euo pipefail
+          fprime-util generate --build-cache "$GITHUB_WORKSPACE/bc-ref-default"
+          DESTDIR="$GITHUB_WORKSPACE/art-ref-default" \
+            fprime-util build --build-cache "$GITHUB_WORKSPACE/bc-ref-default" -j"$(nproc)"
+      - name: "Checkout base commit"
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          filter: blob:none
+          submodules: true
+      - name: "Build Ref default (base commit)"
+        if: github.event_name == 'pull_request'
+        working-directory: base/TestDeploymentsProject
+        run: |
+          set -euo pipefail
+          fprime-util generate --build-cache "$GITHUB_WORKSPACE/bc-ref-base"
+          DESTDIR="$GITHUB_WORKSPACE/art-ref-base" \
+            fprime-util build --build-cache "$GITHUB_WORKSPACE/bc-ref-base" -j"$(nproc)"
+      - name: "Dictionary regression (default Ref vs base)"
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          BASELINE=$(ls "$GITHUB_WORKSPACE"/art-ref-base/*/Ref/dict/RefTopologyDictionary.json)
+          CANDIDATE=$(ls "$GITHUB_WORKSPACE"/art-ref-default/*/Ref/dict/RefTopologyDictionary.json)
+          python3 TestDeploymentsProject/Ref/test/int/check_dictionary_regression.py \
+            --baseline "${BASELINE}" --candidate "${CANDIDATE}"
+      - name: "Build Segmented subtopology deployment (no SDLS)"
+        working-directory: TestDeploymentsProject/SubtopologyBuilds/Segmented
+        run: |
+          set -euo pipefail
+          fprime-util generate --build-cache "$GITHUB_WORKSPACE/bc-seg-nosdls" -DSEGMENTED_SDLS=OFF
+          DESTDIR="$GITHUB_WORKSPACE/art-seg-nosdls" \
+            fprime-util build --build-cache "$GITHUB_WORKSPACE/bc-seg-nosdls" -j"$(nproc)"
+      - name: "Build Segmented subtopology deployment (SDLS, AES-GCM)"
+        working-directory: TestDeploymentsProject/SubtopologyBuilds/Segmented
+        run: |
+          set -euo pipefail
+          fprime-util generate --build-cache "$GITHUB_WORKSPACE/bc-seg-sdls" \
+            -DSEGMENTED_SDLS=ON -DOPENSSL_ROOT_DIR="${OPENSSL_35_ROOT}"
+          # AesGcmDecryptor must actually be registered (the generate above fails on an
+          # undefined Svc.Ccsds.AesGcmDecryptor symbol otherwise); make the check explicit.
+          test -d "$GITHUB_WORKSPACE/bc-seg-sdls/F-Prime/Svc/Ccsds/AesGcmDecryptor"
+          DESTDIR="$GITHUB_WORKSPACE/art-seg-sdls" \
+            fprime-util build --build-cache "$GITHUB_WORKSPACE/bc-seg-sdls" -j"$(nproc)"
+          # Generated topology must configure the key manager and wire decryptor.keyGet to it.
+          AC="$GITHUB_WORKSPACE/bc-seg-sdls/SubtopologyBuilds/Segmented/Top/SegmentedTopologyAc.cpp"
+          grep -q "sdlsKeyManager.configure(" "${AC}"
+          grep -q "decryptor.set_keyGet_OutputPort(" "${AC}"
+          grep -q "sdlsKeyManager.get_keyGet_InputPort(" "${AC}"
+      - name: "Unit tests (Svc/Ccsds with OpenSSL 3.5)"
+        working-directory: Svc/Ccsds
+        run: |
+          set -euo pipefail
+          export LD_LIBRARY_PATH="${OPENSSL_35_ROOT}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          fprime-util generate --ut --build-cache "$GITHUB_WORKSPACE/bc-ut-ccsds" \
+            -DOPENSSL_ROOT_DIR="${OPENSSL_35_ROOT}"
+          test -d "$GITHUB_WORKSPACE/bc-ut-ccsds/F-Prime/Svc/Ccsds/AesGcmDecryptor"
+          fprime-util check --recursive --build-cache "$GITHUB_WORKSPACE/bc-ut-ccsds" -j"$(nproc)"
+      # PR 6 insertion point (steps 10-12): integration tests against the Ref segmented
+      # binary (I1-I13) and against
+      # art-seg-sdls/*/SubtopologyBuilds_Segmented/bin/SubtopologyBuilds_Segmented with --sdls-key-file TestDeploymentsProject/SubtopologyBuilds/Segmented/test/int/sdls_test_key.bin
+      # (I14-I18; run with LD_LIBRARY_PATH=$OPENSSL_35_ROOT/lib). Keep pytest-args/gds-args/binary-args
+      # free of space-containing values.
+      - name: "Archive segmented build artifacts"
+        uses: actions/upload-artifact@v7
+        with:
+          name: ref-segmented-build-artifacts
+          path: |
+            art-seg-nosdls/
+            art-seg-sdls/
+          retention-days: 1
+
   timing-check:
     name: "Timing Check"
     runs-on: ubuntu-latest
-    needs: [build, integration-tests, unit-tests]
+    needs: [build, integration-tests, unit-tests, ref-segmented]
     if: always()
     permissions:
       actions: read
