@@ -194,8 +194,19 @@ jobs:
       # variable, and the default Ref / no-SDLS builds below must not see OpenSSL 3.5.
       - name: "Export OpenSSL 3.5 location"
         run: echo "OPENSSL_35_ROOT=$HOME/openssl-3.5" >> "$GITHUB_ENV"
-      # PR 6 insertion point (step 4): "Build Ref segmented" with -DREF_TC_SEGMENTED=ON into
-      # bc-ref-seg / art-ref-seg, once TestDeploymentsProject/Ref/Top/CMakeLists.txt has the option.
+      - name: "Build Ref segmented (REF_TC_SEGMENTED=ON)"
+        working-directory: TestDeploymentsProject
+        run: |
+          set -euo pipefail
+          fprime-util generate --build-cache "$GITHUB_WORKSPACE/bc-ref-seg" -DREF_TC_SEGMENTED=ON
+          DESTDIR="$GITHUB_WORKSPACE/art-ref-seg" \
+            fprime-util build --build-cache "$GITHUB_WORKSPACE/bc-ref-seg" -j"$(nproc)"
+          # The variant must carry the MAP reassembler and its pool in the dictionary (packetised by
+          # RefPacketsSegmented.fppi) and the scheduler connection of the pool manager.
+          DICT=$(ls "$GITHUB_WORKSPACE"/art-ref-seg/*/Ref/dict/RefTopologyDictionary.json)
+          grep -q '"ComCcsds.tcMapReassembler.PacketsReassembled"' "${DICT}"
+          grep -q '"ComCcsds.tcPacketBufferManager.NoBuffs"' "${DICT}"
+          grep -q "tcPacketBufferManager.get_schedIn_InputPort(" "$GITHUB_WORKSPACE/bc-ref-seg/Ref/Top/RefTopologyAc.cpp"
       - name: "Build Ref default"
         working-directory: TestDeploymentsProject
         run: |
@@ -259,18 +270,60 @@ jobs:
             -DOPENSSL_ROOT_DIR="${OPENSSL_35_ROOT}"
           test -d "$GITHUB_WORKSPACE/bc-ut-ccsds/F-Prime/Svc/Ccsds/AesGcmDecryptor"
           fprime-util check --recursive --build-cache "$GITHUB_WORKSPACE/bc-ut-ccsds" -j"$(nproc)"
-      # PR 6 insertion point (steps 10-12): integration tests against the Ref segmented
-      # binary (I1-I13) and against
-      # art-seg-sdls/*/SubtopologyBuilds_Segmented/bin/SubtopologyBuilds_Segmented with --sdls-key-file TestDeploymentsProject/SubtopologyBuilds/Segmented/test/int/sdls_test_key.bin
-      # (I14-I18; run with LD_LIBRARY_PATH=$OPENSSL_35_ROOT/lib). Keep pytest-args/gds-args/binary-args
-      # free of space-containing values.
+      # Segmented Ref must not carry the reassembler into the default dictionary.
+      - name: "Dictionary check (default Ref has no reassembler)"
+        run: |
+          set -euo pipefail
+          DICT=$(ls "$GITHUB_WORKSPACE"/art-ref-default/*/Ref/dict/RefTopologyDictionary.json)
+          ! grep -q 'tcMapReassembler' "${DICT}"
+      # Integration tests (Svc/Ccsds/TcMapReassembler/test/int) drive the uplink through the tc-segment
+      # framing plugin (Space Packets segmented into Type-BD TC frames with Segment Headers). It is a
+      # selection plugin: loaded with FPRIME_GDS_EXTRA_PLUGINS (module:Class) and enabled with
+      # --framing-selection tc-segment. No value below may contain a space (the action word-splits).
+      - name: "Integration tests: I1-I12 (Ref segmented)"
+        uses: nasa/fprime-actions/run-integration-tests@devel
+        env:
+          PYTHONPATH: ${{ github.workspace }}/Svc/Ccsds/TcMapReassembler/test/int
+          FPRIME_GDS_EXTRA_PLUGINS: tc_segment_plugin.framing:TcSegmentFraming
+        with:
+          gds-working-directory: "TestDeploymentsProject"
+          test-working-directory: "."
+          binary: "${{ github.workspace }}/art-ref-seg/*/Ref/bin/Ref"
+          gds-args: "--dictionary ${{ github.workspace }}/art-ref-seg/*/Ref/dict/RefTopologyDictionary.json --framing-selection tc-segment"
+          pytest-args: "Svc/Ccsds/TcMapReassembler/test/int -m segmented --dictionary ${{ github.workspace }}/art-ref-seg/*/Ref/dict/RefTopologyDictionary.json --deployment-config ${{ github.workspace }}/TestDeploymentsProject/Ref/test/int/int_config.json"
+      - name: "Integration tests: I14-I18 (Segmented, SDLS AES-GCM, SPI 1)"
+        uses: nasa/fprime-actions/run-integration-tests@devel
+        env:
+          LD_LIBRARY_PATH: ${{ env.OPENSSL_35_ROOT }}/lib
+          PYTHONPATH: ${{ github.workspace }}/Svc/Ccsds/TcMapReassembler/test/int
+          FPRIME_GDS_EXTRA_PLUGINS: tc_segment_plugin.framing:TcSegmentFraming
+        with:
+          gds-working-directory: "TestDeploymentsProject"
+          test-working-directory: "."
+          binary: "${{ github.workspace }}/art-seg-sdls/*/SubtopologyBuilds_Segmented/bin/SubtopologyBuilds_Segmented"
+          binary-args: "-a 127.0.0.1 -p 50000 --sdls-key-file ${{ github.workspace }}/TestDeploymentsProject/SubtopologyBuilds/Segmented/test/int/sdls_test_key.bin"
+          gds-args: "--dictionary ${{ github.workspace }}/art-seg-sdls/*/SubtopologyBuilds_Segmented/dict/SegmentedTopologyDictionary.json --framing-selection tc-segment --tc-segment-sdls-key-file ${{ github.workspace }}/TestDeploymentsProject/SubtopologyBuilds/Segmented/test/int/sdls_test_key.bin"
+          pytest-args: "Svc/Ccsds/TcMapReassembler/test/int -m sdls --fsw-stdout-log ${{ github.workspace }}/TestDeploymentsProject/gds-logs/fsw.stdout.log --dictionary ${{ github.workspace }}/art-seg-sdls/*/SubtopologyBuilds_Segmented/dict/SegmentedTopologyDictionary.json --deployment-config ${{ github.workspace }}/TestDeploymentsProject/SubtopologyBuilds/Segmented/test/int/int_config.json"
+      - name: "Integration tests: I13 (feature-off probe, default Ref)"
+        uses: nasa/fprime-actions/run-integration-tests@devel
+        env:
+          PYTHONPATH: ${{ github.workspace }}/Svc/Ccsds/TcMapReassembler/test/int
+          FPRIME_GDS_EXTRA_PLUGINS: tc_segment_plugin.framing:TcSegmentFraming
+        with:
+          gds-working-directory: "TestDeploymentsProject"
+          test-working-directory: "."
+          binary: "${{ github.workspace }}/art-ref-default/*/Ref/bin/Ref"
+          gds-args: "--dictionary ${{ github.workspace }}/art-ref-default/*/Ref/dict/RefTopologyDictionary.json --framing-selection tc-segment"
+          pytest-args: "Svc/Ccsds/TcMapReassembler/test/int -m feature_off --dictionary ${{ github.workspace }}/art-ref-default/*/Ref/dict/RefTopologyDictionary.json --deployment-config ${{ github.workspace }}/TestDeploymentsProject/Ref/test/int/int_config.json"
       - name: "Archive segmented build artifacts"
         uses: actions/upload-artifact@v7
         with:
           name: ref-segmented-build-artifacts
           path: |
+            art-ref-seg/
             art-seg-nosdls/
             art-seg-sdls/
+            TestDeploymentsProject/gds-logs/
           retention-days: 1
 
   timing-check:

@@ -42,5 +42,9 @@
   {
     "name": "no-cmd-residual-check",
     "generate-args": "-DFW_CMD_CHECK_RESIDUAL=0"
+  },
+  {
+    "name": "tc-segmented",
+    "generate-args": "-DREF_TC_SEGMENTED=ON"
   }
 ]
