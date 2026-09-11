@@ -73,41 +73,6 @@ cd fprime/TestDeploymentsProject/build-artifacts/<platform>/bin/
 ./Ref -a 127.0.0.1 -p 50000
 ```
 
-## Segmented TC Uplink Variant
-
-`Ref/Top/topology.fpp` is assembled from `include`d fragments so that the communication stack can be
-swapped without touching the rest of the deployment:
-
-| Fragment | Contents |
-| --- | --- |
-| `RefTopologyDefs.fppi` | Definitions shared by both variants (`Ports_RateGroups`) |
-| `RefTopologyCore.fppi` | Instances and connection graphs of the deployment proper |
-| `RefComStack.fppi` | Default uplink/downlink: `ComCcsds.Subtopology` |
-| `RefComStackSegmented.fppi` | `ComCcsds.SegmentedSubtopology` (CCSDS TC Segment Header / MAP reassembly through `Svc::Ccsds::TcMapReassembler`) plus the rate-group tick of its packet pool |
-| `RefPackets.fppi` / `RefPacketsSegmented.fppi` | Telemetry packet sets of the two variants |
-
-The default build is byte-for-byte the historical `Ref`. The segmented variant (`topologySegmented.fpp`)
-is selected at generate time:
-
-```
-cd fprime/TestDeploymentsProject
-fprime-util generate -DREF_TC_SEGMENTED=ON
-fprime-util build -j"$(nproc)"
-```
-
-The segmented `Ref` expects Type-BD TC frames carrying a Segment Header; the stock GDS framing does not
-produce those. Drive it with the `tc-segment` framing plugin shipped with the reassembler's integration
-tests (see `Svc/Ccsds/TcMapReassembler/test/int/`):
-
-```
-export PYTHONPATH=<fprime>/Svc/Ccsds/TcMapReassembler/test/int
-export FPRIME_GDS_EXTRA_PLUGINS=tc_segment_plugin.framing:TcSegmentFraming
-fprime-gds --framing-selection tc-segment
-```
-
-CI builds and tests this variant in the `ref-segmented` job of `.github/workflows/ref.yml` and in the
-nightly `tc-segmented` configuration profile (`ci/config-profiles.json`).
-
 ## Quick Tips
 
 - The F´ GDS defaults to port 50000. More information can be found with `fprime-gds --help`

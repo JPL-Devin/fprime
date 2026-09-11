@@ -44,9 +44,6 @@ jobs:
       - name: "Run fpp-to-json on Ref topology"
         working-directory: ./TestDeploymentsProject/Ref/Top
         run: |
-          # topologySegmented.fpp is the REF_TC_SEGMENTED=ON alternative of topology.fpp (same
-          # `topology Ref`): only the default deployment topology is analysed here.
-          FPP_FILES="instances.fpp system.fpp topology.fpp"
-          DEPENDENCIES=$(fpp-depend ../../build-fprime-automatic-native/locs.fpp ${FPP_FILES})
-          fpp-to-json ${DEPENDENCIES} ${FPP_FILES}
+          DEPENDENCIES=$(fpp-depend ../../build-fprime-automatic-native/locs.fpp *.fpp)
+          fpp-to-json ${DEPENDENCIES} *.fpp
         shell: bash

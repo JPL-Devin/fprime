@@ -141,18 +141,18 @@ The partial is released by the next authenticated FIRST/UNSEGMENTED (P4), the ne
 
 ## Ground Tooling Requirements
 
-| Requirement | YAMCS | NASA CryptoLib | F´ GDS 4.3.0 | Test plugin |
-|---|---|---|---|---|
-| Segment Header on every Type-BD frame of the VC | yes when configured | `has_segmentation_hdr` | **no** | yes |
-| Flags `11` for one-frame packets | yes, only mode | pass-through | — | yes |
-| `01/00*/10` for spanning packets, no MAP interleaving within a MAP | **no**: rejects packets that do not fit one frame | pass-through | — | yes |
-| MAP ID in the configured set (default 0) | configurable | configurable | — | configurable |
-| One Space Packet per FDU, no fill | yes | — | yes | yes |
-| Packet ≤ `MaxPacketSize` (4096 default) | trivially (one frame) | — | ≤ 1016 | enforced |
-| Portion ≤ 1016 (no SDLS) / 986 (SDLS) | one-frame limit | — | 1016 | yes |
-| SDLS: segment first, ApplySecurity per frame, Security Header after the Segment Header, Segment Header in the AAD | yes | yes | no SDLS | yes |
+| Requirement | YAMCS | NASA CryptoLib | F´ GDS 4.3.0 |
+|---|---|---|---|
+| Segment Header on every Type-BD frame of the VC | yes when configured | `has_segmentation_hdr` | **no** |
+| Flags `11` for one-frame packets | yes, only mode | pass-through | — |
+| `01/00*/10` for spanning packets, no MAP interleaving within a MAP | **no**: rejects packets that do not fit one frame | pass-through | — |
+| MAP ID in the configured set (default 0) | configurable | configurable | — |
+| One Space Packet per FDU, no fill | yes | — | yes |
+| Packet ≤ `MaxPacketSize` (4096 default) | trivially (one frame) | — | ≤ 1016 |
+| Portion ≤ 1016 (no SDLS) / 986 (SDLS) | one-frame limit | — | 1016 |
+| SDLS: segment first, ApplySecurity per frame, Security Header after the Segment Header, Segment Header in the AAD | yes | yes | no SDLS |
 
-YAMCS and CryptoLib interoperate today for UNSEGMENTED (flags `11`) packets with SDLS; spanning packets need a ground framer that segments.
+YAMCS and CryptoLib interoperate today for UNSEGMENTED (flags `11`) packets with SDLS; spanning packets need a ground framer that segments. `fprime-gds` does not emit Segment Headers, so a deployment importing a segmented subtopology needs a ground framer that does.
 
 ## Limitations
 
@@ -164,7 +164,3 @@ YAMCS and CryptoLib interoperate today for UNSEGMENTED (flags `11`) packets with
 ## Unit Testing
 
 `test/ut` connects `allocate`/`deallocate` to a real `Svc::BufferManager` sized `PoolBufferCount × MaxPacketSize`. GTest cases cover every row of the state machine and every path above (including allocation failures by pool exhaustion and by injected invalid/short buffers, and the held-buffer model). `test/ut/Rules` holds an STest rule-based scenario (rules `SendFirst`, `SendContinuing`, `SendLast`, `SendUnsegmented`, `SendOrphan`, `SendInvalidMap`, `SendEmpty`, `SendOversize`, `SendShAbsent`, `ReturnPacket`, `ExhaustPool`) run for 10 000 seeded steps against a shadow model, checking after every step: bounds, no leak (pool allocations equal partials plus delivered-not-returned packets), no state change on rejection, exactly one synchronous frame return per `dataIn`, delivered bytes and declared length, counter accounting, and pool high-water ≤ `PoolBufferCount`.
-
-## Integration Testing
-
-`test/int` ships a `fprime-gds` framing plugin (`tc_segment_plugin`, selection name `tc-segment`) that segments Space Packets into Type-BD TC Transfer Frames with a Segment Header (FIRST / CONTINUING / LAST / UNSEGMENTED, MAP IDs, optional SDLS AES-256-GCM with the received Segment Header in the AAD, FSN IVs) and can inject faults (dropped, swapped or duplicated segments, wrong MAP, oversize, missing FIRST/LAST, corrupted MAC, tampered Segment Header, unknown SPI). `test_tc_segmented.py` runs through the GDS `IntegrationTestAPI` against any deployment configured with `--deployment-config` (`Svc.Ccsds.TcMapReassembler`, `Svc.Ccsds.TcMapReassembler.pool`, `Svc.Ccsds.TcDeframer.segmented`, `Svc.Ccsds.CcsdsSdlsDeframer` keys): `-m segmented` (I1-I12 and I19: delivery, fault handling, pool-pressure invariants and (VCID, MAP ID) isolation), `-m sdls` (I14-I18, AES-GCM build: MAC corruption, Segment Header tampering, unknown SPI) and `-m feature_off` (I13, a Segment Header frame against a deployment without one). The `ref-segmented` job of `.github/workflows/ref.yml` runs all three.

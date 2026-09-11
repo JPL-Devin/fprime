@@ -152,17 +152,11 @@ frameAccumulator -> tcDeframerSeg -> sdlsDeframer -> decryptionSaRouter -> decry
 `1016 - 2 (SPI) - 12 (IV) - 16 (MAC) = 986` octets with the AES-256-GCM decryptor. Ground framers must
 segment packets accordingly (one Space Packet per Frame Data Unit sequence, no blocking).
 
-**Reference deployment.** `TestDeploymentsProject/SubtopologyBuilds/Segmented` builds this variant when
-configured with `-DSEGMENTED_DEPLOYMENT=ON -DSEGMENTED_SDLS=ON -DOPENSSL_ROOT_DIR=<OpenSSL 3.5 prefix>`: its `config/` directory
-supplies the complete `ComCcsdsSdlsConfig.fpp` override (`BASE_ID`, `decryptor: Svc.Ccsds.AesGcmDecryptor`,
-`encryptor: Svc.Ccsds.ClearTextEncryptor`), its topology instantiates `sdlsKeyManager: Svc.Ccsds.SdlsFileKeyManager`
-(`configure(path, 32)` in `configComponents`, key file passed with `--sdls-key-file`) and connects
-`ComCcsdsSdls.decryptor.keyGet -> sdlsKeyManager.keyGet`. The committed `test/int/sdls_test_key.bin`
-(octets `0x40..0x5F`) is a **test key**. Without OpenSSL >= 3.5 `Svc_Ccsds_AesGcmDecryptor` is not
-registered and the SDLS build fails at CMake configure (`FATAL_ERROR`) or, failing that, at `fpp-check`
-(`symbol AesGcmDecryptor is not defined`) — it does not silently fall back to clear text. The `ref-segmented`
-CI job additionally asserts that the `Svc/Ccsds/AesGcmDecryptor` module directory exists in the generated
-build cache before building.
+**Using the AES-GCM decryptor.** A deployment selects it through its `ComCcsdsSdlsConfig.fpp` override
+(`decryptor: Svc.Ccsds.AesGcmDecryptor`), instantiates a key manager (e.g. `Svc.Ccsds.SdlsFileKeyManager`,
+`configure(path, 32)`) and connects `ComCcsdsSdls.decryptor.keyGet -> <keyManager>.keyGet`. Without
+OpenSSL >= 3.5 `Svc_Ccsds_AesGcmDecryptor` is not registered and the build fails at CMake configure or at
+`fpp-check` (`symbol AesGcmDecryptor is not defined`) — it does not silently fall back to clear text.
 
 ### 2.3 Data Flow - Downlink
 
