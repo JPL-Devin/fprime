@@ -309,8 +309,11 @@ A worked example is the `ExampleCdhCoreConfig` module of
 overrides `CdhCoreTlmConfig.fpp`.
 
 > [!NOTE]
-> An override-only module contains no buildable files and must be declared `INTERFACE`. A module that also
-> supplies new `SOURCES` or `AUTOCODER_INPUTS` is built as a `STATIC` library.
+> An override-only module contains no buildable files and must be declared `INTERFACE`. `INTERFACE` is also
+> correct when the module's `AUTOCODER_INPUTS` contain only constants and type aliases, which autocode to headers
+> (as the platform and subtopology examples above do). A module that supplies `SOURCES`, or whose FPP defines
+> `enum`, `struct`, or `array` types (which autocode `.cpp` files), must not be `INTERFACE`; it is then built as a
+> `STATIC` library, as `default/config` is.
 
 ## Directive Summary
 
@@ -318,7 +321,7 @@ overrides `CdhCoreTlmConfig.fpp`.
 |---|---|
 | `SOURCES`, `HEADERS`, `AUTOCODER_INPUTS` | New configuration files, copied into the build cache. A file name already supplied by an earlier module is an error; use `CONFIGURATION_OVERRIDES` instead. |
 | `CONFIGURATION_OVERRIDES` | Replacements for files supplied by an earlier module, matched by file name. A name no earlier module supplied is an error. |
-| `INTERFACE` | Header-only or override-only module. Required when the module has no `SOURCES`/`AUTOCODER_INPUTS`. |
+| `INTERFACE` | Module with nothing to compile: override-only, headers, or FPP constants/type aliases. Not for `SOURCES` or FPP `enum`/`struct`/`array` definitions (these autocode `.cpp` files). |
 | `GLOBAL_IMPLICIT_DEPENDENCY` | Linked into the global interface target: visible to every module without `DEPENDS`. Used by framework defaults and platform packages; available to library defaults. Replaces the deprecated `BASE_CONFIG`, which still works as a synonym and emits a warning. |
 | `DEPENDS` | Modules this configuration needs, typically `Fw_Types` or a library's `_Types` module for FPP overrides. |
 | `CHOOSES_IMPLEMENTATIONS` | Implementation selections (see [CMake Implementations](./cmake-implementations.md)). Platform packages must choose every required implementation; projects may override. |

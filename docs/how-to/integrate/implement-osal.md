@@ -176,10 +176,10 @@ This optimization is most valuable for bare-metal systems with high-frequency op
 
 Projects override compile-time selection by providing their own configuration header that replaces F´'s default. For `RawTime`, create a project-specific override of `config/OsDelegateRawTime.hpp`:
 
-**Step 1:** In your project's config directory, create `config/OsDelegateRawTime.hpp`:
+**Step 1:** In your project's `config-overrides/` directory, create `OsDelegateRawTime.hpp` (same file name as the framework default):
 
 ```c++
-// my-project/config/OsDelegateRawTime.hpp
+// my-project/config-overrides/OsDelegateRawTime.hpp
 #ifndef CONFIG_OS_DELEGATERAWTIME_HPP
 #define CONFIG_OS_DELEGATERAWTIME_HPP
 
