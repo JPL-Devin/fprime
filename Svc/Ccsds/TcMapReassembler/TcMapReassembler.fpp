@@ -1,7 +1,8 @@
 module Svc {
 module Ccsds {
     @ Reassembles Space Packets from authenticated TC Frame Data Units that carry a
-    @ Segment Header (CCSDS 232.0-B-4 4.1.3.2.2, 4.4.1, 4.4.3). Multi-MAP, no blocking.
+    @ Segment Header (CCSDS 232.0-B-4 4.1.3.2.2, 4.4.1, 4.4.3). One reassembly channel per
+    @ configured (Virtual Channel, MAP) pair, no blocking.
     passive component TcMapReassembler {
 
         import Deframer
@@ -22,10 +23,10 @@ module Ccsds {
             format "Frame without Segment Header context dropped; TcDeframer Segment Header mode is off" \
             throttle 5
 
-        @ Segment Header MAP ID not in the configured accepted set
-        event InvalidMapId(mapId: U8) \
+        @ (Virtual Channel, MAP ID) pair of the frame not in the configured accepted set
+        event InvalidMapId(vcId: U8, mapId: U8) \
             severity warning low \
-            format "Segment for unconfigured MAP {} dropped" \
+            format "Segment for unconfigured VC {} MAP {} dropped" \
             throttle 10
 
         @ CONTINUING or LAST segment received while the MAP is IDLE

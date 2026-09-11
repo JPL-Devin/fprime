@@ -242,7 +242,8 @@ jobs:
         working-directory: TestDeploymentsProject/SubtopologyBuilds/Segmented
         run: |
           set -euo pipefail
-          fprime-util generate --build-cache "$GITHUB_WORKSPACE/bc-seg-nosdls" -DSEGMENTED_SDLS=OFF
+          fprime-util generate --build-cache "$GITHUB_WORKSPACE/bc-seg-nosdls" \
+            -DSEGMENTED_DEPLOYMENT=ON -DSEGMENTED_SDLS=OFF
           DESTDIR="$GITHUB_WORKSPACE/art-seg-nosdls" \
             fprime-util build --build-cache "$GITHUB_WORKSPACE/bc-seg-nosdls" -j"$(nproc)"
       - name: "Build Segmented subtopology deployment (SDLS, AES-GCM)"
@@ -250,7 +251,7 @@ jobs:
         run: |
           set -euo pipefail
           fprime-util generate --build-cache "$GITHUB_WORKSPACE/bc-seg-sdls" \
-            -DSEGMENTED_SDLS=ON -DOPENSSL_ROOT_DIR="${OPENSSL_35_ROOT}"
+            -DSEGMENTED_DEPLOYMENT=ON -DSEGMENTED_SDLS=ON -DOPENSSL_ROOT_DIR="${OPENSSL_35_ROOT}"
           # AesGcmDecryptor must actually be registered (the generate above fails on an
           # undefined Svc.Ccsds.AesGcmDecryptor symbol otherwise); make the check explicit.
           test -d "$GITHUB_WORKSPACE/bc-seg-sdls/F-Prime/Svc/Ccsds/AesGcmDecryptor"
@@ -280,7 +281,7 @@ jobs:
       # framing plugin (Space Packets segmented into Type-BD TC frames with Segment Headers). It is a
       # selection plugin: loaded with FPRIME_GDS_EXTRA_PLUGINS (module:Class) and enabled with
       # --framing-selection tc-segment. No value below may contain a space (the action word-splits).
-      - name: "Integration tests: I1-I12 (Ref segmented)"
+      - name: "Integration tests: I1-I12, I19 (Ref segmented)"
         uses: nasa/fprime-actions/run-integration-tests@devel
         env:
           PYTHONPATH: ${{ github.workspace }}/Svc/Ccsds/TcMapReassembler/test/int

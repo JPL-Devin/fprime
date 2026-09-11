@@ -35,6 +35,11 @@ TEST(Nominal, testMultiMap) {
     tester.testMultiMap();
 }
 
+TEST(Nominal, testVcIsolation) {
+    Svc::Ccsds::TcMapReassemblerTester tester;
+    tester.testVcIsolation();
+}
+
 TEST(Nominal, testReturnDeallocates) {
     Svc::Ccsds::TcMapReassemblerTester tester;
     tester.testReturnDeallocates();
@@ -154,6 +159,7 @@ void applyAllOnce(Svc::Ccsds::TcMapReassemblerTester& tester) {
     Svc::Ccsds::TcMapReassemblerTester::Segments__SendUnsegmented sendUnsegmented;
     Svc::Ccsds::TcMapReassemblerTester::Segments__SendOrphan sendOrphan;
     Svc::Ccsds::TcMapReassemblerTester::Segments__SendInvalidMap sendInvalidMap;
+    Svc::Ccsds::TcMapReassemblerTester::Segments__SendWrongVc sendWrongVc;
     Svc::Ccsds::TcMapReassemblerTester::Segments__SendEmpty sendEmpty;
     Svc::Ccsds::TcMapReassemblerTester::Segments__SendOversize sendOversize;
     Svc::Ccsds::TcMapReassemblerTester::Segments__SendShAbsent sendShAbsent;
@@ -161,7 +167,7 @@ void applyAllOnce(Svc::Ccsds::TcMapReassemblerTester& tester) {
     Svc::Ccsds::TcMapReassemblerTester::Pool__ExhaustPool exhaustPool;
 
     STest::Rule<Svc::Ccsds::TcMapReassemblerTester>* rules[] = {
-        &sendShAbsent, &sendInvalidMap, &sendEmpty,       &sendOrphan,   &sendFirst,    &sendContinuing,
+        &sendShAbsent, &sendInvalidMap, &sendEmpty,       &sendOrphan,   &sendFirst,    &sendWrongVc, &sendContinuing,
         &sendLast,     &returnPacket,   &sendUnsegmented, &returnPacket, &sendOversize, &exhaustPool,
     };
     for (STest::Rule<Svc::Ccsds::TcMapReassemblerTester>* rule : rules) {
@@ -188,6 +194,7 @@ TEST(Rules, randomScenario) {
     Svc::Ccsds::TcMapReassemblerTester::Segments__SendUnsegmented sendUnsegmented;
     Svc::Ccsds::TcMapReassemblerTester::Segments__SendOrphan sendOrphan;
     Svc::Ccsds::TcMapReassemblerTester::Segments__SendInvalidMap sendInvalidMap;
+    Svc::Ccsds::TcMapReassemblerTester::Segments__SendWrongVc sendWrongVc;
     Svc::Ccsds::TcMapReassemblerTester::Segments__SendEmpty sendEmpty;
     Svc::Ccsds::TcMapReassemblerTester::Segments__SendOversize sendOversize;
     Svc::Ccsds::TcMapReassemblerTester::Segments__SendShAbsent sendShAbsent;
@@ -195,8 +202,8 @@ TEST(Rules, randomScenario) {
     Svc::Ccsds::TcMapReassemblerTester::Pool__ExhaustPool exhaustPool;
 
     STest::Rule<Svc::Ccsds::TcMapReassemblerTester>* rules[] = {
-        &sendFirst, &sendContinuing, &sendLast,     &sendUnsegmented, &sendOrphan,  &sendInvalidMap,
-        &sendEmpty, &sendOversize,   &sendShAbsent, &returnPacket,    &exhaustPool,
+        &sendFirst,   &sendContinuing, &sendLast,     &sendUnsegmented, &sendOrphan,   &sendInvalidMap,
+        &sendWrongVc, &sendEmpty,      &sendOversize, &sendShAbsent,    &returnPacket, &exhaustPool,
     };
 
     // The invariants (DESIGN §8.4, 1-7) are checked after every single step
@@ -211,9 +218,9 @@ TEST(Rules, randomScenario) {
         STest::Rule<Svc::Ccsds::TcMapReassemblerTester>& m_inner;
     };
     Checked checked[] = {
-        Checked(sendFirst),    Checked(sendContinuing), Checked(sendLast),    Checked(sendUnsegmented),
-        Checked(sendOrphan),   Checked(sendInvalidMap), Checked(sendEmpty),   Checked(sendOversize),
-        Checked(sendShAbsent), Checked(returnPacket),   Checked(exhaustPool),
+        Checked(sendFirst),    Checked(sendContinuing), Checked(sendLast),     Checked(sendUnsegmented),
+        Checked(sendOrphan),   Checked(sendInvalidMap), Checked(sendWrongVc),  Checked(sendEmpty),
+        Checked(sendOversize), Checked(sendShAbsent),   Checked(returnPacket), Checked(exhaustPool),
     };
     STest::Rule<Svc::Ccsds::TcMapReassemblerTester>* checkedRules[FW_NUM_ARRAY_ELEMENTS(rules)];
     for (FwSizeType i = 0; i < FW_NUM_ARRAY_ELEMENTS(rules); i++) {

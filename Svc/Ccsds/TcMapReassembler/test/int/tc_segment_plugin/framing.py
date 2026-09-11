@@ -99,6 +99,7 @@ class TcSegmentFraming(FramerDeframer):
     def frames_for_packet(self, packet: bytes, knobs: Knobs) -> List[bytes]:
         """Segment `packet`, apply the fault-injection knobs, and wrap every emitted segment in a frame."""
         map_id = self.map_id if knobs.map_id is None else knobs.map_id
+        vcid = self.vcid if knobs.vcid is None else knobs.vcid
         spi = self.spi if knobs.spi is None else knobs.spi
         portion = (
             self.max_portion
@@ -109,10 +110,10 @@ class TcSegmentFraming(FramerDeframer):
 
         frames: List[bytes] = []
         if knobs.control_frame:
-            frames.append(self._emit(tf.control_frame(self.scid, self.vcid, self.fsn)))
+            frames.append(self._emit(tf.control_frame(self.scid, vcid, self.fsn)))
         if knobs.empty_segment:
             frames.append(
-                self._frame(tf.Segment(tf.FLAG_UNSEGMENTED, map_id, b""), spi)
+                self._frame(tf.Segment(tf.FLAG_UNSEGMENTED, map_id, b""), spi, vcid)
             )
 
         for index in self._emission_order(len(segments), knobs):
@@ -126,6 +127,7 @@ class TcSegmentFraming(FramerDeframer):
                 self._frame(
                     segments[index],
                     spi,
+                    vcid,
                     sh_override=tamper,
                     corrupt_mac=corrupt,
                     strip_sh=knobs.strip_sh,
@@ -133,7 +135,7 @@ class TcSegmentFraming(FramerDeframer):
             )
             if index in knobs.retransmit:
                 frames.append(
-                    self._frame(segments[index], spi, strip_sh=knobs.strip_sh)
+                    self._frame(segments[index], spi, vcid, strip_sh=knobs.strip_sh)
                 )
         return frames
 
@@ -151,10 +153,10 @@ class TcSegmentFraming(FramerDeframer):
             order = [index for index in order if index != count - 1]
         return [index for index in order if index not in knobs.drop]
 
-    def _frame(self, segment: tf.Segment, spi: int, **options) -> bytes:
+    def _frame(self, segment: tf.Segment, spi: int, vcid: int, **options) -> bytes:
         frame = tf.frame_segment(
             self.scid,
-            self.vcid,
+            vcid,
             self.fsn,
             segment,
             sdls_key=self.key,

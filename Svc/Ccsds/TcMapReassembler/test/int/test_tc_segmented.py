@@ -1,8 +1,8 @@
-"""Integration tests of the segmented TC uplink (Segment Header + MAP reassembly), DESIGN §8.5 I1-I18.
+"""Integration tests of the segmented TC uplink (Segment Header + MAP reassembly), DESIGN §8.5 I1-I19.
 
 Run against a deployment whose `fprime-gds` uses the `tc-segment` framing plugin (see conftest.py):
 
-    -m segmented    I1-I12  Ref built with -DREF_TC_SEGMENTED=ON, or SubtopologyBuilds/Segmented
+    -m segmented    I1-I12, I19  Ref built with -DREF_TC_SEGMENTED=ON, or SubtopologyBuilds/Segmented
     -m feature_off  I13     default Ref (no Segment Header support)
     -m sdls         I14-I18 SubtopologyBuilds/Segmented built with -DSEGMENTED_SDLS=ON
 
@@ -145,13 +145,27 @@ def test_i6_duplicate_first(segmented):
 
 @pytest.mark.segmented
 def test_i7_invalid_map(segmented):
-    """I7: MAP 5 is not in the accepted table {0}: InvalidMapId(5), command not executed."""
+    """I7: (VC 1, MAP 5) is not in the accepted table {(1, 0)}: InvalidMapId(1, 5), command not executed."""
     dep = segmented
     before = dep.counters()
     dep.send_no_op(Knobs(map_id=5))
-    dep.assert_event(dep.names.reassembler, "InvalidMapId", [5])
+    dep.assert_event(dep.names.reassembler, "InvalidMapId", [1, 5])
     dep.await_counters(before, SegmentsDropped=1)
     assert not dep.command_completed(timeout=1.0)
+
+
+@pytest.mark.segmented
+def test_i19_wrong_virtual_channel(segmented):
+    """I19: MAP 0 on VC 2 is a different (VC, MAP) pair from the configured (1, 0): every segment is
+    InvalidMapId(2, 0), the partial packet on (1, 0) is untouched and completes afterwards."""
+    dep = segmented
+    before = dep.counters()
+    send_no_op_string(dep, Knobs(segment_size=24, vcid=2))
+    dep.assert_event_count(dep.names.reassembler, "InvalidMapId", 2, [2, 0])
+    dep.await_counters(before, SegmentsDropped=2)
+    assert not dep.command_completed(timeout=1.0)
+    no_op_string(dep, Knobs(segment_size=24))
+    dep.await_counters(before, SegmentsDropped=2, PacketsReassembled=1)
 
 
 @pytest.mark.segmented

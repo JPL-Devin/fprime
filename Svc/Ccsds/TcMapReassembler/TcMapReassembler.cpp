@@ -14,6 +14,11 @@
 namespace Svc {
 namespace Ccsds {
 
+namespace {
+// TC Virtual Channel ID is a 6-bit field (232.0-B-4 4.1.2.6)
+constexpr U8 kVcIdMax = static_cast<U8>(TCSubfields::VcIdMask >> TCSubfields::VcIdOffset);
+}  // namespace
+
 // ----------------------------------------------------------------------
 // Component construction and destruction
 // ----------------------------------------------------------------------
@@ -22,16 +27,20 @@ TcMapReassembler ::TcMapReassembler(const char* const compName) : TcMapReassembl
 
 TcMapReassembler ::~TcMapReassembler() {}
 
-void TcMapReassembler ::configure(const U8* mapIds, FwSizeType count) {
-    FW_ASSERT(mapIds != nullptr);
+void TcMapReassembler ::configure(const MapKey* channels, FwSizeType count) {
+    FW_ASSERT(channels != nullptr);
     FW_ASSERT(count >= 1 && count <= static_cast<FwSizeType>(TcMapCfg::MapChannelCount),
               static_cast<FwAssertArgType>(count));
     for (FwSizeType i = 0; i < count; i++) {
-        FW_ASSERT(Utils::TcSegmentHeader::isValidMapId(mapIds[i]), static_cast<FwAssertArgType>(mapIds[i]));
+        FW_ASSERT(channels[i].vcId <= kVcIdMax, static_cast<FwAssertArgType>(channels[i].vcId));
+        FW_ASSERT(Utils::TcSegmentHeader::isValidMapId(channels[i].mapId),
+                  static_cast<FwAssertArgType>(channels[i].mapId));
         for (FwSizeType j = 0; j < i; j++) {
-            FW_ASSERT(mapIds[j] != mapIds[i], static_cast<FwAssertArgType>(mapIds[i]));
+            FW_ASSERT((channels[j].vcId != channels[i].vcId) || (channels[j].mapId != channels[i].mapId),
+                      static_cast<FwAssertArgType>(channels[i].vcId), static_cast<FwAssertArgType>(channels[i].mapId));
         }
-        this->m_maps[i].mapId = mapIds[i];
+        this->m_maps[i].vcId = channels[i].vcId;
+        this->m_maps[i].mapId = channels[i].mapId;
         this->m_maps[i].state = MapChannel::IDLE;
         this->m_maps[i].buffer = Fw::Buffer();
         this->m_maps[i].received = 0;
@@ -54,11 +63,12 @@ void TcMapReassembler ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, co
     const U8 sh = context.get_tcSegmentHeader();
     const TcSequenceFlags::T flags = Utils::TcSegmentHeader::sequenceFlags(sh);
     const U8 mapId = Utils::TcSegmentHeader::mapId(sh);
+    const U8 vcId = context.get_vcId();
 
-    // P2: MAP demultiplexing, unrecognised MAP discarded (232.0-B-4 4.4.3.3)
-    MapChannel* const ch = this->findMap(mapId);
+    // P2: (VC, MAP) demultiplexing, unrecognised pair discarded (232.0-B-4 4.4.3.3)
+    MapChannel* const ch = this->findMap(vcId, mapId);
     if (ch == nullptr) {
-        this->log_WARNING_LO_InvalidMapId(mapId);
+        this->log_WARNING_LO_InvalidMapId(vcId, mapId);
         this->reject(FrameError::TC_INVALID_MAP_ID, data, context);
         return;
     }
@@ -131,9 +141,9 @@ void TcMapReassembler ::dataReturnIn_handler(FwIndexType portNum,
 // Private helper methods
 // ----------------------------------------------------------------------
 
-TcMapReassembler::MapChannel* TcMapReassembler ::findMap(U8 mapId) {
+TcMapReassembler::MapChannel* TcMapReassembler ::findMap(U8 vcId, U8 mapId) {
     for (FwSizeType i = 0; i < this->m_mapCount; i++) {
-        if (this->m_maps[i].mapId == mapId) {
+        if ((this->m_maps[i].vcId == vcId) && (this->m_maps[i].mapId == mapId)) {
             return &this->m_maps[i];
         }
     }

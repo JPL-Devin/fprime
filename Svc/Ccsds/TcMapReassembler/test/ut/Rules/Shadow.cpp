@@ -68,7 +68,8 @@ void TcMapReassemblerTester ::ruleSend(U8 mapId,
                                        TcSequenceFlags::T flags,
                                        const U8* data,
                                        FwSizeType len,
-                                       bool present) {
+                                       bool present,
+                                       U8 vcId) {
     // ------------------------------------------------------------------
     // Predict from the shadow (DESIGN §5.2 / §5.3, written from the table, not from the code)
     // ------------------------------------------------------------------
@@ -89,8 +90,9 @@ void TcMapReassemblerTester ::ruleSend(U8 mapId,
     const U32 priorAbandoned = this->shadow_packetsAbandoned;
     bool deliveredNow = false;
 
+    // Every shadow channel lives on TEST_VC_ID: the same MAP ID on another VC is unconfigured
     MapShadow* map = nullptr;
-    for (FwSizeType i = 0; i < MAP_CHANNEL_COUNT; i++) {
+    for (FwSizeType i = 0; (vcId == TEST_VC_ID) && (i < MAP_CHANNEL_COUNT); i++) {
         if (this->shadow_maps[i].mapId == mapId) {
             map = &this->shadow_maps[i];
         }
@@ -182,7 +184,7 @@ void TcMapReassemblerTester ::ruleSend(U8 mapId,
     // ------------------------------------------------------------------
     // Execute (sendSegment asserts the single synchronous frame return: invariant 4)
     // ------------------------------------------------------------------
-    this->sendSegment(mapId, flags, data, len, present);
+    this->sendSegment(mapId, flags, data, len, present, vcId);
     this->shadow_dataInCalls++;
 
     // ------------------------------------------------------------------
@@ -206,7 +208,7 @@ void TcMapReassemblerTester ::ruleSend(U8 mapId,
     ASSERT_EVENTS_SIZE(expShAbsent + expInvalidMap + expUnexpected + expAbandoned + expEmpty + expTooLarge +
                        expAllocFailed + expMismatch);
     if (expInvalidMap > 0) {
-        ASSERT_EVENTS_InvalidMapId(0, mapId);
+        ASSERT_EVENTS_InvalidMapId(0, vcId, mapId);
     }
     if (expUnexpected > 0) {
         ASSERT_EVENTS_UnexpectedSegment(0, mapId, flags);
@@ -241,7 +243,8 @@ void TcMapReassemblerTester ::ruleSend(U8 mapId,
         ASSERT_EQ(::memcmp(d.buffer.getData(), d.bytes.data(), d.bytes.size()), 0);
         ASSERT_EQ(TcMapReassemblerTester::declaredOf(d.bytes), d.bytes.size());
         ASSERT_NE(d.buffer.getData(), this->m_frame.data());
-        ASSERT_EQ(this->fromPortHistory_dataOut->at(0).context, TcMapReassemblerTester::makeContext(flags, mapId));
+        ASSERT_EQ(this->fromPortHistory_dataOut->at(0).context,
+                  TcMapReassemblerTester::makeContext(flags, mapId, true, vcId));
     }
 }
 
@@ -255,8 +258,9 @@ void TcMapReassemblerTester ::checkInvariants() {
     // Invariant 1: per-MAP state
     for (FwSizeType i = 0; i < MAP_CHANNEL_COUNT; i++) {
         const MapShadow& shadow = this->shadow_maps[i];
-        TcMapReassembler::MapChannel* const ch = this->component.findMap(shadow.mapId);
+        TcMapReassembler::MapChannel* const ch = this->component.findMap(TEST_VC_ID, shadow.mapId);
         ASSERT_NE(ch, nullptr);
+        ASSERT_EQ(this->component.findMap(OTHER_VC_ID, shadow.mapId), nullptr);
         ASSERT_LE(ch->received, MAX_PACKET_SIZE);
         ASSERT_EQ(ch->state == TcMapReassembler::MapChannel::IN_PROGRESS, ch->buffer.isValid());
         ASSERT_EQ(ch->state == TcMapReassembler::MapChannel::IN_PROGRESS, shadow.inProgress);

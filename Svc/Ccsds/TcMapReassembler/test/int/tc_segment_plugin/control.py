@@ -10,6 +10,7 @@ Knobs (all optional; segment indices refer to the nominal FIRST..LAST list, 0 = 
 
     segment_size       maximum Space Packet portion per frame (capped at the mode maximum)
     map_id             MAP ID override for every Segment Header of this packet
+    vcid               Virtual Channel ID override for every frame of this packet
     spi                SDLS Security Parameter Index override for this packet
     payload            {"apid": int, "size": int}: replace the uplinked data by a synthetic packet
                        whose Space Packet totals `size` octets on the given APID
@@ -53,6 +54,7 @@ def control_file_path(explicit: Optional[str] = None) -> Path:
 class Knobs:
     segment_size: Optional[int] = None
     map_id: Optional[int] = None
+    vcid: Optional[int] = None
     spi: Optional[int] = None
     payload: Optional[Dict[str, int]] = None
     drop: List[int] = field(default_factory=list)

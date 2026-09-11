@@ -153,7 +153,7 @@ frameAccumulator -> tcDeframerSeg -> sdlsDeframer -> decryptionSaRouter -> decry
 segment packets accordingly (one Space Packet per Frame Data Unit sequence, no blocking).
 
 **Reference deployment.** `TestDeploymentsProject/SubtopologyBuilds/Segmented` builds this variant when
-configured with `-DSEGMENTED_SDLS=ON -DOPENSSL_ROOT_DIR=<OpenSSL 3.5 prefix>`: its `config/` directory
+configured with `-DSEGMENTED_DEPLOYMENT=ON -DSEGMENTED_SDLS=ON -DOPENSSL_ROOT_DIR=<OpenSSL 3.5 prefix>`: its `config/` directory
 supplies the complete `ComCcsdsSdlsConfig.fpp` override (`BASE_ID`, `decryptor: Svc.Ccsds.AesGcmDecryptor`,
 `encryptor: Svc.Ccsds.ClearTextEncryptor`), its topology instantiates `sdlsKeyManager: Svc.Ccsds.SdlsFileKeyManager`
 (`configure(path, 32)` in `configComponents`, key file passed with `--sdls-key-file`) and connects

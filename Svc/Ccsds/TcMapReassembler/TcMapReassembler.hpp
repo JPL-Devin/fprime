@@ -42,11 +42,22 @@ static_assert(kPoolBytes == static_cast<U64>(kPoolBufferCount) * static_cast<U64
 //! Reassembles Space Packets from TC Frame Data Units carrying a Segment Header (CCSDS 232.0-B-4 4.4.1,
 //! 4.4.3). Sits after the SDLS SUCCESS gate: every octet it sees is authenticated. Copy-always: every
 //! incoming frame is returned upstream synchronously from dataIn; delivered packets live in buffers from
-//! the dedicated pool reached through allocate/deallocate.
+//! the dedicated pool reached through allocate/deallocate. A MAP is a channel *within* a Virtual
+//! Channel (232.0-B-4 2.1.3), so reassembly state is keyed by the (VCID, MAP ID) pair.
 class TcMapReassembler final : public TcMapReassemblerComponentBase {
     friend class TcMapReassemblerTester;
 
   public:
+    // ----------------------------------------------------------------------
+    // Types
+    // ----------------------------------------------------------------------
+
+    //! Identity of one reassembly channel: a MAP of one Virtual Channel
+    struct MapKey {
+        U8 vcId;   //!< TC Virtual Channel ID (0..63), matched against FrameContext.vcId
+        U8 mapId;  //!< MAP ID (0..63) of the Segment Header
+    };
+
     // ----------------------------------------------------------------------
     // Component construction and destruction
     // ----------------------------------------------------------------------
@@ -61,13 +72,14 @@ class TcMapReassembler final : public TcMapReassemblerComponentBase {
     TcMapReassembler(const TcMapReassembler&) = delete;
     TcMapReassembler& operator=(const TcMapReassembler&) = delete;
 
-    //! \brief Configure the accepted MAP IDs (CCSDS 232.0-B-4 Table 5-3 "Valid MAP IDs")
+    //! \brief Configure the accepted (Virtual Channel, MAP ID) pairs (CCSDS 232.0-B-4 Table 5-3 "Valid MAP IDs")
     //!
-    //! Call once during topology setup, before any frame is processed. Each MAP ID gets one
-    //! reassembly slot. Asserts on a null table, a count outside 1..TcMapCfg::MapChannelCount,
-    //! a MAP ID above 63, or a duplicate: these are configuration errors, not ground input.
-    void configure(const U8* mapIds,  //!< Accepted MAP IDs
-                   FwSizeType count   //!< Number of entries in mapIds
+    //! Call once during topology setup, before any frame is processed. Each pair gets one
+    //! reassembly slot; the same MAP ID on two Virtual Channels is two independent channels.
+    //! Asserts on a null table, a count outside 1..TcMapCfg::MapChannelCount, a VCID or MAP ID
+    //! above 63, or a duplicate pair: these are configuration errors, not ground input.
+    void configure(const MapKey* channels,  //!< Accepted (VCID, MAP ID) pairs
+                   FwSizeType count         //!< Number of entries in channels
     );
 
   private:
@@ -78,6 +90,7 @@ class TcMapReassembler final : public TcMapReassemblerComponentBase {
     //! Reassembly state of one MAP channel (232.0-B-4 4.1.3.2.2.3)
     struct MapChannel {
         enum State : U8 { IDLE = 0, IN_PROGRESS = 1 };
+        U8 vcId = 0;              //!< configured Virtual Channel ID (0..63)
         U8 mapId = 0;             //!< configured MAP ID (0..63)
         State state = IDLE;       //!< IDLE at construction and after every delivery/abandon
         Fw::Buffer buffer;        //!< valid iff IN_PROGRESS; capacity == TcMapCfg::MaxPacketSize
@@ -109,8 +122,8 @@ class TcMapReassembler final : public TcMapReassemblerComponentBase {
     // Private helper methods
     // ----------------------------------------------------------------------
 
-    //! Find the reassembly slot for a MAP ID; nullptr if not configured (232.0-B-4 4.4.3.3)
-    MapChannel* findMap(U8 mapId);
+    //! Find the reassembly slot for a (VCID, MAP ID) pair; nullptr if not configured (232.0-B-4 4.4.3.3)
+    MapChannel* findMap(U8 vcId, U8 mapId);
 
     //! Start a new packet on an IDLE MAP from a FIRST or UNSEGMENTED segment (P6, P8, P7, P12)
     //! \return true if the segment was copied into a freshly allocated pool buffer
@@ -136,7 +149,7 @@ class TcMapReassembler final : public TcMapReassemblerComponentBase {
     // Member variables
     // ----------------------------------------------------------------------
 
-    MapChannel m_maps[TcMapCfg::MapChannelCount];  //!< one slot per configured MAP; fixed array
+    MapChannel m_maps[TcMapCfg::MapChannelCount];  //!< one slot per configured (VCID, MAP) pair; fixed array
     FwSizeType m_mapCount = 0;                     //!< entries of m_maps set by configure()
     U32 m_packetsReassembled = 0;                  //!< PacketsReassembled telemetry
     U32 m_segmentsDropped = 0;                     //!< SegmentsDropped telemetry

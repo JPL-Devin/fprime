@@ -35,8 +35,11 @@ class TcMapReassemblerTester : public TcMapReassemblerGTestBase, public TcMapRea
     //! Memory identifier handed to the pool allocator
     static const FwEnumStoreType POOL_MEM_ID = 0;
 
-    //! Test virtual channel carried in every context
+    //! Test virtual channel carried in every context and configured for every slot
     static const U8 TEST_VC_ID = 1;
+
+    //! A second virtual channel, never configured by configureDefault()
+    static const U8 OTHER_VC_ID = 2;
 
     //! How the allocate proxy answers the component
     enum AllocMode {
@@ -81,6 +84,7 @@ class TcMapReassemblerTester : public TcMapReassemblerGTestBase, public TcMapRea
     void testLengthMismatchUnsegmented();
     void testTooShortForHeader();
     void testMultiMap();
+    void testVcIsolation();
     void testInFlightBound();
     void testReturnDeallocates();
     void testMacFailureMidPacketModel();
@@ -98,6 +102,7 @@ class TcMapReassemblerTester : public TcMapReassemblerGTestBase, public TcMapRea
     FW_RBT_DEFINE_RULE(TcMapReassemblerTester, Segments, SendUnsegmented);
     FW_RBT_DEFINE_RULE(TcMapReassemblerTester, Segments, SendOrphan);
     FW_RBT_DEFINE_RULE(TcMapReassemblerTester, Segments, SendInvalidMap);
+    FW_RBT_DEFINE_RULE(TcMapReassemblerTester, Segments, SendWrongVc);
     FW_RBT_DEFINE_RULE(TcMapReassemblerTester, Segments, SendEmpty);
     FW_RBT_DEFINE_RULE(TcMapReassemblerTester, Segments, SendOversize);
     FW_RBT_DEFINE_RULE(TcMapReassemblerTester, Segments, SendShAbsent);
@@ -140,8 +145,11 @@ class TcMapReassemblerTester : public TcMapReassemblerGTestBase, public TcMapRea
     //! MAP ID of configured slot i
     static U8 testMapId(FwSizeType i);
 
-    //! Context carrying a Segment Header for (flags, mapId)
-    static ComCfg::FrameContext makeContext(TcSequenceFlags::T flags, U8 mapId, bool present = true);
+    //! Context carrying a Segment Header for (flags, mapId) on virtual channel vcId
+    static ComCfg::FrameContext makeContext(TcSequenceFlags::T flags,
+                                            U8 mapId,
+                                            bool present = true,
+                                            U8 vcId = TEST_VC_ID);
 
     //! Fill pkt with len random octets; when len >= SP_HEADER_SIZE the header declares `declared` total octets
     static void buildPacket(std::vector<U8>& pkt, FwSizeType len, FwSizeType declared);
@@ -150,19 +158,29 @@ class TcMapReassemblerTester : public TcMapReassemblerGTestBase, public TcMapRea
     static void buildPacket(std::vector<U8>& pkt, FwSizeType len);
 
     //! Send one segment: clears the histories, invokes dataIn, asserts exactly one synchronous frame return
-    void sendSegment(U8 mapId, TcSequenceFlags::T flags, const U8* data, FwSizeType len, bool present = true);
+    void sendSegment(U8 mapId,
+                     TcSequenceFlags::T flags,
+                     const U8* data,
+                     FwSizeType len,
+                     bool present = true,
+                     U8 vcId = TEST_VC_ID);
 
     //! Send the portion [offset, offset + len) of pkt
-    void sendPortion(U8 mapId, TcSequenceFlags::T flags, const std::vector<U8>& pkt, FwSizeType offset, FwSizeType len);
+    void sendPortion(U8 mapId,
+                     TcSequenceFlags::T flags,
+                     const std::vector<U8>& pkt,
+                     FwSizeType offset,
+                     FwSizeType len,
+                     U8 vcId = TEST_VC_ID);
 
     //! Return the delivered packet at dataOut history index through dataReturnIn
     void returnDelivered(FwSizeType index);
 
-    //! Assert the component MAP is IDLE with no buffer
-    void assertIdle(U8 mapId);
+    //! Assert the component (vcId, mapId) channel is IDLE with no buffer
+    void assertIdle(U8 mapId, U8 vcId = TEST_VC_ID);
 
-    //! Assert the component MAP is IN_PROGRESS holding exactly `received` octets
-    void assertInProgress(U8 mapId, FwSizeType received);
+    //! Assert the component (vcId, mapId) channel is IN_PROGRESS holding exactly `received` octets
+    void assertInProgress(U8 mapId, FwSizeType received, U8 vcId = TEST_VC_ID);
 
     //! Assert the dataOut history entry equals pkt
     void assertDelivered(FwSizeType index, const std::vector<U8>& pkt);
@@ -180,7 +198,12 @@ class TcMapReassemblerTester : public TcMapReassemblerGTestBase, public TcMapRea
     void releaseHeldBuffers();
 
     //! Rule helper: predict the outcome from the shadow, send the segment, compare, update the shadow
-    void ruleSend(U8 mapId, TcSequenceFlags::T flags, const U8* data, FwSizeType len, bool present = true);
+    void ruleSend(U8 mapId,
+                  TcSequenceFlags::T flags,
+                  const U8* data,
+                  FwSizeType len,
+                  bool present = true,
+                  U8 vcId = TEST_VC_ID);
 
     //! Rule helper: the pool has no free buffer (real pool: in progress + delivered + held)
     bool poolFull() const;

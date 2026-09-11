@@ -68,7 +68,7 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     config.addinivalue_line(
         "markers",
-        "segmented: scenarios I1-I12 against a segmented (SH mode) deployment",
+        "segmented: scenarios I1-I12 and I19 against a segmented (SH mode) deployment",
     )
     config.addinivalue_line(
         "markers",

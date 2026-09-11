@@ -169,6 +169,21 @@ void TcMapReassemblerTester ::Segments__SendInvalidMap__action() {
 }
 
 // ----------------------------------------------------------------------
+// SendWrongVc: any flags on a configured MAP ID carried by an unconfigured Virtual Channel
+// ----------------------------------------------------------------------
+
+bool TcMapReassemblerTester ::Segments__SendWrongVc__precondition() const {
+    return true;
+}
+
+void TcMapReassemblerTester ::Segments__SendWrongVc__action() {
+    const MapShadow& map = this->shadow_maps[this->shadow_randomMapIndex()];
+    const FwSizeType portion = randomPortion(MAX_PACKET_SIZE);
+    this->ruleSend(map.mapId, TcMapReassemblerTester::randomFlags(), this->randomSegment(portion), portion, true,
+                   OTHER_VC_ID);
+}
+
+// ----------------------------------------------------------------------
 // SendEmpty: zero User Data octets with any flags
 // ----------------------------------------------------------------------
 

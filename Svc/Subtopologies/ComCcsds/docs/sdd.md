@@ -194,8 +194,9 @@ Segmented variants (see the TcMapReassembler and TcDeframer SDDs for the full li
   one packet, or fill, is rejected by the exact-length check (`LengthMismatch`).
 * **Type-BC (control) frames are dropped** in Segment Header mode (`tcDeframerSeg.ControlFrameDropped`);
   there is no FARM-1/COP-1, so Unlock/SetV(R) are not processed.
-* **MAP IDs** — only the MAP IDs passed to `TcMapReassembler::configure()` are accepted (default: MAP 0);
-  segments for any other MAP are discarded (`InvalidMapId`).
+* **(VCID, MAP ID) pairs** — only the pairs passed to `TcMapReassembler::configure()` are accepted
+  (default: VCID 1, MAP 0); segments for any other pair are discarded (`InvalidMapId`). The same MAP ID on
+  two Virtual Channels is two independent reassembly channels.
 * **Largest packet** — `TcMapCfg::MaxPacketSize` (4096 octets by default); a larger packet is rejected
   loudly at its first segment (`PacketTooLarge`).
 * **No stall timeout** — a partial packet whose remaining segments never arrive holds one pool buffer until
@@ -319,9 +320,10 @@ The segmented variants are configured by two files, both overridable through `re
   | `PoolManagerId`     | 201     | `Svc.BufferManager` manager id of the pool (the comms pool is 200)           |
 
 * `Svc/Subtopologies/ComCcsds/ComCcsdsConfig/ComCcsdsTcMapConfig.fpp` — defines `instance tcMapReassembler`
-  and its `configComponents` phase, which passes the accepted **MAP ID table** to
-  `TcMapReassembler::configure(mapIds, TcMapCfg::MapChannelCount)`. The default table is `{0}`; a project
-  overrides this file to accept other MAP IDs (the table must hold exactly `MapChannelCount` distinct values).
+  and its `configComponents` phase, which passes the accepted **(VCID, MAP ID) table** to
+  `TcMapReassembler::configure(channels, TcMapCfg::MapChannelCount)`. The default table is `{{1, 0}}`; a
+  project overrides this file to accept other pairs (the table must hold exactly `MapChannelCount` distinct
+  pairs, every VCID and MAP ID in `0..63`).
 
 **Pool arithmetic.** `tcPacketBufferManager` is set up in `configComponents` with a single bin
 `bufferSize = TcMapCfg::MaxPacketSize`, `numBuffers = TcMapCfg::PoolBufferCount`, carved from

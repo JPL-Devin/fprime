@@ -24,6 +24,7 @@ const FwSizeType TcMapReassemblerTester::MAX_HISTORY_SIZE;
 const FwEnumStoreType TcMapReassemblerTester::TEST_INSTANCE_ID;
 const FwEnumStoreType TcMapReassemblerTester::POOL_MEM_ID;
 const U8 TcMapReassemblerTester::TEST_VC_ID;
+const U8 TcMapReassemblerTester::OTHER_VC_ID;
 
 TcMapReassemblerTester ::TcMapReassemblerTester()
     : TcMapReassemblerGTestBase("TcMapReassemblerTester", TcMapReassemblerTester::MAX_HISTORY_SIZE),
@@ -105,12 +106,13 @@ void TcMapReassemblerTester ::from_dataReturnOut_handler(FwIndexType portNum,
 // ----------------------------------------------------------------------
 
 void TcMapReassemblerTester ::configureDefault() {
-    U8 mapIds[MAP_CHANNEL_COUNT];
+    TcMapReassembler::MapKey channels[MAP_CHANNEL_COUNT];
     for (FwSizeType i = 0; i < MAP_CHANNEL_COUNT; i++) {
-        mapIds[i] = TcMapReassemblerTester::testMapId(i);
-        this->shadow_maps[i].mapId = mapIds[i];
+        channels[i].vcId = TEST_VC_ID;
+        channels[i].mapId = TcMapReassemblerTester::testMapId(i);
+        this->shadow_maps[i].mapId = channels[i].mapId;
     }
-    this->component.configure(mapIds, MAP_CHANNEL_COUNT);
+    this->component.configure(channels, MAP_CHANNEL_COUNT);
 }
 
 U8 TcMapReassemblerTester ::testMapId(FwSizeType i) {
@@ -118,9 +120,9 @@ U8 TcMapReassemblerTester ::testMapId(FwSizeType i) {
     return static_cast<U8>((i * 5) % 64);
 }
 
-ComCfg::FrameContext TcMapReassemblerTester ::makeContext(TcSequenceFlags::T flags, U8 mapId, bool present) {
+ComCfg::FrameContext TcMapReassemblerTester ::makeContext(TcSequenceFlags::T flags, U8 mapId, bool present, U8 vcId) {
     ComCfg::FrameContext context;
-    context.set_vcId(TEST_VC_ID);
+    context.set_vcId(vcId);
     context.set_tcSegmentHeaderPresent(present);
     context.set_tcSegmentHeader(Utils::TcSegmentHeader::encode(flags, mapId));
     return context;
@@ -149,14 +151,15 @@ void TcMapReassemblerTester ::sendSegment(U8 mapId,
                                           TcSequenceFlags::T flags,
                                           const U8* data,
                                           FwSizeType len,
-                                          bool present) {
+                                          bool present,
+                                          U8 vcId) {
     ASSERT_LE(len, this->m_frame.size());
     this->clearHistory();
     if (len > 0) {
         (void)::memcpy(this->m_frame.data(), data, len);
     }
     Fw::Buffer frame(this->m_frame.data(), static_cast<Fw::Buffer::SizeType>(len));
-    const ComCfg::FrameContext context = TcMapReassemblerTester::makeContext(flags, mapId, present);
+    const ComCfg::FrameContext context = TcMapReassemblerTester::makeContext(flags, mapId, present, vcId);
     this->invoke_to_dataIn(0, frame, context);
     // Invariant 4: exactly one synchronous frame return carrying the same buffer
     ASSERT_from_dataReturnOut_SIZE(1);
@@ -169,9 +172,10 @@ void TcMapReassemblerTester ::sendPortion(U8 mapId,
                                           TcSequenceFlags::T flags,
                                           const std::vector<U8>& pkt,
                                           FwSizeType offset,
-                                          FwSizeType len) {
+                                          FwSizeType len,
+                                          U8 vcId) {
     ASSERT_LE(offset + len, pkt.size());
-    this->sendSegment(mapId, flags, pkt.data() + offset, len);
+    this->sendSegment(mapId, flags, pkt.data() + offset, len, true, vcId);
 }
 
 void TcMapReassemblerTester ::returnDelivered(FwSizeType index) {
@@ -181,8 +185,8 @@ void TcMapReassemblerTester ::returnDelivered(FwSizeType index) {
     this->invoke_to_dataReturnIn(0, buffer, context);
 }
 
-void TcMapReassemblerTester ::assertIdle(U8 mapId) {
-    TcMapReassembler::MapChannel* const ch = this->component.findMap(mapId);
+void TcMapReassemblerTester ::assertIdle(U8 mapId, U8 vcId) {
+    TcMapReassembler::MapChannel* const ch = this->component.findMap(vcId, mapId);
     ASSERT_NE(ch, nullptr);
     ASSERT_EQ(ch->state, TcMapReassembler::MapChannel::IDLE);
     ASSERT_FALSE(ch->buffer.isValid());
@@ -190,8 +194,8 @@ void TcMapReassemblerTester ::assertIdle(U8 mapId) {
     ASSERT_EQ(ch->segments, 0U);
 }
 
-void TcMapReassemblerTester ::assertInProgress(U8 mapId, FwSizeType received) {
-    TcMapReassembler::MapChannel* const ch = this->component.findMap(mapId);
+void TcMapReassemblerTester ::assertInProgress(U8 mapId, FwSizeType received, U8 vcId) {
+    TcMapReassembler::MapChannel* const ch = this->component.findMap(vcId, mapId);
     ASSERT_NE(ch, nullptr);
     ASSERT_EQ(ch->state, TcMapReassembler::MapChannel::IN_PROGRESS);
     ASSERT_TRUE(ch->buffer.isValid());
@@ -360,7 +364,7 @@ void TcMapReassemblerTester ::testInvalidMapId() {
 
     this->sendPortion(badMap, TcSequenceFlags::UNSEGMENTED, pkt, 0, pkt.size());
     ASSERT_EVENTS_InvalidMapId_SIZE(1);
-    ASSERT_EVENTS_InvalidMapId(0, badMap);
+    ASSERT_EVENTS_InvalidMapId(0, TEST_VC_ID, badMap);
     this->assertError(FrameError::TC_INVALID_MAP_ID);
     ASSERT_from_allocate_SIZE(0);
     ASSERT_from_dataOut_SIZE(0);
@@ -795,6 +799,85 @@ void TcMapReassemblerTester ::testMultiMap() {
     ASSERT_EQ(this->m_poolAllocated, 0U);
 }
 
+void TcMapReassemblerTester ::testVcIsolation() {
+    // A MAP is a channel of one Virtual Channel (232.0-B-4 2.1.3): the same MAP ID on another VCID
+    // must never read or write the state of the configured (VC, MAP) channel
+    const U8 mapId = TcMapReassemblerTester::testMapId(0);
+    std::vector<U8> pkt;
+    std::vector<U8> other;
+    TcMapReassemblerTester::buildPacket(pkt, 80);
+    TcMapReassemblerTester::buildPacket(other, 80);
+
+    // Part 1: only (TEST_VC_ID, mapId) is configured. Every flag on (OTHER_VC_ID, mapId) is
+    // rejected as an unconfigured channel and leaves the in-progress packet untouched.
+    this->sendPortion(mapId, TcSequenceFlags::FIRST, pkt, 0, 40);
+    this->assertInProgress(mapId, 40);
+    const TcSequenceFlags::T flags[] = {TcSequenceFlags::FIRST, TcSequenceFlags::CONTINUING, TcSequenceFlags::LAST,
+                                        TcSequenceFlags::UNSEGMENTED};
+    for (FwSizeType i = 0; i < FW_NUM_ARRAY_ELEMENTS(flags); i++) {
+        this->sendPortion(mapId, flags[i], other, 0, 40, OTHER_VC_ID);
+        ASSERT_EVENTS_InvalidMapId_SIZE(1);
+        ASSERT_EVENTS_InvalidMapId(0, OTHER_VC_ID, mapId);
+        this->assertError(FrameError::TC_INVALID_MAP_ID);
+        ASSERT_from_allocate_SIZE(0);
+        ASSERT_from_dataOut_SIZE(0);
+        ASSERT_EQ(this->component.findMap(OTHER_VC_ID, mapId), nullptr);
+        this->assertInProgress(mapId, 40);
+    }
+    this->assertCounters(0, static_cast<U32>(FW_NUM_ARRAY_ELEMENTS(flags)), 0);
+
+    // The packet on the configured channel completes with its own octets only
+    this->sendPortion(mapId, TcSequenceFlags::LAST, pkt, 40, 40);
+    ASSERT_from_dataOut_SIZE(1);
+    this->assertDelivered(0, pkt);
+    ASSERT_EQ(this->fromPortHistory_dataOut->at(0).context.get_vcId(), TEST_VC_ID);
+    this->assertIdle(mapId);
+    this->returnDelivered(0);
+    ASSERT_EQ(this->m_poolAllocated, 0U);
+
+    // Part 2: both (TEST_VC_ID, mapId) and (OTHER_VC_ID, mapId) configured are two independent
+    // channels; interleaved segments with the same MAP ID reassemble into two distinct packets
+    if (MAP_CHANNEL_COUNT < 2) {
+        return;
+    }
+    const TcMapReassembler::MapKey channels[] = {{TEST_VC_ID, mapId}, {OTHER_VC_ID, mapId}};
+    this->component.configure(channels, 2);
+    ASSERT_NE(this->component.findMap(TEST_VC_ID, mapId), this->component.findMap(OTHER_VC_ID, mapId));
+
+    this->sendPortion(mapId, TcSequenceFlags::FIRST, pkt, 0, 30, TEST_VC_ID);
+    this->assertInProgress(mapId, 30, TEST_VC_ID);
+    this->assertIdle(mapId, OTHER_VC_ID);
+
+    this->sendPortion(mapId, TcSequenceFlags::FIRST, other, 0, 20, OTHER_VC_ID);
+    ASSERT_EVENTS_PacketAbandoned_SIZE(0);
+    this->assertInProgress(mapId, 30, TEST_VC_ID);
+    this->assertInProgress(mapId, 20, OTHER_VC_ID);
+    ASSERT_EQ(this->m_poolAllocated, 2U);
+
+    this->sendPortion(mapId, TcSequenceFlags::CONTINUING, other, 20, 30, OTHER_VC_ID);
+    this->assertInProgress(mapId, 30, TEST_VC_ID);
+    this->assertInProgress(mapId, 50, OTHER_VC_ID);
+
+    this->sendPortion(mapId, TcSequenceFlags::LAST, pkt, 30, 50, TEST_VC_ID);
+    ASSERT_from_dataOut_SIZE(1);
+    this->assertDelivered(0, pkt);
+    ASSERT_EQ(this->fromPortHistory_dataOut->at(0).context.get_vcId(), TEST_VC_ID);
+    this->assertIdle(mapId, TEST_VC_ID);
+    this->assertInProgress(mapId, 50, OTHER_VC_ID);
+    this->returnDelivered(0);
+
+    this->sendPortion(mapId, TcSequenceFlags::LAST, other, 50, 30, OTHER_VC_ID);
+    ASSERT_from_dataOut_SIZE(1);
+    this->assertDelivered(0, other);
+    ASSERT_EQ(this->fromPortHistory_dataOut->at(0).context.get_vcId(), OTHER_VC_ID);
+    this->assertIdle(mapId, TEST_VC_ID);
+    this->assertIdle(mapId, OTHER_VC_ID);
+    this->returnDelivered(0);
+    ASSERT_EVENTS_SIZE(0);
+    ASSERT_EQ(this->m_poolAllocated, 0U);
+    this->configureDefault();
+}
+
 void TcMapReassemblerTester ::testInFlightBound() {
     const U8 mapId = TcMapReassemblerTester::testMapId(0);
     std::vector<U8> pkt;
@@ -933,31 +1016,49 @@ void TcMapReassemblerTester ::testMacFailureMidPacketModel() {
 }
 
 void TcMapReassemblerTester ::testConfigureAsserts() {
-    const U8 valid[] = {0};
-    const U8 outOfRange[] = {64};
-    const U8 tooMany[MAP_CHANNEL_COUNT + 1] = {0};
+    using MapKey = TcMapReassembler::MapKey;
+    const MapKey valid[] = {{TEST_VC_ID, 0}};
+    const MapKey mapOutOfRange[] = {{TEST_VC_ID, 64}};
+    const MapKey vcOutOfRange[] = {{64, 0}};
+    MapKey tooMany[MAP_CHANNEL_COUNT + 1];
+    for (FwSizeType i = 0; i < MAP_CHANNEL_COUNT + 1; i++) {
+        tooMany[i].vcId = TEST_VC_ID;
+        tooMany[i].mapId = static_cast<U8>(i);
+    }
 
     ASSERT_DEATH_IF_SUPPORTED(this->component.configure(nullptr, 1), "TcMapReassembler.cpp");
     ASSERT_DEATH_IF_SUPPORTED(this->component.configure(valid, 0), "TcMapReassembler.cpp");
     ASSERT_DEATH_IF_SUPPORTED(this->component.configure(tooMany, MAP_CHANNEL_COUNT + 1), "TcMapReassembler.cpp");
-    ASSERT_DEATH_IF_SUPPORTED(this->component.configure(outOfRange, 1), "TcMapReassembler.cpp");
+    ASSERT_DEATH_IF_SUPPORTED(this->component.configure(mapOutOfRange, 1), "TcMapReassembler.cpp");
+    ASSERT_DEATH_IF_SUPPORTED(this->component.configure(vcOutOfRange, 1), "TcMapReassembler.cpp");
     if (MAP_CHANNEL_COUNT >= 2) {
-        const U8 duplicate[] = {3, 3};
+        const MapKey duplicate[] = {{TEST_VC_ID, 3}, {TEST_VC_ID, 3}};
         ASSERT_DEATH_IF_SUPPORTED(this->component.configure(duplicate, 2), "TcMapReassembler.cpp");
+        // Same MAP ID on two VCs is two distinct channels, not a duplicate
+        const MapKey twoVcs[] = {{TEST_VC_ID, 3}, {OTHER_VC_ID, 3}};
+        this->component.configure(twoVcs, 2);
+        ASSERT_EQ(this->component.m_mapCount, 2U);
+        ASSERT_NE(this->component.findMap(TEST_VC_ID, 3), nullptr);
+        ASSERT_NE(this->component.findMap(OTHER_VC_ID, 3), nullptr);
+        ASSERT_NE(this->component.findMap(TEST_VC_ID, 3), this->component.findMap(OTHER_VC_ID, 3));
     }
 
     // A valid table (re)configures without asserting
-    U8 table[MAP_CHANNEL_COUNT];
+    MapKey table[MAP_CHANNEL_COUNT];
     for (FwSizeType i = 0; i < MAP_CHANNEL_COUNT; i++) {
-        table[i] = static_cast<U8>(63 - i);
+        table[i].vcId = 63;
+        table[i].mapId = static_cast<U8>(63 - i);
     }
     this->component.configure(table, MAP_CHANNEL_COUNT);
     ASSERT_EQ(this->component.m_mapCount, MAP_CHANNEL_COUNT);
-    ASSERT_NE(this->component.findMap(63), nullptr);
-    this->assertIdle(63);
+    ASSERT_NE(this->component.findMap(63, 63), nullptr);
+    this->assertIdle(63, 63);
+    // Same MAP ID on an unconfigured VC is not found
+    ASSERT_EQ(this->component.findMap(TEST_VC_ID, 63), nullptr);
     if (MAP_CHANNEL_COUNT < 64) {
-        ASSERT_EQ(this->component.findMap(0), nullptr);
+        ASSERT_EQ(this->component.findMap(63, 0), nullptr);
     }
+    this->configureDefault();
 }
 
 void TcMapReassemblerTester ::testSerializedSize() {

@@ -21,10 +21,16 @@ Each incoming buffer is the *portion* of one FDU: the Space Packet bytes carried
 ## Configuration
 
 ```cpp
-void configure(const U8* mapIds, FwSizeType count);
+struct MapKey {
+    U8 vcId;   // TC Virtual Channel ID (0..63), matched against FrameContext.vcId
+    U8 mapId;  // MAP ID (0..63) of the Segment Header
+};
+void configure(const MapKey* channels, FwSizeType count);
 ```
 
-`configure` sets the table of accepted MAP IDs (`0..63`). It must be called once at initialization with `1 <= count <= TcMapCfg::MapChannelCount`, distinct valid MAP IDs, and a non-null table; violations are programming errors and assert. A segment whose MAP ID is not in the table is rejected (`InvalidMapId`).
+`configure` sets the table of accepted `(Virtual Channel, MAP ID)` pairs, one reassembly channel each. A MAP is a channel *within* one Virtual Channel (232.0-B-4 2.1.3), and `TcDeframer` accepts several VCIDs, so the reassembly state is keyed by the pair: the same MAP ID on two Virtual Channels is two independent channels that never share a partial packet. `configure` must be called once at initialization with `1 <= count <= TcMapCfg::MapChannelCount`, every `vcId` and `mapId` in `0..63`, distinct pairs, and a non-null table; violations are programming errors and assert. A segment whose `(FrameContext.vcId, MAP ID)` pair is not in the table is rejected (`InvalidMapId`). The default table of the `ComCcsds` segmented subtopologies is `{{1, 0}}` (VCID 1 is the fprime-gds TC framing default).
+
+Each configured pair costs one `MapChannel` and one reassembly buffer of `MaxPacketSize` in the dedicated pool (`PoolBufferCount = MapChannelCount + MaxPacketsInFlight`), whether or not the pair is ever used.
 
 Compile-time configuration lives in the `TcMapCfg` FPP module (`config/TcMapReassemblerConfig/TcMapCfg.fpp`), registered with `register_fprime_config`; a project overrides it by shadowing the file in its own configuration directory.
 
@@ -56,9 +62,9 @@ The pool must be a **dedicated** `Svc.BufferManager` instance with one bin of `P
 
 ## State Machine
 
-One `MapChannel` per configured MAP: `state` (`IDLE` or `IN_PROGRESS`), `buffer` (valid iff `IN_PROGRESS`, capacity `MaxPacketSize`), `received` (octets copied so far) and `segments`. `Max` below is `TcMapCfg::MaxPacketSize`; "portion" is the size of the incoming buffer; "declared" is `6 + be16(data[4..5]) + 1`, or 0 when fewer than 6 octets are available.
+One `MapChannel` per configured `(VCID, MAP ID)` pair: `state` (`IDLE` or `IN_PROGRESS`), `buffer` (valid iff `IN_PROGRESS`, capacity `MaxPacketSize`), `received` (octets copied so far) and `segments`. `Max` below is `TcMapCfg::MaxPacketSize`; "portion" is the size of the incoming buffer; "declared" is `6 + be16(data[4..5]) + 1`, or 0 when fewer than 6 octets are available.
 
-Preconditions checked before the table, in order: `tcSegmentHeaderPresent == true` (else `SegmentHeaderAbsent`), MAP ID configured (else `InvalidMapId`), `portion > 0` (else `EmptySegment`). None of them changes state or allocates.
+Preconditions checked before the table, in order: `tcSegmentHeaderPresent == true` (else `SegmentHeaderAbsent`), `(FrameContext.vcId, MAP ID)` configured (else `InvalidMapId`), `portion > 0` (else `EmptySegment`). None of them changes state or allocates.
 
 | Flags \ State | IDLE | IN_PROGRESS |
 |---|---|---|
@@ -74,7 +80,7 @@ The incoming frame is returned on `dataReturnOut` in every cell. The MAP is set 
 | # | Condition (checked in this order) | MAP state | Reassembly buffer | Event | `FrameError` | Telemetry |
 |---|---|---|---|---|---|---|
 | P1 | `tcSegmentHeaderPresent == false` | none (no MAP lookup) | none | `SegmentHeaderAbsent` (WARNING_HI) | `TC_SEGMENT_HEADER_ABSENT` | `SegmentsDropped++` |
-| P2 | MAP ID not configured | none | none | `InvalidMapId` (WARNING_LO; mapId) | `TC_INVALID_MAP_ID` | `SegmentsDropped++` |
+| P2 | `(vcId, MAP ID)` pair not configured | none | none | `InvalidMapId` (WARNING_LO; vcId, mapId) | `TC_INVALID_MAP_ID` | `SegmentsDropped++` |
 | P3 | `portion == 0` | none | none | `EmptySegment` (WARNING_LO; mapId, flags) | `TC_SEGMENT_EMPTY` | `SegmentsDropped++` |
 | P4 | FIRST/UNSEGMENTED while IN_PROGRESS | IN_PROGRESS → IDLE, then continue as IDLE | deallocate partial | `PacketAbandoned` (WARNING_HI; mapId, received, flags) | `TC_SEGMENT_UNEXPECTED_FIRST` / `TC_SEGMENT_UNEXPECTED_UNSEGMENTED` | `PacketsAbandoned++` |
 | P5 | CONTINUING/LAST while IDLE | none | none | `UnexpectedSegment` (WARNING_HI; mapId, flags) | `TC_SEGMENT_ORPHAN` | `SegmentsDropped++` |
@@ -117,7 +123,7 @@ The partial is released by the next authenticated FIRST/UNSEGMENTED (P4), the ne
 | Name | Severity | Throttle | Description |
 |---|---|---|---|
 | SegmentHeaderAbsent | `warning high` | 5 | Frame reached the reassembler without Segment Header context (`TcDeframer` Segment Header mode off) |
-| InvalidMapId | `warning low` | 10 | MAP ID not in the configured set |
+| InvalidMapId | `warning low` | 10 | `(Virtual Channel, MAP ID)` pair not in the configured set |
 | UnexpectedSegment | `warning high` | 10 | CONTINUING or LAST while the MAP is IDLE |
 | PacketAbandoned | `warning high` | 10 | Partial discarded because a FIRST or UNSEGMENTED arrived while IN_PROGRESS |
 | EmptySegment | `warning low` | 10 | Segment with zero user-data octets |
@@ -161,4 +167,4 @@ YAMCS and CryptoLib interoperate today for UNSEGMENTED (flags `11`) packets with
 
 ## Integration Testing
 
-`test/int` ships a `fprime-gds` framing plugin (`tc_segment_plugin`, selection name `tc-segment`) that segments Space Packets into Type-BD TC Transfer Frames with a Segment Header (FIRST / CONTINUING / LAST / UNSEGMENTED, MAP IDs, optional SDLS AES-256-GCM with the received Segment Header in the AAD, FSN IVs) and can inject faults (dropped, swapped or duplicated segments, wrong MAP, oversize, missing FIRST/LAST, corrupted MAC, tampered Segment Header, unknown SPI). `test_tc_segmented.py` runs through the GDS `IntegrationTestAPI` against any deployment configured with `--deployment-config` (`Svc.Ccsds.TcMapReassembler`, `Svc.Ccsds.TcMapReassembler.pool`, `Svc.Ccsds.TcDeframer.segmented`, `Svc.Ccsds.CcsdsSdlsDeframer` keys): `-m segmented` (I1-I12, delivery, fault handling and pool-pressure invariants), `-m sdls` (I14-I18, AES-GCM build: MAC corruption, Segment Header tampering, unknown SPI) and `-m feature_off` (I13, a Segment Header frame against a deployment without one). The `ref-segmented` job of `.github/workflows/ref.yml` runs all three.
+`test/int` ships a `fprime-gds` framing plugin (`tc_segment_plugin`, selection name `tc-segment`) that segments Space Packets into Type-BD TC Transfer Frames with a Segment Header (FIRST / CONTINUING / LAST / UNSEGMENTED, MAP IDs, optional SDLS AES-256-GCM with the received Segment Header in the AAD, FSN IVs) and can inject faults (dropped, swapped or duplicated segments, wrong MAP, oversize, missing FIRST/LAST, corrupted MAC, tampered Segment Header, unknown SPI). `test_tc_segmented.py` runs through the GDS `IntegrationTestAPI` against any deployment configured with `--deployment-config` (`Svc.Ccsds.TcMapReassembler`, `Svc.Ccsds.TcMapReassembler.pool`, `Svc.Ccsds.TcDeframer.segmented`, `Svc.Ccsds.CcsdsSdlsDeframer` keys): `-m segmented` (I1-I12 and I19: delivery, fault handling, pool-pressure invariants and (VCID, MAP ID) isolation), `-m sdls` (I14-I18, AES-GCM build: MAC corruption, Segment Header tampering, unknown SPI) and `-m feature_off` (I13, a Segment Header frame against a deployment without one). The `ref-segmented` job of `.github/workflows/ref.yml` runs all three.

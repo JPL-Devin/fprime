@@ -19,14 +19,15 @@ is only registered when OpenSSL >= 3.5 is found; otherwise the SDLS configure fa
 ```bash
 cd TestDeploymentsProject/SubtopologyBuilds/Segmented
 # non-SDLS
-fprime-util generate && fprime-util build -j"$(nproc)"
+fprime-util generate -DSEGMENTED_DEPLOYMENT=ON && fprime-util build -j"$(nproc)"
 # SDLS (separate build cache; OpenSSL >= 3.5)
-fprime-util generate --build-cache ../../build-seg-sdls -DSEGMENTED_SDLS=ON -DOPENSSL_ROOT_DIR=<openssl-3.5 prefix>
+fprime-util generate --build-cache ../../build-seg-sdls -DSEGMENTED_DEPLOYMENT=ON -DSEGMENTED_SDLS=ON -DOPENSSL_ROOT_DIR=<openssl-3.5 prefix>
 fprime-util build --build-cache ../../build-seg-sdls -j"$(nproc)"
 ```
 
 `TestDeploymentsProject/CMakeLists.txt` is the only `project()`, so `Ref` and `Segmented` share the default
-build cache and the same `build-artifacts/` install destination. Use `--build-cache` to build several variants side by
+build cache and the same `build-artifacts/` install destination; the deployment is only added with
+`-DSEGMENTED_DEPLOYMENT=ON` so that a plain `Ref` build installs a single deployment (GDS auto-detection). Use `--build-cache` to build several variants side by
 side and, if the installed artifacts must not overwrite each other, `DESTDIR=<dir> fprime-util build ...` (the
 `-DFPRIME_INSTALL_DEST` command-line option is overridden by `settings.ini`). The installed binary is
 `<install>/<platform>/SubtopologyBuilds_Segmented/bin/SubtopologyBuilds_Segmented`.
