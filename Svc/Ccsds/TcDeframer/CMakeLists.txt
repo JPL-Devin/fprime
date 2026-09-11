@@ -27,6 +27,7 @@ register_fprime_ut(
     "${CMAKE_CURRENT_LIST_DIR}/TcDeframer.fpp"
   DEPENDS
     Svc_Ccsds_Types
+    Svc_Ccsds_TestUtils
     STest
   UT_AUTO_HELPERS
 )
