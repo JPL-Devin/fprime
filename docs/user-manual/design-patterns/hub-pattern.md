@@ -98,9 +98,13 @@ GenericHub <-> ComDataBufferAdapter <-> FprimeFramer / FprimeDeframer <-> ComStu
 > Use F Prime framing (`Svc::FprimeFramer` / `Svc::FprimeDeframer`) here. The
 > adapter forwards each hub buffer to the framer immediately, without flow
 > control, so the framer must accept a new input while previous frames are
-> still in flight. `Svc::FprimeFramer` allocates a frame per input and does;
-> the CCSDS `TmFramer` and `AosFramer` hold a single frame and are not
-> supported behind the adapter.
+> still in flight. `Svc::FprimeFramer` does, allocating a frame per input; the
+> CCSDS `TmFramer` and `AosFramer` hold a single frame and are not supported
+> behind the adapter. Size the framer's buffer pool for the maximum number of
+> hub sends in flight at once: on exhaustion the framer emits
+> `NoBufferAvailable` and the hub message is dropped (hub traffic is
+> best-effort; see the
+> [adapter SDD](../../../Svc/ComDataBufferAdapter/docs/sdd.md)).
 
 ```fpp
 hub.toBufferDriver         -> hubAdapter.bufferIn
