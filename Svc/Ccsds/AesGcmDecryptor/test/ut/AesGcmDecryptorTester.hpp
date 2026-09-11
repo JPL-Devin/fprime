@@ -121,6 +121,57 @@ class AesGcmDecryptorTester final : public AesGcmDecryptorGTestBase {
     //! Covers SVC-CCSDS-AES-DECRYPTOR-007.
     void testBufferReturn();
 
+    //! Without a Segment Header both constructors build the same 19-byte AAD and the Segment
+    //! Header argument is ignored. Covers SVC-CCSDS-AES-DECRYPTOR-002.
+    void testAuthMaskNoSh();
+
+    //! With a Segment Header the AAD is 20 bytes with the received octet between the primary
+    //! header and the SPI. Covers SVC-CCSDS-AES-DECRYPTOR-008.
+    void testAuthMaskSh();
+
+    //! The FIRST Segment Header known-answer frame decrypts to the expected plaintext.
+    //! Covers SVC-CCSDS-AES-DECRYPTOR-008.
+    void testDecryptVectorFirst();
+
+    //! The UNSEGMENTED Segment Header known-answer frame decrypts.
+    //! Covers SVC-CCSDS-AES-DECRYPTOR-008.
+    void testDecryptVectorUnsegmented();
+
+    //! The CONTINUING and LAST Segment Header known-answer frames decrypt.
+    //! Covers SVC-CCSDS-AES-DECRYPTOR-008.
+    void testDecryptVectorContinuingLast();
+
+    //! A frame authenticated with a Segment Header fails under a context saying there was
+    //! none, and vice versa: the Segment Header octet is part of the AAD.
+    //! Covers SVC-CCSDS-AES-DECRYPTOR-008.
+    void testShNotInAadFails();
+
+    //! A frame whose context carries a Segment Header other than the one authenticated (MAP
+    //! or sequence flags) fails the MAC check. Covers SVC-CCSDS-AES-DECRYPTOR-008.
+    void testShTamperFails();
+
+    //! One instance decrypts a 19-byte-AAD frame and then a 20-byte-AAD frame, which is only
+    //! possible when the runtime AAD length reaches the cipher.
+    //! Covers SVC-CCSDS-AES-DECRYPTOR-008.
+    void testAadLengthPassed();
+
+    //! An end-to-end SDLS frame on VC 0 with a Segment Header decrypts.
+    //! Covers SVC-CCSDS-AES-DECRYPTOR-002 and SVC-CCSDS-AES-DECRYPTOR-008.
+    void testDecryptFrameVc0();
+
+    //! Both end-to-end SDLS frames on VC 1 decrypt, and the first fails under a VC 0 context.
+    //! Covers SVC-CCSDS-AES-DECRYPTOR-002 and SVC-CCSDS-AES-DECRYPTOR-008.
+    void testDecryptFrameVc1();
+
+    //! An end-to-end frame whose MAC was flipped (and whose FECF was recomputed so it passed
+    //! the CRC check upstream) fails the MAC check. Covers SVC-CCSDS-AES-DECRYPTOR-003.
+    void testTamperedMacVector();
+
+    //! Frames with and without a Segment Header, and with differing Segment Headers, alternate
+    //! through one instance and each authenticates: the AAD is built per frame.
+    //! Covers SVC-CCSDS-AES-DECRYPTOR-008.
+    void testPerFrameAad();
+
   private:
     // ----------------------------------------------------------------------
     // Handler overrides
@@ -145,11 +196,25 @@ class AesGcmDecryptorTester final : public AesGcmDecryptorGTestBase {
     void setKey(const U8* key, FwSizeType keyLen, Svc::Ccsds::SdlsStatus status);
 
     //! Build IV | ciphertext | MAC into the harness storage for the given plaintext, and
-    //! return a buffer wrapping it
-    Fw::Buffer buildFrame(const U8* plaintext, FwSizeType plainLen, U8 vcId, U16 spi);
+    //! return a buffer wrapping it; the AAD carries the Segment Header when present
+    Fw::Buffer buildFrame(const U8* plaintext,
+                          FwSizeType plainLen,
+                          U8 vcId,
+                          U16 spi,
+                          bool segmentHeaderPresent = false,
+                          U8 segmentHeader = 0);
 
-    //! Hand a frame to the component, naming the virtual channel on the context
-    void sendDecrypt(Fw::Buffer& data, U16 spi, U8 vcId = TEST_VC_ID);
+    //! Copy a fixed IV | ciphertext | MAC vector into the harness storage and return a
+    //! buffer wrapping it
+    Fw::Buffer loadFrame(const U8* iv, const U8* ciphertext, FwSizeType cipherLen, const U8* mac);
+
+    //! Hand a frame to the component, naming the virtual channel and the stripped Segment
+    //! Header on the context
+    void sendDecrypt(Fw::Buffer& data,
+                     U16 spi,
+                     U8 vcId = TEST_VC_ID,
+                     bool segmentHeaderPresent = false,
+                     U8 segmentHeader = 0);
 
     //! Assert that exactly one buffer came out on decryptOut carrying the given status
     void assertStatus(Svc::Ccsds::SdlsStatus status);
