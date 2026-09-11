@@ -231,6 +231,14 @@ void TcDeframerTester::testShModeUnsegmented() {
     TcDeframerTester::fillPayload(this->m_payload, payloadLength);
     Fw::Buffer frame = this->buildFrame(fields, Fw::Buffer(this->m_payload, payloadLength));
 
+    // The positional builder overload must produce the identical frame
+    U8 positionalData[sizeof(this->m_frameData)] = {};
+    Fw::Buffer positionalFrame(positionalData, sizeof(positionalData));
+    ASSERT_TRUE(CcsdsTestUtils::buildTcFrame(fields.bypass, fields.control, fields.scid, fields.vcid, fields.sequence,
+                                             Fw::Buffer(this->m_payload, payloadLength), true, 0xC0, positionalFrame));
+    ASSERT_EQ(frame.getSize(), positionalFrame.getSize());
+    ASSERT_EQ(0, ::memcmp(frame.getData(), positionalFrame.getData(), frame.getSize()));
+
     this->setComponentState(fields.scid);
     this->component.configureSegmentHeader(true);
     this->assertForwarded(frame, this->m_payload, payloadLength, fields.vcid, true, 0xC0);

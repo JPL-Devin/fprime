@@ -104,6 +104,26 @@ bool buildTcFrame(const TcFrameFields& fields, const Fw::Buffer& payload, Fw::Bu
     return true;
 }
 
+bool buildTcFrame(bool bypass,
+                  bool control,
+                  U16 scid,
+                  U8 vcid,
+                  U8 seq,
+                  const Fw::Buffer& payload,
+                  bool withSegmentHeader,
+                  U8 sh,
+                  Fw::Buffer& frame) {
+    TcFrameFields fields;
+    fields.bypass = bypass;
+    fields.control = control;
+    fields.scid = scid;
+    fields.vcid = vcid;
+    fields.sequence = seq;
+    fields.withSegmentHeader = withSegmentHeader;
+    fields.segmentHeader = sh;
+    return buildTcFrame(fields, payload, frame);
+}
+
 U8 makeSegmentHeader(U8 sequenceFlags, U8 mapId) {
     namespace TCSegmentHeader = Svc::Ccsds::TCSegmentHeader;
     return static_cast<U8>(((static_cast<U8>(sequenceFlags << TCSegmentHeader::SequenceFlagsOffset)) &
