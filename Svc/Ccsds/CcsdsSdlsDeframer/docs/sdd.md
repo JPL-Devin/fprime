@@ -14,6 +14,12 @@ Deframing an SDLS frame proceeds as follows:
 
 Buffer ownership follows the standard F Prime data-with-context return pattern: frames that cannot be processed (or fail decryption) are returned via `dataReturnOut`, decrypted data ownership returns from downstream (`dataReturnIn`) are routed back to the decryption helper (`decryptReturnOut`), and original frame buffers returned by the helper (`bufferReturnIn`) go back upstream via `dataReturnOut`.
 
+### Ordering and authentication gate
+
+In the uplink pipeline this component sits between the TC deframer and any MAP-level processing, in the order [CCSDS 232.0-B-4](https://public.ccsds.org/Pubs/232x0b4e1c1.pdf) §6.5.2.1 prescribes: FARM-1 or bypass acceptance → SDLS `ProcessSecurity` → virtual channel reception → MAP extraction. `dataOut` is taken only on `SUCCESS`; every other status ends in `DecryptionFailed`, `errorNotify(SDLS_DECRYPTION_FAILURE)` and the buffer's return, with nothing emitted downstream. A `Svc::Ccsds::TcMapReassembler` wired to `dataOut` relies on this gate: no octet of a frame that failed security processing — in particular no TC Segment Header — can allocate, append to, complete or abandon reassembly state. The frame context passed downstream carries the Segment Header `Svc::Ccsds::TcDeframer` stripped (`tcSegmentHeaderPresent`, `tcSegmentHeader`); this component does not read it, and the decryptor authenticates it as part of the AAD.
+
+**The gate authenticates only if the connected decryptor verifies the MAC.** `SUCCESS` means "the selected decryptor returned `SdlsStatus::SUCCESS`". [`Svc::Ccsds::AesGcmDecryptor`](../../AesGcmDecryptor/docs/sdd.md) verifies an AES-256-GCM MAC over the frame body, the VC, the SA index and the Segment Header when present; the default [`Svc::Ccsds::ClearTextDecryptor`](../../ClearTextDecryptor/docs/sdd.md) returns `SUCCESS` for every frame and provides no protection against forged Segment Headers. A deployment that places a MAP reassembler behind this component must therefore select a MAC-verifying decryptor; with `ClearTextDecryptor` every Segment Header reaching the reassembler is attacker-controllable.
+
 ## Requirements
 
 | Name | Description | Rationale | Validation |
