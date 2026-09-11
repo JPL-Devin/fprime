@@ -17,7 +17,7 @@ In this section, you will learn about the expected structure of an F´ library.
 1. Module Directories and Modules (Components, Ports, Topologies, etc.)
 2. `cmake/toolchain` Folder and Toolchain Files
 3. `cmake/platform` Folder and Platform Files
-4. `default-config/config-<library name>` Folder and Default Configuration Files
+4. `default-config/config-<library name>` Folder and Default Configuration Files (optional)
 
 That means that a complete F´ library might look like the following:
 

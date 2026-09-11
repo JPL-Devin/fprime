@@ -45,9 +45,6 @@ These settings include:
   computer platform.
 - `environment_file`: An ini file that can be used to set environmental variables during the build
   process.
-- `config_directory`: Legacy setting, no longer read by the build system. Configuration is overridden by
-  registering a configuration module with `CONFIGURATION_OVERRIDES`; see
-  [Configuration Modules](./configuration.md).
 
 ### Platform Sections
 

@@ -204,7 +204,7 @@ namespace Os {
 #endif  // CONFIG_OS_DELEGATERAWTIME_HPP
 ```
 
-**Step 2:** Register the config header in your project's `config/CMakeLists.txt` (see [Configuration Modules](../../user-manual/build-system/configuration.md#overriding-configuration-in-a-project)):
+**Step 2:** Register the config header in your project's `config-overrides/CMakeLists.txt` (see [Configuration Modules](../../user-manual/build-system/configuration.md#overriding-configuration-in-a-project)):
 
 ```cmake
 register_fprime_config(

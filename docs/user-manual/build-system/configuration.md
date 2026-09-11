@@ -256,13 +256,15 @@ subtopology with the same steps:
    directory (`default-config/config-<library name>` by convention); subtopology files are in
    `Svc/Subtopologies/<Subtopology>/<Subtopology>Config` or the equivalent library path.
 2. **Copy the file into the project, keeping its name.** Overrides are matched by file name, so the name must be
-   identical. Copy only the files you change; the rest keep their defaults. A single `config/` directory at
-   the project root is the usual place.
+   identical. Copy only the files you change; the rest keep their defaults. A single `config-overrides/`
+   directory at the project root is the recommended place. Do not name it `config/`: the project root is an
+   include root, so `<project>/config/FpConfig.h` would be found at the same include path as the build-cache
+   copy of the framework's `config/FpConfig.h` and shadow it.
 3. **Edit the copy.**
 4. **Register the overrides once**, from a `CMakeLists.txt` in that directory:
 
    ```cmake
-   # <project>/config/CMakeLists.txt
+   # <project>/config-overrides/CMakeLists.txt
    register_fprime_config(
            MyProjectConfig
        CONFIGURATION_OVERRIDES
@@ -280,7 +282,7 @@ subtopology with the same steps:
    # <project>/CMakeLists.txt
    include("${CMAKE_CURRENT_LIST_DIR}/lib/fprime/cmake/FPrime.cmake")
    fprime_setup_included_code()
-   add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/config/")
+   add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/config-overrides/")
    add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/MyDeployment/")
    ```
 
