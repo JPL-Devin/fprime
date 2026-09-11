@@ -6,6 +6,10 @@
 
 #include "Svc/Ccsds/TestUtils/TestUtils.hpp"
 #include "STest/Random/Random.hpp"
+#include "Svc/Ccsds/Types/FppConstantsAc.hpp"
+#include "Svc/Ccsds/Types/TCHeaderSerializableAc.hpp"
+#include "Svc/Ccsds/Types/TCTrailerSerializableAc.hpp"
+#include "Svc/Ccsds/Utils/CRC16.hpp"
 
 namespace Svc {
 
@@ -48,6 +52,63 @@ ApidOption getRandomApid() {
     // required by CCSDS
     const auto result = ComCfg::Apid::isValid(apid) ? ApidOption(static_cast<ComCfg::Apid::T>(apid)) : Fw::NONE;
     return result;
+}
+
+bool buildTcFrame(const TcFrameFields& fields, const Fw::Buffer& payload, Fw::Buffer& frame) {
+    using Svc::Ccsds::TCHeader;
+    using Svc::Ccsds::TCTrailer;
+    namespace TCSegmentHeader = Svc::Ccsds::TCSegmentHeader;
+    namespace TCSubfields = Svc::Ccsds::TCSubfields;
+    // Frame Length is a 10-bit field holding (total octets - 1): frames are at most 1024 octets
+    constexpr FwSizeType MAX_FRAME_LENGTH = static_cast<FwSizeType>(TCSubfields::FrameLengthMask) + 1;
+
+    const FwSizeType segmentHeaderLength =
+        fields.withSegmentHeader ? static_cast<FwSizeType>(TCSegmentHeader::Size) : 0;
+    const FwSizeType frameLength = static_cast<FwSizeType>(TCHeader::SERIALIZED_SIZE) + segmentHeaderLength +
+                                   payload.getSize() + static_cast<FwSizeType>(TCTrailer::SERIALIZED_SIZE);
+    if ((frameLength > MAX_FRAME_LENGTH) || (frameLength > frame.getSize())) {
+        return false;
+    }
+
+    U8* const out = frame.getData();
+    const U16 lengthToken = static_cast<U16>(frameLength - 1);
+    U16 flagsAndScId = static_cast<U16>(fields.scid & TCSubfields::SpacecraftIdMask);
+    if (fields.bypass) {
+        flagsAndScId = static_cast<U16>(flagsAndScId | TCSubfields::BypassFlagMask);
+    }
+    if (fields.control) {
+        flagsAndScId = static_cast<U16>(flagsAndScId | TCSubfields::ControlFlagMask);
+    }
+    const U16 vcIdAndLength =
+        static_cast<U16>(((static_cast<U16>(fields.vcid) << TCSubfields::VcIdOffset) & TCSubfields::VcIdMask) |
+                         (lengthToken & TCSubfields::FrameLengthMask));
+
+    FwSizeType offset = 0;
+    out[offset++] = static_cast<U8>(flagsAndScId >> 8);
+    out[offset++] = static_cast<U8>(flagsAndScId & 0xFF);
+    out[offset++] = static_cast<U8>(vcIdAndLength >> 8);
+    out[offset++] = static_cast<U8>(vcIdAndLength & 0xFF);
+    out[offset++] = fields.sequence;
+    if (fields.withSegmentHeader) {
+        out[offset++] = fields.segmentHeader;
+    }
+    for (FwSizeType i = 0; i < payload.getSize(); i++) {
+        out[offset++] = payload.getData()[i];
+    }
+    const U16 crc = Svc::Ccsds::Utils::CRC16::compute(out, static_cast<U32>(offset));
+    out[offset++] = static_cast<U8>(crc >> 8);
+    out[offset++] = static_cast<U8>(crc & 0xFF);
+    FW_ASSERT(offset == frameLength, static_cast<FwAssertArgType>(offset), static_cast<FwAssertArgType>(frameLength));
+
+    frame.setSize(frameLength);
+    return true;
+}
+
+U8 makeSegmentHeader(U8 sequenceFlags, U8 mapId) {
+    namespace TCSegmentHeader = Svc::Ccsds::TCSegmentHeader;
+    return static_cast<U8>(((static_cast<U8>(sequenceFlags << TCSegmentHeader::SequenceFlagsOffset)) &
+                            TCSegmentHeader::SequenceFlagsMask) |
+                           (mapId & TCSegmentHeader::MapIdMask));
 }
 
 }  // namespace CcsdsTestUtils
