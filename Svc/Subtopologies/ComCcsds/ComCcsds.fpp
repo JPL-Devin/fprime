@@ -118,6 +118,64 @@ module ComCcsds {
 
     instance comStub: Svc.ComStub base id ComCcsdsConfig.BASE_ID + 0x0A000
 
+    # ----------------------------------------------------------------------
+    # Segmented-uplink instances (used only by the *Segmented topologies below)
+    # ----------------------------------------------------------------------
+
+    @ TC deframer in Segment Header mode (CCSDS 232.0-B-4 4.1.3.2.2). Distinct from
+    @ 'tcDeframer' so that Segment Header processing is enabled by importing a Segmented
+    @ topology and by nothing else (single switch).
+    instance tcDeframerSeg: Svc.Ccsds.TcDeframer base id ComCcsdsConfig.BASE_ID + 0x0B000 \
+    {
+        phase Fpp.ToCpp.Phases.configComponents """
+        ComCcsds::tcDeframerSeg.configureSegmentHeader(true);
+        """
+    }
+
+    @ Dedicated buffer pool for reassembled Space Packets: one bin,
+    @ TcMapCfg.PoolBufferCount buffers of TcMapCfg.MaxPacketSize octets. Never shared
+    @ with commsBufferManager (Svc.BufferManager allocates first-fit across bins).
+    instance tcPacketBufferManager: Svc.BufferManager base id ComCcsdsConfig.BASE_ID + 0x0C000 \
+    {
+        phase Fpp.ToCpp.Phases.configObjects """
+        Svc::BufferManager::BufferBins bins;
+        // fpp constants are anonymous enums: bind each to a named constexpr, then assert on the names
+        // (inline static_cast operands fail cmake/flags.cmake -Wconversion -Werror)
+        constexpr U16        kPoolManagerId      = TcMapCfg::PoolManagerId;
+        constexpr U16        kCommsBuffMgrId     = ComCcsdsConfig::BuffMgr::commsBuffMgrId;
+        constexpr FwSizeType kPoolBufferCount    = TcMapCfg::PoolBufferCount;
+        constexpr FwSizeType kMapChannelCount    = TcMapCfg::MapChannelCount;
+        constexpr FwSizeType kMaxPacketsInFlight = TcMapCfg::MaxPacketsInFlight;
+        constexpr U64        kPoolBytes          = TcMapCfg::PoolBytes;
+        constexpr U64        kMaxPacketSize      = TcMapCfg::MaxPacketSize;
+        static_assert(kPoolManagerId != kCommsBuffMgrId,
+                      "dedicated TC packet pool must not reuse the comms BufferManager id");
+        static_assert(kPoolBufferCount == kMapChannelCount + kMaxPacketsInFlight,
+                      "TC packet pool must hold one buffer per MAP plus MaxPacketsInFlight");
+        static_assert(kPoolBytes == static_cast<U64>(kPoolBufferCount) * kMaxPacketSize,
+                      "TC packet pool backing memory arithmetic");
+        """
+
+        phase Fpp.ToCpp.Phases.configComponents """
+        memset(&ConfigObjects::ComCcsds_tcPacketBufferManager::bins, 0, sizeof(ConfigObjects::ComCcsds_tcPacketBufferManager::bins));
+        ConfigObjects::ComCcsds_tcPacketBufferManager::bins.bins[0].bufferSize = TcMapCfg::MaxPacketSize;
+        ConfigObjects::ComCcsds_tcPacketBufferManager::bins.bins[0].numBuffers = TcMapCfg::PoolBufferCount;
+        ComCcsds::tcPacketBufferManager.setup(
+            TcMapCfg::PoolManagerId,
+            0,
+            ComCcsds::Allocation::memAllocator,
+            ConfigObjects::ComCcsds_tcPacketBufferManager::bins
+        );
+        """
+
+        phase Fpp.ToCpp.Phases.tearDownComponents """
+        ComCcsds::tcPacketBufferManager.cleanup();
+        """
+    }
+
+    # NOTE: the 'tcMapReassembler' instance is defined in ComCcsdsConfig/ComCcsdsTcMapConfig.fpp so that
+    # projects may change the accepted MAP ID table via configuration overrides
+
     # This subtopology boxes the Space Packet packet layer: router, ComQueue, space packet
     # framer/deframer, APID manager, aggregator, and comms buffer manager.
     topology SpacePacketFraming {
@@ -490,5 +548,237 @@ module ComCcsds {
         port bufferManagerSchedIn = commsBufferManager.schedIn
 
     } # end Subtopology
+
+    # ----------------------------------------------------------------------
+    # Segmented TC uplink variants (CCSDS 232.0-B-4 Segment Header / MAP packet extraction)
+    # ----------------------------------------------------------------------
+
+    # TC/TM transfer frame layer with the TC deframer in Segment Header mode.
+    # Same topology ports as TmTcFraming so the *Segmented topologies wire identically.
+    topology TmTcFramingSegmented {
+        instance framer
+        instance tcDeframerSeg
+        instance frameAccumulator
+
+        connections Uplink {
+            # FrameAccumulator <-> TcDeframer (Segment Header mode)
+            frameAccumulator.dataOut    -> tcDeframerSeg.dataIn
+            tcDeframerSeg.dataReturnOut -> frameAccumulator.dataReturnIn
+        }
+
+        # ----------------------------------------------------------------------
+        # Topology ports
+        # ----------------------------------------------------------------------
+
+        # Upstream boundary (packet layer) - downlink identical to TmTcFraming
+        @ Input port receiving space packets from the packet layer for TM framing
+        port dataIn        = framer.dataIn
+
+        @ Output port returning ownership of downlinked buffers to the packet layer
+        port dataReturnOut = framer.dataReturnOut
+
+        @ Output port forwarding com status to the packet layer
+        port comStatusOut  = framer.comStatusOut
+
+        @ Output port sending TC-deframed frame data (Segment Header stripped into FrameContext)
+        port dataOut       = tcDeframerSeg.dataOut
+
+        @ Input port receiving back ownership of uplinked buffers
+        port dataReturnIn  = tcDeframerSeg.dataReturnIn
+
+        # Downstream boundary (Svc.Com interface) - identical to TmTcFraming
+        @ Output port sending TM transfer frames to the com interface
+        port framedDataOut       = framer.dataOut
+
+        @ Input port receiving back ownership of transmitted frame buffers from the com interface
+        port framedDataReturnIn  = framer.dataReturnIn
+
+        @ Input port receiving com status from the com interface
+        port framedComStatusIn   = framer.comStatusIn
+
+        @ Input port receiving raw uplink data from the com interface
+        port framedDataIn        = frameAccumulator.dataIn
+
+        @ Output port returning ownership of received uplink buffers to the com interface
+        port framedDataReturnOut = frameAccumulator.dataReturnOut
+
+        # Buffer management boundary
+        @ Output port for allocating accumulation buffers
+        port bufferAllocate   = frameAccumulator.bufferAllocate
+
+        @ Output port for deallocating accumulation buffers
+        port bufferDeallocate = frameAccumulator.bufferDeallocate
+    } # end TmTcFramingSegmented
+
+    # MAP packet extraction layer: reassembles Space Packets from authenticated TC segments.
+    # Sits between the TC deframer (or the SDLS SUCCESS gate) and SpacePacketFraming.
+    topology TcMapExtraction {
+        instance tcMapReassembler
+        instance tcPacketBufferManager
+
+        connections Pool {
+            # Reassembled-packet buffers come from the dedicated pool only
+            tcMapReassembler.allocate   -> tcPacketBufferManager.bufferGetCallee
+            tcMapReassembler.deallocate -> tcPacketBufferManager.bufferSendIn
+        }
+
+        # ----------------------------------------------------------------------
+        # Topology ports
+        # ----------------------------------------------------------------------
+
+        @ Segments in (from the TC deframer in Segment Header mode or from the SDLS decryption layer)
+        port dataIn        = tcMapReassembler.dataIn
+
+        @ Segment frame buffers returned upstream
+        port dataReturnOut = tcMapReassembler.dataReturnOut
+
+        @ Complete Space Packets out
+        port dataOut       = tcMapReassembler.dataOut
+
+        @ Packet buffers returned by the packet layer
+        port dataReturnIn  = tcMapReassembler.dataReturnIn
+
+        @ Optional: schedule the dedicated pool's telemetry (Svc.BufferManager.schedIn)
+        port poolSchedIn   = tcPacketBufferManager.schedIn
+    } # end TcMapExtraction
+
+    # FramingSubtopology with the segmented TC uplink (no SDLS):
+    # frameAccumulator -> tcDeframerSeg -> tcMapReassembler -> spacePacketDeframer
+    topology FramingSubtopologySegmented {
+        # Usage Note: same external connections as FramingSubtopology (see above).
+
+        # Packet layer (router, ComQueue, space packet framer/deframer, buffer manager)
+        import SpacePacketFraming
+
+        # TM/TC transfer frame layer with the TC deframer in Segment Header mode
+        import TmTcFramingSegmented
+
+        # MAP packet extraction layer (reassembler + dedicated pool)
+        import TcMapExtraction
+
+        connections Downlink {
+            # SpacePacketFraming <-> TmTcFramingSegmented
+            SpacePacketFraming.dataOut          -> TmTcFramingSegmented.dataIn
+            TmTcFramingSegmented.dataReturnOut  -> SpacePacketFraming.dataReturnIn
+
+            # ComStatus
+            TmTcFramingSegmented.comStatusOut   -> SpacePacketFraming.comStatusIn
+            # (Outgoing) TmTcFramingSegmented <-> ComInterface connections shall be established by the user
+        }
+
+        connections Uplink {
+            # (Incoming) ComInterface <-> TmTcFramingSegmented connections shall be established by the user
+            # TmTcFramingSegmented buffer allocations
+            TmTcFramingSegmented.bufferDeallocate -> SpacePacketFraming.bufferSendIn
+            TmTcFramingSegmented.bufferAllocate   -> SpacePacketFraming.bufferGetCallee
+
+            # TC deframer (Segment Header mode) -> MAP reassembler
+            TmTcFramingSegmented.dataOut  -> TcMapExtraction.dataIn
+            TcMapExtraction.dataReturnOut -> TmTcFramingSegmented.dataReturnIn
+
+            # MAP reassembler -> Space Packet deframer
+            TcMapExtraction.dataOut             -> SpacePacketFraming.dataIn
+            SpacePacketFraming.dataReturnOut    -> TcMapExtraction.dataReturnIn
+        }
+
+        # ----------------------------------------------------------------------
+        # Topology ports (Svc.Com boundary)
+        # ----------------------------------------------------------------------
+
+        @ Output port sending TM transfer frames to the com interface
+        port dataOut       = framer.dataOut
+
+        @ Input port receiving back ownership of transmitted frame buffers from the com interface
+        port dataReturnIn  = framer.dataReturnIn
+
+        @ Input port receiving com status from the com interface
+        port comStatusIn   = framer.comStatusIn
+
+        @ Input port receiving raw uplink data from the com interface
+        port dataIn        = frameAccumulator.dataIn
+
+        @ Output port returning ownership of received uplink buffers to the com interface
+        port dataReturnOut = frameAccumulator.dataReturnOut
+    } # end FramingSubtopologySegmented
+
+    # Subtopology (with ComStub) with the segmented TC uplink. Same topology ports as
+    # Subtopology plus tcPacketBufferManagerSchedIn.
+    topology SegmentedSubtopology {
+        import FramingSubtopologySegmented
+
+        instance comStub
+
+        connections ComStub {
+            # FramingSubtopologySegmented <-> ComStub (Downlink)
+            FramingSubtopologySegmented.dataOut -> comStub.dataIn
+            comStub.dataReturnOut  -> FramingSubtopologySegmented.dataReturnIn
+            comStub.comStatusOut   -> FramingSubtopologySegmented.comStatusIn
+
+            # ComStub <-> FramingSubtopologySegmented (Uplink)
+            comStub.dataOut        -> FramingSubtopologySegmented.dataIn
+            FramingSubtopologySegmented.dataReturnOut -> comStub.dataReturnIn
+        }
+
+        # ----------------------------------------------------------------------
+        # Topology ports (identical to Subtopology, plus tcPacketBufferManagerSchedIn)
+        # ----------------------------------------------------------------------
+
+        # Command routing
+        @ Output port sending routed command packets to the command dispatcher
+        port commandOut         = fprimeRouter.commandOut
+
+        @ Input port receiving command response messages back into the router
+        port cmdResponseIn      = fprimeRouter.cmdResponseIn
+
+        @ Output port sending uplinked file packets to the file handling stack
+        port fileUplinkOut          = fprimeRouter.fileOut
+
+        @ Input port receiving back buffer ownership from the file handling stack
+        port fileUplinkReturnIn = fprimeRouter.fileBufferReturnIn
+
+        # Telemetry/events/file queuing (array ports - index at connection site)
+        @ Input port array for queueing Fw::ComBuffers
+        port comPacketQueueIn = comQueue.comPacketQueueIn
+
+        @ Input port array for queueing Fw::Buffers
+        port bufferQueueIn    = comQueue.bufferQueueIn
+
+        @ Output port array returning ownership of Fw::Buffers to their original sender after dequeuing
+        port bufferReturnOut  = comQueue.bufferReturnOut
+
+        # ComDriver interface (via ComStub)
+        @ Input port receiving data read from the ByteStream driver
+        port drvReceiveIn        = comStub.drvReceiveIn
+
+        @ Output port returning ownership of the buffer that came in on drvReceiveIn back to the driver
+        port drvReceiveReturnOut = comStub.drvReceiveReturnOut
+
+        @ Output port sending framed data to the ByteStream driver for transmission
+        port drvSendOut          = comStub.drvSendOut
+
+        @ Input port receiving the ready signal when the ByteStream driver has connected
+        port drvConnected        = comStub.drvConnected
+
+        # Buffer management for ComDriver
+        @ Input port for requesting (allocating) a new Fw::Buffer from the comms buffer pool
+        port commsBufferGetCallee = commsBufferManager.bufferGetCallee
+
+        @ Input port for deallocating Fw::Buffers back into the comms buffer pool
+        port commsBufferSendIn    = commsBufferManager.bufferSendIn
+
+        # Scheduling
+        @ Input port for scheduling ComQueue telemetry output
+        port comQueueRun          = comQueue.run
+
+        @ Rate-group driven timeout to flush the ComAggregator buffer
+        port aggregatorTimeout    = aggregator.timeout
+
+        @ Input port triggering commsBufferManager telemetry output
+        port bufferManagerSchedIn = commsBufferManager.schedIn
+
+        @ Input port triggering the dedicated TC packet pool (tcPacketBufferManager) telemetry output
+        port tcPacketBufferManagerSchedIn = tcPacketBufferManager.schedIn
+
+    } # end SegmentedSubtopology
 
 } # end ComCcsds

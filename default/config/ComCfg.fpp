@@ -62,6 +62,8 @@ module ComCfg {
         sendNow: bool               @< Flag to AOS Framer that the Frame this packet goes into should be sent ASAP
         saIndex: U16                @< Security Association Index - set by SDLS deframers, read by SDLS framers
         firstHeaderPointer: U16     @< 11 bit TM First Header Pointer - set by ComAggregator, read by TmFramer
+        tcSegmentHeaderPresent: bool @< TC Segment Header was present and stripped by TcDeframer (Segment Header mode); false when the mode is off
+        tcSegmentHeader: U8         @< Raw TC Segment Header octet (bits 0-1 sequence flags, bits 2-7 MAP ID) - valid iff tcSegmentHeaderPresent
     } default {
         comQueueIndex = 0
         apid = Apid.FW_PACKET_UNKNOWN
@@ -73,6 +75,8 @@ module ComCfg {
         sendNow = false
         saIndex = SaIndexUnset
         firstHeaderPointer = 0
+        tcSegmentHeaderPresent = false
+        tcSegmentHeader = 0
     }
 
 }

@@ -28,12 +28,7 @@ static constexpr FwSizeType AES_256_KEY_LEN = 32;
 // Only the key and the IV change and those are supplied per
 // frame by a single EVP_DecryptInit_ex.
 AesGcmDecryptor ::AesGcmDecryptor(const char* const compName)
-    : AesGcmDecryptorComponentBase(compName),
-      m_cipher(nullptr),
-      m_ctx(nullptr),
-      m_aad(0, 0),
-      m_aadVcId(0),
-      m_aadSaIndex(0) {
+    : AesGcmDecryptorComponentBase(compName), m_cipher(nullptr), m_ctx(nullptr) {
     this->m_cipher = EVP_CIPHER_fetch(nullptr, "AES-256-GCM", nullptr);
     FW_ASSERT(this->m_cipher != nullptr);
     this->m_ctx = EVP_CIPHER_CTX_new();
@@ -80,15 +75,14 @@ void AesGcmDecryptor ::decryptIn_handler(FwIndexType portNum,
     const U32 cipherLen = static_cast<U32>(data.getSize()) - GCM_IV_LEN - GCM_TAG_LEN;
     U8* const tag = ciphertext + cipherLen;
 
-    // Authenticated but not encrypted; the VC travels in the context
-    // The mask depends only on the VC and the SA, so it is rebuilt when either changes
-    // rather than per frame
-    const U8 vcId = context.get_vcId();
-    if ((vcId != this->m_aadVcId) || (securityAssociationIndex != this->m_aadSaIndex)) {
-        this->m_aad = Svc::Ccsds::Utils::SdlsTcAuthMask(vcId, securityAssociationIndex);
-        this->m_aadVcId = vcId;
-        this->m_aadSaIndex = securityAssociationIndex;
-    }
+    // Authenticated but not encrypted. The VC and, when TcDeframer stripped one, the received
+    // Segment Header octet travel in the context; the mask is rebuilt per frame because the
+    // Segment Header changes between consecutive frames of one packet.
+    const Svc::Ccsds::Utils::SdlsTcAuthMask aad(context.get_vcId(), securityAssociationIndex,
+                                                context.get_tcSegmentHeaderPresent(), context.get_tcSegmentHeader());
+    FW_ASSERT(aad.size == Svc::Ccsds::Utils::SdlsTcAuthMask::SIZE_NO_SEGMENT_HEADER ||
+                  aad.size == Svc::Ccsds::Utils::SdlsTcAuthMask::SIZE_WITH_SEGMENT_HEADER,
+              static_cast<FwAssertArgType>(aad.size));
 
     int len = 0;
     int plainLen = 0;
@@ -97,8 +91,8 @@ void AesGcmDecryptor ::decryptIn_handler(FwIndexType portNum,
     // The cipher context holds the key schedule now, so the stack copy is dead.
     // OPENSSL_cleanse wipes it so the key cannot be recovered from a memory dump.
     OPENSSL_cleanse(key.getBuffAddr(), key.getCapacity());
-    const bool aadAbsorbed = rekeyed && (EVP_DecryptUpdate(this->m_ctx, nullptr, &len, this->m_aad.bytes,
-                                                           static_cast<int>(sizeof(this->m_aad.bytes))) == 1);
+    const bool aadAbsorbed =
+        rekeyed && (EVP_DecryptUpdate(this->m_ctx, nullptr, &len, aad.bytes, static_cast<int>(aad.size)) == 1);
     const bool decrypted =
         aadAbsorbed && (EVP_DecryptUpdate(this->m_ctx, ciphertext, &len, ciphertext, static_cast<int>(cipherLen)) == 1);
     const bool tagSet =

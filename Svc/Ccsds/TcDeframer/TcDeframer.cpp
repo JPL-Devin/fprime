@@ -19,7 +19,7 @@ namespace Ccsds {
 // ----------------------------------------------------------------------
 
 TcDeframer ::TcDeframer(const char* const compName)
-    : TcDeframerComponentBase(compName), m_spacecraftId(ComCfg::SpacecraftId) {}
+    : TcDeframerComponentBase(compName), m_spacecraftId(ComCfg::SpacecraftId), m_segmentHeaderEnabled(false) {}
 
 TcDeframer ::~TcDeframer() {}
 
@@ -27,6 +27,10 @@ void TcDeframer::configure(U16 vcId, U16 spacecraftId, bool acceptAllVcid) {
     this->m_vcId = vcId;
     this->m_spacecraftId = spacecraftId;
     this->m_acceptAllVcid = acceptAllVcid;
+}
+
+void TcDeframer::configureSegmentHeader(bool enabled) {
+    this->m_segmentHeaderEnabled = enabled;
 }
 // ----------------------------------------------------------------------
 // Handler implementations for user-defined typed input ports
@@ -110,6 +114,25 @@ void TcDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, const Co
         return;
     }
 
+    if (this->m_segmentHeaderEnabled) {
+        // Type-BC/AC control frames carry no Segment Header (CCSDS 232.0-B-4 4.1.3.3): drop them before
+        // interpreting octet 5
+        if ((header.get_flagsAndScId() & TCSubfields::ControlFlagMask) != 0) {
+            this->log_WARNING_LO_ControlFrameDropped(header.get_flagsAndScId());
+            this->dataReturnOut_out(0, data, context);  // drop the frame
+            return;
+        }
+        // The frame must hold header | Segment Header | trailer. Only reachable when the buffer is larger than the
+        // frame (an exactly-sized 7-octet buffer is rejected above); without it the first FECF octet would be
+        // read as the Segment Header
+        if (total_frame_length < TCHeader::SERIALIZED_SIZE + TCSegmentHeader::Size + TCTrailer::SERIALIZED_SIZE) {
+            this->log_WARNING_HI_MissingSegmentHeader(total_frame_length);
+            this->errorNotifyHelper(Ccsds::FrameError::TC_MISSING_SEGMENT_HEADER);
+            this->dataReturnOut_out(0, data, context);  // drop the frame
+            return;
+        }
+    }
+
     // Point to the start of the data field and set appropriate size
     data.advance(TCHeader::SERIALIZED_SIZE);
     // Shrink size to that of the encapsulated data field ( header | data | trailer )
@@ -118,6 +141,15 @@ void TcDeframer ::dataIn_handler(FwIndexType portNum, Fw::Buffer& data, const Co
     // Carry the VC on in the context
     ComCfg::FrameContext contextCopy = context;
     contextCopy.set_vcId(vc_id);
+
+    if (this->m_segmentHeaderEnabled) {
+        // Strip the Segment Header (CCSDS 232.0-B-4 4.1.3.2.2) and carry the raw octet in the context so that
+        // downstream consumers (SDLS authentication, MAP reassembly) see exactly what was received
+        const U8 segmentHeader = data.getData()[0];
+        data.advance(TCSegmentHeader::Size);
+        contextCopy.set_tcSegmentHeaderPresent(true);
+        contextCopy.set_tcSegmentHeader(segmentHeader);
+    }
 
     this->dataOut_out(0, data, contextCopy);
 }

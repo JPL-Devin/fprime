@@ -38,6 +38,18 @@ class TcDeframer : public TcDeframerComponentBase {
     //!
     void configure(U16 vcId, U16 spacecraftId, bool acceptAllVcid);
 
+    //! \brief Enable or disable TC Segment Header processing (CCSDS 232.0-B-4 4.1.3.2.2)
+    //!
+    //! When enabled, every accepted Type-BD frame must carry a one-octet Segment Header immediately after the
+    //! primary header. The octet is stripped from the emitted data and copied verbatim into the emitted
+    //! `ComCfg::FrameContext` (`tcSegmentHeaderPresent = true`, `tcSegmentHeader = octet`). Type-BC/AC control
+    //! frames, which carry no Segment Header, are dropped. Call once during component configuration; the default
+    //! (disabled) preserves the baseline behaviour byte-for-byte.
+    //!
+    //! \param enabled true to enable Segment Header mode, false to disable it
+    //!
+    void configureSegmentHeader(bool enabled);
+
   private:
     // ----------------------------------------------------------------------
     // Handler implementations for user-defined typed input ports
@@ -65,6 +77,7 @@ class TcDeframer : public TcDeframerComponentBase {
     U16 m_vcId;                   //!< The virtual channel ID this deframer is configured to handle
     U16 m_spacecraftId;           //!< The spacecraft ID this deframer is configured to handle
     bool m_acceptAllVcid = true;  //!< Flag to accept all VCIDs
+    bool m_segmentHeaderEnabled;  //!< Segment Header mode (CCSDS 232.0-B-4 4.1.3.2.2); false by default
 };
 }  // namespace Ccsds
 }  // namespace Svc
