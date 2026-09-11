@@ -38,7 +38,7 @@ Compile-time configuration lives in the `TcMapCfg` FPP module (`config/TcMapReas
 |---|---|---|
 | `MapChannelCount` | 1 | Number of MAP slots (1..64) |
 | `MaxPacketSize` | 4096 | Largest reassembled Space Packet, in octets (7..65542) |
-| `MaxPacketsInFlight` | 4 | Delivered packets that may be outstanding downstream before allocation fails |
+| `MaxPacketsInFlight` | 4 | Pool budget for delivered packets outstanding downstream. Sizing only: the component does not count deliveries, so a downstream holding more than this many packets eats into the per-MAP reassembly buffers and the next FIRST/UNSEGMENTED fails allocation (`AllocationFailed`) until a packet is returned |
 | `PoolBufferCount` | `MapChannelCount + MaxPacketsInFlight` | Buffers in the dedicated pool |
 | `PoolBytes` | `PoolBufferCount * MaxPacketSize` | Pool memory |
 | `PoolManagerId` | 201 | Manager ID of the dedicated `Svc.BufferManager` |
