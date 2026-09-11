@@ -23,7 +23,13 @@ import pytest
 from fprime_gds.common.testing_fw import predicates
 
 from tc_segment_plugin import tc_frames as tf
-from tc_segment_plugin.control import Knobs, clear_knobs, control_file_path, wait_consumed, write_knobs
+from tc_segment_plugin.control import (
+    Knobs,
+    clear_knobs,
+    control_file_path,
+    wait_consumed,
+    write_knobs,
+)
 
 # Dictionary discriminator of the SDLS deployment (Svc.Ccsds.AesGcmDecryptor has no events, channels or
 # commands, so the selected decryptor can only be recognised by what is absent).
@@ -32,7 +38,10 @@ CLEAR_TEXT_ENCRYPTOR_EVENT = "ComCcsdsSdls.encryptor.NullCipherInUse"
 KEY_MANAGER_FAILURE_EVENT = "Segmented.sdlsKeyManager.KeyReadFailed"
 DECRYPTOR_EVENT_PREFIX = "ComCcsdsSdls.decryptor."
 REPO_ROOT = Path(__file__).resolve().parents[5]
-SDLS_KEY_FILE = REPO_ROOT / "TestDeploymentsProject/SubtopologyBuilds/Segmented/test/int/sdls_test_key.bin"
+SDLS_KEY_FILE = (
+    REPO_ROOT
+    / "TestDeploymentsProject/SubtopologyBuilds/Segmented/test/int/sdls_test_key.bin"
+)
 SDLS_KEY_SIZE = 32
 SDLS_KEY_FIRST_OCTET = 0x40
 
@@ -47,10 +56,27 @@ COUNTERS = ("PacketsReassembled", "SegmentsDropped", "PacketsAbandoned")
 POOL_BUFFER_COUNT = 5
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--fsw-stdout-log",
+        default=None,
+        help="Flight software stdout capture (text events), used as a second source for events raised before"
+        " the test session connected to the GDS (run-integration-tests writes gds-logs/fsw.stdout.log)",
+    )
+
+
 def pytest_configure(config):
-    config.addinivalue_line("markers", "segmented: scenarios I1-I12 against a segmented (SH mode) deployment")
-    config.addinivalue_line("markers", "feature_off: scenario I13 against a default (no Segment Header) deployment")
-    config.addinivalue_line("markers", "sdls: scenarios I14-I18 against the SEGMENTED_SDLS=ON deployment")
+    config.addinivalue_line(
+        "markers",
+        "segmented: scenarios I1-I12 against a segmented (SH mode) deployment",
+    )
+    config.addinivalue_line(
+        "markers",
+        "feature_off: scenario I13 against a default (no Segment Header) deployment",
+    )
+    config.addinivalue_line(
+        "markers", "sdls: scenarios I14-I18 against the SEGMENTED_SDLS=ON deployment"
+    )
 
 
 @dataclass(frozen=True)
@@ -78,7 +104,9 @@ class PluginControl:
         write_knobs(self.path, knobs)
 
     def wait(self, timeout: float = 10.0):
-        assert wait_consumed(self.path, timeout), f"plugin did not consume {self.path} within {timeout}s"
+        assert wait_consumed(
+            self.path, timeout
+        ), f"plugin did not consume {self.path} within {timeout}s"
 
 
 class Deployment:
@@ -104,14 +132,24 @@ class Deployment:
         if knobs is not None:
             self.control.wait()
 
-    def send_and_assert_no_op(self, knobs: Optional[Knobs] = None, timeout: float = 5.0):
+    def send_and_assert_no_op(
+        self, knobs: Optional[Knobs] = None, timeout: float = 5.0
+    ):
         if knobs is not None:
             self.control.arm(knobs)
         self.api.send_and_assert_command(
-            f"{self.names.cmd_disp}.CMD_NO_OP", timeout=timeout, commander=self.names.cmd_disp
+            f"{self.names.cmd_disp}.CMD_NO_OP",
+            timeout=timeout,
+            commander=self.names.cmd_disp,
         )
         if knobs is not None:
             self.control.wait()
+
+    def recover(self):
+        """Close a fault scenario: a plain CMD_NO_OP completes and its PacketsReassembled sample is consumed."""
+        before = self.counters()
+        self.send_and_assert_no_op()
+        self.await_counters(before, PacketsReassembled=1)
 
     def send_synthetic(self, size: int, knobs: Optional[Knobs] = None, apid: int = 0):
         """Uplink a synthetic Space Packet of `size` octets (default APID FW_PACKET_COMMAND)."""
@@ -125,14 +163,21 @@ class Deployment:
         return f"{instance}.{name}"
 
     def assert_event(self, instance: str, name: str, args=None, timeout: float = 5.0):
-        return self.api.assert_event(self.event(instance, name), args, start=0, timeout=timeout)
+        return self.api.assert_event(
+            self.event(instance, name), args, start=0, timeout=timeout
+        )
 
-    def assert_event_count(self, instance: str, name: str, count: int, args=None, timeout: float = 5.0):
+    def assert_event_count(
+        self, instance: str, name: str, count: int, args=None, timeout: float = 5.0
+    ):
         pred = self.api.get_event_pred(self.event(instance, name), args)
         return self.api.assert_event_count(count, pred, timeout=timeout)
 
     def received_event_names(self) -> List[str]:
-        return [e.get_template().get_full_name() for e in self.api.get_event_test_history().retrieve()]
+        return [
+            e.get_template().get_full_name()
+            for e in self.api.get_event_test_history().retrieve()
+        ]
 
     def events_from(self, instance: str) -> List[str]:
         prefix = f"{instance}."
@@ -164,15 +209,24 @@ class Deployment:
 
     def all_event_names(self) -> List[str]:
         """Every event received over the whole GDS session (aggregate history)."""
-        return [e.get_template().get_full_name() for e in self.api.aggregate_event_history.retrieve()]
+        return [
+            e.get_template().get_full_name()
+            for e in self.api.aggregate_event_history.retrieve()
+        ]
 
     def counters(self) -> Dict[str, int]:
         return {name: self.latest(self.names.reassembler, name) for name in COUNTERS}
 
-    def await_value(self, instance: str, name: str, value: int, timeout: float = TLM_TIMEOUT):
-        pred = self.api.get_telemetry_pred(self.channel(instance, name), predicates.equal_to(value))
+    def await_value(
+        self, instance: str, name: str, value: int, timeout: float = TLM_TIMEOUT
+    ):
+        pred = self.api.get_telemetry_pred(
+            self.channel(instance, name), predicates.equal_to(value)
+        )
         result = self.api.await_telemetry(pred, start=0, timeout=timeout)
-        assert result is not None, f"{instance}.{name} did not reach {value} within {timeout}s (latest {self.latest(instance, name, 'n/a')})"
+        assert (
+            result is not None
+        ), f"{instance}.{name} did not reach {value} within {timeout}s (latest {self.latest(instance, name, 'n/a')})"
         return result
 
     def await_counters(self, before: Dict[str, int], **deltas: int):
@@ -184,7 +238,9 @@ class Deployment:
         # Unchanged counters are update-on-change: nothing newer than `before` may have arrived.
         for name in COUNTERS:
             if not deltas.get(name, 0):
-                assert self.latest(self.names.reassembler, name) == before[name], f"{name} changed unexpectedly"
+                assert (
+                    self.latest(self.names.reassembler, name) == before[name]
+                ), f"{name} changed unexpectedly"
 
     def settle(self, seconds: float = 1.0):
         time.sleep(seconds)
@@ -202,7 +258,9 @@ class Deployment:
         deadline = time.monotonic() + timeout
         while self.pool_counter(name) != value and time.monotonic() < deadline:
             time.sleep(0.2)
-        assert self.pool_counter(name) == value, f"{self.names.pool}.{name} is {self.pool_counter(name)}, expected {value}"
+        assert (
+            self.pool_counter(name) == value
+        ), f"{self.names.pool}.{name} is {self.pool_counter(name)}, expected {value}"
 
 
 @pytest.fixture(scope="session")
@@ -240,7 +298,10 @@ def channel_names(fprime_test_api_session) -> List[str]:
 @pytest.fixture(scope="session")
 def sdls_deployment(fprime_test_api_session, event_names) -> bool:
     """True when the dictionary is the SEGMENTED_SDLS=ON one (AES-GCM decryptor, key manager)."""
-    return CLEAR_TEXT_DECRYPTOR_EVENT not in event_names and KEY_MANAGER_FAILURE_EVENT in event_names
+    return (
+        CLEAR_TEXT_DECRYPTOR_EVENT not in event_names
+        and KEY_MANAGER_FAILURE_EVENT in event_names
+    )
 
 
 @pytest.fixture(scope="session")
@@ -259,15 +320,21 @@ def primed(fprime_test_api_session, tc_names, plugin_control, channel_names):
     start = api.get_telemetry_test_history().size()
     dep.send_no_op(Knobs(map_id=5))
     dep.send_synthetic(1500, Knobs(omit_last=True))
-    api.send_and_assert_command(f"{tc_names.cmd_disp}.CMD_NO_OP", timeout=10, commander=tc_names.cmd_disp)
+    api.send_and_assert_command(
+        f"{tc_names.cmd_disp}.CMD_NO_OP", timeout=10, commander=tc_names.cmd_disp
+    )
     for name in COUNTERS:
-        found = api.await_telemetry(dep.channel(reassembler, name), start=start, timeout=TLM_TIMEOUT)
+        found = api.await_telemetry(
+            dep.channel(reassembler, name), start=start, timeout=TLM_TIMEOUT
+        )
         assert found is not None, f"{reassembler}.{name} was not reported after priming"
     return True
 
 
 @pytest.fixture
-def segmented(primed, sdls_deployment, fprime_test_api, tc_names, plugin_control) -> Deployment:
+def segmented(
+    primed, sdls_deployment, fprime_test_api, tc_names, plugin_control
+) -> Deployment:
     """A segmented deployment (Ref REF_TC_SEGMENTED=ON or SubtopologyBuilds/Segmented) with primed counters."""
     return Deployment(fprime_test_api, tc_names, plugin_control, sdls=sdls_deployment)
 
@@ -277,25 +344,61 @@ def feature_off(fprime_test_api, tc_names, plugin_control, channel_names) -> Dep
     """A deployment built without the segmented variant: the reassembler must be absent."""
     reassembler = tc_names.reassembler
     present = [name for name in channel_names if name.startswith(f"{reassembler}.")]
-    assert present == [], f"{reassembler} is part of this deployment; not a feature-off build"
+    assert (
+        present == []
+    ), f"{reassembler} is part of this deployment; not a feature-off build"
     return Deployment(fprime_test_api, tc_names, plugin_control, sdls=False)
 
 
+def _text_events(path: Optional[str], full_name: str) -> int:
+    """Occurrences of event `full_name` in a flight-software stdout capture (`(<instance>) <event> :` lines)."""
+    if path is None or not Path(path).is_file():
+        return 0
+    instance, _, event = full_name.rpartition(".")
+    marker = f"({instance}) {event} :"
+    return sum(
+        1
+        for line in Path(path).read_text(errors="replace").splitlines()
+        if marker in line
+    )
+
+
 @pytest.fixture
-def sdls(segmented, sdls_deployment, event_names) -> Deployment:
+def sdls(request, segmented, sdls_deployment, event_names) -> Deployment:
     """SDLS deployment checks of DESIGN §8.5: run only against the AES-GCM build, verify after each scenario."""
     if CLEAR_TEXT_DECRYPTOR_EVENT in event_names:
         pytest.skip("clear-text decryptor selected")
-    assert sdls_deployment, f"{KEY_MANAGER_FAILURE_EVENT} is not defined: not the SEGMENTED_SDLS=ON dictionary"
+    assert (
+        sdls_deployment
+    ), f"{KEY_MANAGER_FAILURE_EVENT} is not defined: not the SEGMENTED_SDLS=ON dictionary"
     key = SDLS_KEY_FILE.read_bytes()
-    assert key == bytes(SDLS_KEY_FIRST_OCTET + i for i in range(SDLS_KEY_SIZE)), f"unexpected key file {SDLS_KEY_FILE}"
+    assert key == bytes(
+        SDLS_KEY_FIRST_OCTET + i for i in range(SDLS_KEY_SIZE)
+    ), f"unexpected key file {SDLS_KEY_FILE}"
     dep = segmented
     assert dep.sdls
     yield dep
-    # After every scenario: no decryptor event at all (an AES-GCM decryptor is silent), at least one
-    # NullCipherInUse from the deliberately clear-text downlink encryptor, no key-manager failure.
-    received = dep.received_event_names()
-    decryptor_events = [name for name in received if name.startswith(DECRYPTOR_EVENT_PREFIX)]
+    # After every scenario, over the whole session's raw event stream: no decryptor event at all (an
+    # AES-GCM decryptor is silent; the name is undefined in this dictionary so it is matched by prefix),
+    # at least one NullCipherInUse from the deliberately clear-text downlink encryptor, no key-manager
+    # failure. NullCipherInUse is throttled at 5 and the encryptor handles its first five TM frames while
+    # the deployment boots, before the test session is attached to the GDS: the flight-software stdout
+    # capture (--fsw-stdout-log) is the second place those five reports can be found.
+    received = dep.all_event_names()
+    decryptor_events = [
+        name for name in received if name.startswith(DECRYPTOR_EVENT_PREFIX)
+    ]
     assert decryptor_events == [], f"decryptor events received: {decryptor_events}"
-    assert received.count(CLEAR_TEXT_ENCRYPTOR_EVENT) >= 1, "downlink encryptor did not report NullCipherInUse"
-    assert received.count(KEY_MANAGER_FAILURE_EVENT) == 0, "sdlsKeyManager reported KeyReadFailed"
+    fsw_log = request.config.getoption("--fsw-stdout-log")
+    encryptor_reports = received.count(CLEAR_TEXT_ENCRYPTOR_EVENT) + _text_events(
+        fsw_log, CLEAR_TEXT_ENCRYPTOR_EVENT
+    )
+    assert (
+        encryptor_reports >= 1
+    ), f"downlink encryptor did not report {CLEAR_TEXT_ENCRYPTOR_EVENT} (GDS stream or --fsw-stdout-log={fsw_log})"
+    assert (
+        received.count(KEY_MANAGER_FAILURE_EVENT) == 0
+    ), "sdlsKeyManager reported KeyReadFailed"
+    assert (
+        _text_events(fsw_log, KEY_MANAGER_FAILURE_EVENT) == 0
+    ), "sdlsKeyManager reported KeyReadFailed at boot"

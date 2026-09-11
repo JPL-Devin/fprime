@@ -22,16 +22,25 @@ import struct
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from fprime_gds.common.communication.ccsds.space_data_link import SpaceDataLinkFramerDeframer
+from fprime_gds.common.communication.ccsds.space_data_link import (
+    SpaceDataLinkFramerDeframer,
+)
 from fprime_gds.common.communication.ccsds.space_packet import SpacePacketFramerDeframer
 from fprime_gds.common.communication.framing import FramerDeframer
 from fprime_gds.plugin.definitions import gds_plugin
 
 from . import tc_frames as tf
-from .control import ENV_SDLS_KEY_FILE, ENV_SDLS_SPI, Knobs, control_file_path, read_knobs
+from .control import (
+    ENV_SDLS_KEY_FILE,
+    ENV_SDLS_SPI,
+    Knobs,
+    control_file_path,
+    read_knobs,
+)
 
 SDLS_KEY_SIZE = 32
 SA_INDEX_SIZE = 2
+SPACE_PACKET_HEADER_SIZE = 6
 DEFAULT_SPI = 1
 DEFAULT_MAP_ID = 0
 DEFAULT_VCID = 1
@@ -91,21 +100,41 @@ class TcSegmentFraming(FramerDeframer):
         """Segment `packet`, apply the fault-injection knobs, and wrap every emitted segment in a frame."""
         map_id = self.map_id if knobs.map_id is None else knobs.map_id
         spi = self.spi if knobs.spi is None else knobs.spi
-        portion = self.max_portion if knobs.segment_size is None else min(knobs.segment_size, self.max_portion)
+        portion = (
+            self.max_portion
+            if knobs.segment_size is None
+            else min(knobs.segment_size, self.max_portion)
+        )
         segments = tf.segment_packet(packet, map_id, portion)
 
         frames: List[bytes] = []
         if knobs.control_frame:
             frames.append(self._emit(tf.control_frame(self.scid, self.vcid, self.fsn)))
         if knobs.empty_segment:
-            frames.append(self._frame(tf.Segment(tf.FLAG_UNSEGMENTED, map_id, b""), spi))
+            frames.append(
+                self._frame(tf.Segment(tf.FLAG_UNSEGMENTED, map_id, b""), spi)
+            )
 
         for index in self._emission_order(len(segments), knobs):
             corrupt = index in knobs.corrupt_mac
-            tamper = knobs.tamper_sh["value"] if knobs.tamper_sh and knobs.tamper_sh["index"] == index else None
-            frames.append(self._frame(segments[index], spi, sh_override=tamper, corrupt_mac=corrupt, strip_sh=knobs.strip_sh))
+            tamper = (
+                knobs.tamper_sh["value"]
+                if knobs.tamper_sh and knobs.tamper_sh["index"] == index
+                else None
+            )
+            frames.append(
+                self._frame(
+                    segments[index],
+                    spi,
+                    sh_override=tamper,
+                    corrupt_mac=corrupt,
+                    strip_sh=knobs.strip_sh,
+                )
+            )
             if index in knobs.retransmit:
-                frames.append(self._frame(segments[index], spi, strip_sh=knobs.strip_sh))
+                frames.append(
+                    self._frame(segments[index], spi, strip_sh=knobs.strip_sh)
+                )
         return frames
 
     @staticmethod
@@ -144,10 +173,14 @@ class TcSegmentFraming(FramerDeframer):
     @staticmethod
     def _synthetic_payload(apid: int, size: int) -> bytes:
         """Data whose Space Packet totals `size` octets: descriptor (the APID) followed by a counting fill."""
-        data_size = size - tf.TC_HEADER_SIZE - 1  # Space Packet primary header is 6 octets
+        data_size = size - SPACE_PACKET_HEADER_SIZE
         if data_size < struct.calcsize(">H"):
-            raise ValueError(f"synthetic packet of {size} octets cannot hold an APID descriptor")
-        fill = bytes((index & 0xFF) for index in range(data_size - struct.calcsize(">H")))
+            raise ValueError(
+                f"synthetic packet of {size} octets cannot hold an APID descriptor"
+            )
+        fill = bytes(
+            (index & 0xFF) for index in range(data_size - struct.calcsize(">H"))
+        )
         return struct.pack(">H", apid) + fill
 
     # ------------------------------------------------------------------
@@ -155,7 +188,9 @@ class TcSegmentFraming(FramerDeframer):
     # ------------------------------------------------------------------
 
     def deframe(self, data, no_copy=False):
-        raise AssertionError("deframe_all is the only entry point of this composite framer")
+        raise AssertionError(
+            "deframe_all is the only entry point of this composite framer"
+        )
 
     def deframe_all(self, data, no_copy):
         """TM frames -> [SA index removal] -> Space Packets -> F Prime packets."""
@@ -233,9 +268,13 @@ class TcSegmentFraming(FramerDeframer):
         tc_segment_sdls_spi=DEFAULT_SPI,
         tc_segment_control_file=None,
     ):
-        SpaceDataLinkFramerDeframer.check_arguments(tc_segment_scid, tc_segment_vcid, None)
+        SpaceDataLinkFramerDeframer.check_arguments(
+            tc_segment_scid, tc_segment_vcid, None
+        )
         if not 0 <= tc_segment_map_id <= tf.MAP_ID_MAX:
-            raise TypeError(f"MAP ID {tc_segment_map_id} out of range 0..{tf.MAP_ID_MAX}")
+            raise TypeError(
+                f"MAP ID {tc_segment_map_id} out of range 0..{tf.MAP_ID_MAX}"
+            )
         if not 0 <= tc_segment_sdls_spi <= 0xFFFF:
             raise TypeError(f"SPI {tc_segment_sdls_spi} out of range 0..65535")
         if tc_segment_sdls_key_file is not None:
@@ -247,5 +286,7 @@ class TcSegmentFraming(FramerDeframer):
             return None
         key = Path(path).read_bytes()
         if len(key) != SDLS_KEY_SIZE:
-            raise TypeError(f"SDLS key file {path} holds {len(key)} octets, expected {SDLS_KEY_SIZE}")
+            raise TypeError(
+                f"SDLS key file {path} holds {len(key)} octets, expected {SDLS_KEY_SIZE}"
+            )
         return key

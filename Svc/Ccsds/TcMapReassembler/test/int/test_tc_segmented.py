@@ -20,7 +20,9 @@ import pytest
 from tc_segment_plugin.control import Knobs
 
 STRING_30 = "0123456789abcdefghijklmnopqrst"
-NO_OP_STRING_PACKET_SIZE = 44  # 6 SP header + 2 descriptor + 4 opcode + 2 length + 30 characters
+NO_OP_STRING_PACKET_SIZE = (
+    44  # 6 SP header + 2 descriptor + 4 opcode + 2 length + 30 characters
+)
 MAX_PACKET_SIZE = 4096  # TcMapCfg.MaxPacketSize
 SPI_UNIT_VECTOR = 0x1234  # DESIGN §4.6 vector SPI, absent from the default SaMap (integration SPI is 1)
 
@@ -28,7 +30,10 @@ SPI_UNIT_VECTOR = 0x1234  # DESIGN §4.6 vector SPI, absent from the default SaM
 def no_op_string(dep, knobs, timeout=5.0):
     dep.control.arm(knobs)
     dep.api.send_and_assert_command(
-        f"{dep.names.cmd_disp}.CMD_NO_OP_STRING", [STRING_30], timeout=timeout, commander=dep.names.cmd_disp
+        f"{dep.names.cmd_disp}.CMD_NO_OP_STRING",
+        [STRING_30],
+        timeout=timeout,
+        commander=dep.names.cmd_disp,
     )
     dep.control.wait()
 
@@ -125,7 +130,7 @@ def test_i5_out_of_order(segmented):
     assert not dep.command_completed(timeout=1.0)
     dep.assert_no_events_from(dep.names.reassembler)
 
-    dep.send_and_assert_no_op()
+    dep.recover()
 
 
 @pytest.mark.segmented
@@ -157,7 +162,9 @@ def test_i8_oversize(segmented):
     size = MAX_PACKET_SIZE + 1
     count = segments_for(dep, size)
     dep.send_synthetic(size)
-    dep.assert_event(dep.names.reassembler, "PacketTooLarge", [0, size, MAX_PACKET_SIZE])
+    dep.assert_event(
+        dep.names.reassembler, "PacketTooLarge", [0, size, MAX_PACKET_SIZE]
+    )
     # FIRST refused; every following segment finds the MAP idle.
     dep.assert_event_count(dep.names.reassembler, "UnexpectedSegment", count - 1)
     dep.await_counters(before, SegmentsDropped=count)
@@ -169,7 +176,9 @@ def test_i9_no_first(segmented):
     """I9: CONTINUING and LAST without a FIRST are orphans: UnexpectedSegment x2."""
     dep = segmented
     before = dep.counters()
-    send_no_op_string(dep, Knobs(segment_size=16, omit_first=True))  # 16 + 16 + 12, FIRST withheld
+    send_no_op_string(
+        dep, Knobs(segment_size=16, omit_first=True)
+    )  # 16 + 16 + 12, FIRST withheld
     dep.assert_event(dep.names.reassembler, "UnexpectedSegment", [0, "CONTINUING"])
     dep.assert_event(dep.names.reassembler, "UnexpectedSegment", [0, "LAST"])
     dep.await_counters(before, SegmentsDropped=2)
@@ -197,7 +206,9 @@ def test_i11_pool_pressure(segmented):
     for _ in range(burst):
         dep.api.send_command(f"{dep.names.cmd_disp}.CMD_NO_OP")
     dep.settle(1.0)
-    dep.send_and_assert_no_op(timeout=10.0)  # (d) recovery after any drop, (e) deployment alive
+    dep.send_and_assert_no_op(
+        timeout=10.0
+    )  # (d) recovery after any drop, (e) deployment alive
 
     # (a) every frame accounted for exactly once
     total = burst + 1
@@ -209,16 +220,23 @@ def test_i11_pool_pressure(segmented):
         if delivered + dropped == total or time.monotonic() > deadline:
             break
         time.sleep(0.2)
-    assert delivered + dropped == total, f"{delivered} delivered + {dropped} dropped != {total}"
+    assert (
+        delivered + dropped == total
+    ), f"{delivered} delivered + {dropped} dropped != {total}"
     assert after["PacketsAbandoned"] == before["PacketsAbandoned"]
-    failures = dep.received_event_names().count(f"{dep.names.reassembler}.AllocationFailed")
+    failures = dep.received_event_names().count(
+        f"{dep.names.reassembler}.AllocationFailed"
+    )
     assert dropped == failures, "every drop under pressure must be an AllocationFailed"
 
     # (b) and (c): pool never above its size, NoBuffs tracks AllocationFailed, nothing leaked. The pool
     # manager samples on its tick and downlinks changes only, so NoBuffs is checked against every
     # AllocationFailed of the session (the deployment received no uplink before the session started)
     # and CurrBuffs is awaited back at 0 in case a tick caught buffers in flight.
-    dep.await_pool_counter("NoBuffs", dep.all_event_names().count(f"{dep.names.reassembler}.AllocationFailed"))
+    dep.await_pool_counter(
+        "NoBuffs",
+        dep.all_event_names().count(f"{dep.names.reassembler}.AllocationFailed"),
+    )
     assert dep.pool_counter("HiBuffs") <= pool_size
     dep.await_pool_counter("CurrBuffs", 0)
 
@@ -277,8 +295,12 @@ def test_i15_corrupt_mac_then_retransmit(sdls):
     """I15: a segment with a bad MAC is refused at the SDLS gate; its retransmission completes the packet."""
     dep = sdls
     before = dep.counters()
-    no_op_string(dep, Knobs(segment_size=16, corrupt_mac=[1], retransmit=[1]), timeout=10.0)
-    dep.assert_event_count(dep.names.sdls_deframer, "DecryptionFailed", 1, ["MAC_VERIFICATION_FAILURE"])
+    no_op_string(
+        dep, Knobs(segment_size=16, corrupt_mac=[1], retransmit=[1]), timeout=10.0
+    )
+    dep.assert_event_count(
+        dep.names.sdls_deframer, "DecryptionFailed", 1, ["MAC_VERIFICATION_FAILURE"]
+    )
     dep.await_counters(before, PacketsReassembled=1)
     dep.assert_no_events_from(dep.names.reassembler)
 
@@ -289,7 +311,9 @@ def test_i16_corrupt_mac_then_new_packet(sdls):
     dep = sdls
     before = dep.counters()
     send_no_op_string(dep, Knobs(segment_size=24, corrupt_mac=[1]))
-    dep.assert_event(dep.names.sdls_deframer, "DecryptionFailed", ["MAC_VERIFICATION_FAILURE"])
+    dep.assert_event(
+        dep.names.sdls_deframer, "DecryptionFailed", ["MAC_VERIFICATION_FAILURE"]
+    )
     no_op_string(dep, Knobs(segment_size=24))
     dep.assert_event(dep.names.reassembler, "PacketAbandoned", [0, 24, "FIRST"])
     dep.await_counters(before, PacketsAbandoned=1, PacketsReassembled=1)
@@ -300,13 +324,17 @@ def test_i17_tampered_segment_header(sdls):
     """I17: the Segment Header is part of the AAD: flags 01 -> 11 after protection fails authentication."""
     dep = sdls
     before = dep.counters()
-    send_no_op_string(dep, Knobs(segment_size=24, tamper_sh={"index": 0, "value": 0xC0}, drop=[1]))
-    dep.assert_event(dep.names.sdls_deframer, "DecryptionFailed", ["MAC_VERIFICATION_FAILURE"])
+    send_no_op_string(
+        dep, Knobs(segment_size=24, tamper_sh={"index": 0, "value": 0xC0}, drop=[1])
+    )
+    dep.assert_event(
+        dep.names.sdls_deframer, "DecryptionFailed", ["MAC_VERIFICATION_FAILURE"]
+    )
     assert not dep.command_completed(timeout=1.0)
     dep.await_counters(before)
     dep.assert_no_events_from(dep.names.reassembler)
 
-    dep.send_and_assert_no_op()
+    dep.recover()
 
 
 @pytest.mark.sdls
@@ -315,11 +343,15 @@ def test_i18_unknown_spi(sdls):
     dep = sdls
     before = dep.counters()
     dep.send_no_op(Knobs(spi=SPI_UNIT_VECTOR))
-    dep.assert_event_count(dep.names.sdls_deframer, "DecryptionFailed", 1, ["UNKNOWN_SA"], timeout=5.0)
+    dep.assert_event_count(
+        dep.names.sdls_deframer, "DecryptionFailed", 1, ["UNKNOWN_SA"], timeout=5.0
+    )
     assert not dep.command_completed(timeout=1.0)
     dep.settle(1.0)
-    assert dep.events_from(dep.names.sdls_deframer) == [f"{dep.names.sdls_deframer}.DecryptionFailed"]
+    assert dep.events_from(dep.names.sdls_deframer) == [
+        f"{dep.names.sdls_deframer}.DecryptionFailed"
+    ]
     dep.await_counters(before)
     dep.assert_no_events_from(dep.names.reassembler)
 
-    dep.send_and_assert_no_op()
+    dep.recover()

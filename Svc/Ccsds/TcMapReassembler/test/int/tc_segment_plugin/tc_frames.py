@@ -29,7 +29,9 @@ SDLS_OVERHEAD = SDLS_SPI_SIZE + SDLS_IV_SIZE + SDLS_MAC_SIZE
 SDLS_AAD_SIZE = 20
 
 # Largest Space Packet portion per frame (DESIGN-final.md 4.3): 1016 clear, 986 with SDLS
-MAX_PORTION_CLEAR = TC_MAX_FRAME_SIZE - TC_HEADER_SIZE - SEGMENT_HEADER_SIZE - TC_TRAILER_SIZE
+MAX_PORTION_CLEAR = (
+    TC_MAX_FRAME_SIZE - TC_HEADER_SIZE - SEGMENT_HEADER_SIZE - TC_TRAILER_SIZE
+)
 MAX_PORTION_SDLS = MAX_PORTION_CLEAR - SDLS_OVERHEAD
 
 # Segment Header sequence flags (232.0-B-4 4.1.3.2.2), bits 7-6 of the octet
@@ -55,7 +57,9 @@ def segment_header(flags: int, map_id: int) -> int:
     return (flags << 6) | map_id
 
 
-def primary_header(scid: int, vcid: int, frame_length: int, fsn: int, control: bool = False) -> bytes:
+def primary_header(
+    scid: int, vcid: int, frame_length: int, fsn: int, control: bool = False
+) -> bytes:
     """Type-BD (or Type-BC when `control`) TC primary header: TFVN 00, Bypass 1, Control flag."""
     if not 0 <= scid <= SCID_MAX:
         raise ValueError(f"SCID {scid} out of range")
@@ -68,7 +72,9 @@ def primary_header(scid: int, vcid: int, frame_length: int, fsn: int, control: b
     return struct.pack(">HHB", word1, word2, fsn % FSN_MODULUS)
 
 
-def build_frame(scid: int, vcid: int, fsn: int, data_field: bytes, control: bool = False) -> bytes:
+def build_frame(
+    scid: int, vcid: int, fsn: int, data_field: bytes, control: bool = False
+) -> bytes:
     """Assemble header + data field + FECF; `data_field` already contains the SH for Type-BD frames."""
     length = TC_HEADER_SIZE + len(data_field) + TC_TRAILER_SIZE
     body = primary_header(scid, vcid, length, fsn, control) + data_field
@@ -94,11 +100,15 @@ def sdls_iv(counter: int) -> bytes:
     return counter.to_bytes(SDLS_IV_SIZE, "big")
 
 
-def sdls_protect(key: bytes, spi: int, iv: bytes, vcid: int, sh: int, portion: bytes) -> bytes:
+def sdls_protect(
+    key: bytes, spi: int, iv: bytes, vcid: int, sh: int, portion: bytes
+) -> bytes:
     """Return SPI | IV | ciphertext | MAC for one segment (232.0-B-4 SH authenticated through the AAD)."""
     aad = sdls_aad(vcid, spi, sh)
     if len(aad) != SDLS_AAD_SIZE:
-        raise AssertionError(f"SDLS AAD must be {SDLS_AAD_SIZE} octets with a Segment Header")
+        raise AssertionError(
+            f"SDLS AAD must be {SDLS_AAD_SIZE} octets with a Segment Header"
+        )
     ciphertext, mac = aes256_gcm_encrypt(key, iv, portion, aad)
     return struct.pack(">H", spi & 0xFFFF) + iv + ciphertext + mac
 
@@ -130,7 +140,9 @@ def segment_packet(packet: bytes, map_id: int, max_portion: int) -> List[Segment
         return [Segment(FLAG_UNSEGMENTED, map_id, packet)]
     portions = [packet[i : i + max_portion] for i in range(0, len(packet), max_portion)]
     segments = [Segment(FLAG_FIRST, map_id, portions[0])]
-    segments += [Segment(FLAG_CONTINUING, map_id, portion) for portion in portions[1:-1]]
+    segments += [
+        Segment(FLAG_CONTINUING, map_id, portion) for portion in portions[1:-1]
+    ]
     segments.append(Segment(FLAG_LAST, map_id, portions[-1]))
     return segments
 
@@ -159,7 +171,9 @@ def frame_segment(
     if sdls_key is None:
         secured = segment.portion
     else:
-        secured = sdls_protect(sdls_key, spi, sdls_iv(iv_counter), vcid, sh, segment.portion)
+        secured = sdls_protect(
+            sdls_key, spi, sdls_iv(iv_counter), vcid, sh, segment.portion
+        )
         if corrupt_mac:
             secured = secured[:-1] + bytes([secured[-1] ^ 0x01])
     if sh_override is not None:
@@ -169,7 +183,13 @@ def frame_segment(
 
 
 def frame_size_for_portion(portion_length: int, sdls: bool) -> int:
-    return TC_HEADER_SIZE + SEGMENT_HEADER_SIZE + (SDLS_OVERHEAD if sdls else 0) + portion_length + TC_TRAILER_SIZE
+    return (
+        TC_HEADER_SIZE
+        + SEGMENT_HEADER_SIZE
+        + (SDLS_OVERHEAD if sdls else 0)
+        + portion_length
+        + TC_TRAILER_SIZE
+    )
 
 
 def hexstr(data: Sequence[int]) -> str:

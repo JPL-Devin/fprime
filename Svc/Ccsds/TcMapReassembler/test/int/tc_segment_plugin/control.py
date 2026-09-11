@@ -38,7 +38,9 @@ ENV_CONTROL_FILE = "TC_SEGMENT_PLUGIN_CONTROL_FILE"
 ENV_SDLS_KEY_FILE = "TC_SEGMENT_PLUGIN_SDLS_KEY_FILE"
 ENV_SDLS_SPI = "TC_SEGMENT_PLUGIN_SPI"
 
-DEFAULT_CONTROL_FILE = Path(__file__).resolve().parent.parent / "tc_segment_control.json"
+DEFAULT_CONTROL_FILE = (
+    Path(__file__).resolve().parent.parent / "tc_segment_control.json"
+)
 
 
 def control_file_path(explicit: Optional[str] = None) -> Path:
@@ -75,7 +77,11 @@ class Knobs:
 
     def to_dict(self) -> dict:
         defaults = Knobs()
-        return {key: value for key, value in self.__dict__.items() if value != getattr(defaults, key)}
+        return {
+            key: value
+            for key, value in self.__dict__.items()
+            if value != getattr(defaults, key)
+        }
 
 
 def write_knobs(path: Path, knobs: Knobs) -> None:
@@ -95,7 +101,9 @@ def read_knobs(path: Path) -> Knobs:
     try:
         knobs = Knobs.from_dict(json.loads(text))
     except (ValueError, TypeError) as error:
-        raise RuntimeError(f"tc-segment control file {path} is invalid: {error}") from error
+        raise RuntimeError(
+            f"tc-segment control file {path} is invalid: {error}"
+        ) from error
     if knobs.once:
         clear_knobs(path)
     return knobs
