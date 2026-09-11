@@ -7,5 +7,11 @@
     "Svc.TlmChan": "CdhCore.tlmSend",
     "Svc.PrmDb": "FileHandling.prmDb",
     "Svc.PrmDb.filename": "/tmp/PrmDb.dat",
-    "Svc.Health": "CdhCore.health"
+    "Svc.Health": "CdhCore.health",
+    "Svc.Ccsds.TcDeframer.segmented": "ComCcsds.tcDeframerSeg",
+    "Svc.Ccsds.TcMapReassembler": "ComCcsds.tcMapReassembler",
+    "Svc.Ccsds.TcMapReassembler.pool": "ComCcsds.tcPacketBufferManager",
+    "Svc.Ccsds.SpacePacketDeframer": "ComCcsds.spacePacketDeframer",
+    "Svc.FprimeRouter": "ComCcsds.fprimeRouter",
+    "Svc.Ccsds.CcsdsSdlsDeframer": "ComCcsdsSdls.sdlsDeframer"
 }
