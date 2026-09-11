@@ -8,7 +8,6 @@
 #define Svc_Ccsds_AesGcmDecryptor_HPP
 
 #include "Svc/Ccsds/AesGcmDecryptor/AesGcmDecryptorComponentAc.hpp"
-#include "Svc/Ccsds/Utils/SdlsAuthMask.hpp"
 
 #include <openssl/evp.h>
 
@@ -65,15 +64,6 @@ class AesGcmDecryptor final : public AesGcmDecryptorComponentBase {
 
     //! Cipher context, created once at construction and re-keyed per frame
     EVP_CIPHER_CTX* m_ctx;
-
-    //! AAD for the VC and SA in m_aadVcId and m_aadSaIndex.
-    Svc::Ccsds::Utils::SdlsTcAuthMask m_aad;
-
-    //! Virtual channel m_aad was built for
-    U8 m_aadVcId;
-
-    //! Security association index m_aad was built for
-    U16 m_aadSaIndex;
 };
 
 }  // namespace Ccsds
