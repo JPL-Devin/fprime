@@ -7,6 +7,7 @@ register_fprime_config(
     AUTOCODER_INPUTS
         "${CMAKE_CURRENT_LIST_DIR}/ComCcsdsConfig.fpp"
         "${CMAKE_CURRENT_LIST_DIR}/ComCcsdsRouterConfig.fpp"
+        "${CMAKE_CURRENT_LIST_DIR}/ComCcsdsTcMapConfig.fpp"
     DEPENDS
         Fw_Types
 )
