@@ -66,7 +66,11 @@ port.
   itself an event source or telemetry database.
 - Use a buffer driver at each end of the transport. The
   `Drv::ByteStreamBufferAdapter` can pair a byte-stream driver with the
-  buffer-driver interface expected by GenericHub.
+  buffer-driver interface expected by GenericHub when each received buffer
+  carries exactly one hub message. When the transport is a raw byte stream
+  (e.g. a UART), use
+  [`Svc::ComDataBufferAdapter`](../../../Svc/ComDataBufferAdapter/docs/sdd.md)
+  to place a framer and deframer between the hub and the driver (see below).
 
 ## Putting it together
 
@@ -77,6 +81,36 @@ Deployment A                         Deployment B
 -------------                        -------------
 FSW -> GenericHub -> transport -> GenericHub -> FSW
 ```
+
+### Framed byte-stream transport
+
+Over a raw byte stream, hub messages must be framed so the receiving end can
+recover message boundaries. `Svc::ComDataBufferAdapter` implements the
+buffer-driver interface on the hub side and speaks `Svc.ComDataWithContext` to
+a framer/deframer pair on the other, so the standard framing stack carries hub
+traffic:
+
+```text
+GenericHub <-> ComDataBufferAdapter <-> Framer / Deframer <-> ComStub <-> ByteStreamDriver ~~> (peer, mirrored)
+```
+
+```fpp
+hub.toBufferDriver         -> hubAdapter.bufferIn
+hubAdapter.bufferInReturn  -> hub.toBufferDriverReturn
+hubAdapter.dataOut         -> hubFramer.dataIn
+hubFramer.dataReturnOut    -> hubAdapter.dataReturnIn
+
+hubDeframer.dataOut        -> hubAdapter.dataIn
+hubAdapter.dataReturnOut   -> hubDeframer.dataReturnIn
+hubAdapter.bufferOut       -> hub.fromBufferDriver
+hub.fromBufferDriverReturn -> hubAdapter.bufferOutReturn
+```
+
+The framer, deframer, and (for the deframer) frame accumulator are wired to the
+com driver as in the [ComFprime subtopology](../../../Svc/Subtopologies/ComFprime/docs/sdd.md),
+but must be dedicated to the hub rather than shared with the deployment's own
+downlink/uplink stack. Framers that read the frame context (e.g. CCSDS) are
+served by `hubAdapter.configure(context)`.
 
 For a runnable worked example, see
 [`fprime-community/fprime-generic-hub-reference`](https://github.com/fprime-community/fprime-generic-hub-reference).

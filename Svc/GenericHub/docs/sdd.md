@@ -27,8 +27,11 @@ For example, logical connections between components in deployments A and B:
 The driver paired with each hub must be a **buffer driver**: a combination of
 components that sends and receives `Fw::Buffer` objects across the transport.
 The reference implementation uses a `Drv::ByteStreamDriver` together with a
-`Drv::ByteStreamBufferAdapter`. Other transport-specific drivers may be used
-provided that they implement the buffer-driver interfaces described below.
+`Drv::ByteStreamBufferAdapter`. Over a raw byte stream (e.g. a UART),
+[`Svc::ComDataBufferAdapter`](../../ComDataBufferAdapter/docs/sdd.md) pairs the
+hub with a framer and deframer so that message boundaries are preserved. Other
+transport-specific drivers may be used provided that they implement the
+buffer-driver interfaces described below.
 
 ## Design
 

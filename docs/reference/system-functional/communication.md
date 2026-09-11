@@ -16,6 +16,7 @@
 - [F Prime ComLogger](https://github.com/nasa/fprime/blob/devel/Svc/ComLogger/docs/sdd.md)
 - [F Prime CmdSplitter SDD](https://github.com/nasa/fprime/blob/devel/Svc/CmdSplitter/docs/sdd.md)
 - [F Prime PassThroughRouter SDD](https://github.com/nasa/fprime/blob/devel/Svc/PassThroughRouter/docs/sdd.md)
+- [F Prime ComDataBufferAdapter SDD](https://github.com/nasa/fprime/blob/devel/Svc/ComDataBufferAdapter/docs/sdd.md)
 - [Communication Adapter Interface](https://github.com/nasa/fprime/blob/devel/docs/reference/communication-adapter-interface.md)
 
 ## Overview
@@ -72,6 +73,10 @@ This protocol is designed for simplicity and is commonly used for development an
 - [CmdSplitter](https://github.com/nasa/fprime/blob/devel/Svc/CmdSplitter/docs/sdd.md) — Duplicates incoming command buffers to multiple outputs, enabling redundant command processing paths.
 - [ComSplitter](https://github.com/nasa/fprime/blob/devel/Svc/ComSplitter/ComSplitter.fpp) — Distributes outgoing communication buffers to multiple output ports.
 - [ComAggregator](https://github.com/nasa/fprime/blob/devel/Svc/ComAggregator/docs/sdd.md) — Merges data from multiple input sources into a single output stream.
+
+### Hub Transport
+
+[ComDataBufferAdapter](https://github.com/nasa/fprime/blob/devel/Svc/ComDataBufferAdapter/docs/sdd.md) presents a framer/deframer pair as the buffer driver expected by [GenericHub](https://github.com/nasa/fprime/blob/devel/Svc/GenericHub/docs/sdd.md), so hub traffic can be carried over a framed byte stream (e.g. a UART) instead of a transport that preserves message boundaries. See the [hub pattern](../../user-manual/design-patterns/hub-pattern.md).
 
 ### CCSDS Protocol Support
 
