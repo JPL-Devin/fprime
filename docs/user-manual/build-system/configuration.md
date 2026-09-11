@@ -65,9 +65,10 @@ replace a file that an earlier module supplied.
 Because configuration is included from the build cache, a configuration directory **must not sit directly
 under a source include root** (the project root, the framework root, or a library root). If it did, the
 source-tree copy would be found at the same include path as the build-cache copy and would shadow every
-override. The build detects this for `HEADERS` and `SOURCES` and stops with an error (see [Errors](#errors));
-FPP inputs are consumed by absolute path and are not checked, so the placement rule must be followed even for
-FPP-only modules.
+override. The build detects this for `HEADERS` and `SOURCES` and stops with an error (see [Errors](#errors)).
+FPP inputs are consumed by absolute path and `CONFIGURATION_OVERRIDES` are never checked, so the placement rule
+must be followed even for FPP-only and override-only modules: a stray header in an include-root `config/`
+directory shadows the framework default silently.
 
 ## Providing Configuration
 
