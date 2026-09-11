@@ -3,6 +3,8 @@
 #
 # This is the project that contains the set of test deployments. This includes:
 # - The 'Ref' deployment, which is a historical reference for testing and demonstration
+# - The 'SubtopologyBuilds/Segmented' deployment, a minimal build of the TC Segment Header / MAP
+#   uplink variants of the ComCcsds and ComCcsdsSdls subtopologies (SEGMENTED_SDLS option)
 ####
 
 # Allow CMake 3.0 - 4.0 projects to set the VERSION variable in the `project` call
@@ -20,3 +22,4 @@ find_package(FPrime REQUIRED PATHS "${CMAKE_CURRENT_LIST_DIR}/..")
 fprime_add_validation_flags()
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/.." "F-Prime")
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/Ref/")
+add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/SubtopologyBuilds/Segmented/")
