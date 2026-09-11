@@ -291,6 +291,11 @@ jobs:
           binary: "${{ github.workspace }}/art-ref-seg/*/Ref/bin/Ref"
           gds-args: "--dictionary ${{ github.workspace }}/art-ref-seg/*/Ref/dict/RefTopologyDictionary.json --framing-selection tc-segment"
           pytest-args: "Svc/Ccsds/TcMapReassembler/test/int -m segmented --dictionary ${{ github.workspace }}/art-ref-seg/*/Ref/dict/RefTopologyDictionary.json --deployment-config ${{ github.workspace }}/TestDeploymentsProject/Ref/test/int/int_config.json"
+      # run-integration-tests stops the fprime-gds launcher only; its comm/data-handler children
+      # survive and keep 0.0.0.0:50000 and the ZMQ endpoints, which makes the next ground system
+      # fail with "Address already in use".
+      - name: "Stop leftover ground-system processes"
+        run: pkill -KILL -f "[f]prime_gds.executables" || true
       - name: "Integration tests: I14-I18 (Segmented, SDLS AES-GCM, SPI 1)"
         uses: nasa/fprime-actions/run-integration-tests@devel
         env:
@@ -304,6 +309,8 @@ jobs:
           binary-args: "-a 127.0.0.1 -p 50000 --sdls-key-file ${{ github.workspace }}/TestDeploymentsProject/SubtopologyBuilds/Segmented/test/int/sdls_test_key.bin"
           gds-args: "--dictionary ${{ github.workspace }}/art-seg-sdls/*/SubtopologyBuilds_Segmented/dict/SegmentedTopologyDictionary.json --framing-selection tc-segment --tc-segment-sdls-key-file ${{ github.workspace }}/TestDeploymentsProject/SubtopologyBuilds/Segmented/test/int/sdls_test_key.bin"
           pytest-args: "Svc/Ccsds/TcMapReassembler/test/int -m sdls --fsw-stdout-log ${{ github.workspace }}/TestDeploymentsProject/gds-logs/fsw.stdout.log --dictionary ${{ github.workspace }}/art-seg-sdls/*/SubtopologyBuilds_Segmented/dict/SegmentedTopologyDictionary.json --deployment-config ${{ github.workspace }}/TestDeploymentsProject/SubtopologyBuilds/Segmented/test/int/int_config.json"
+      - name: "Stop leftover ground-system processes (SDLS)"
+        run: pkill -KILL -f "[f]prime_gds.executables" || true
       - name: "Integration tests: I13 (feature-off probe, default Ref)"
         uses: nasa/fprime-actions/run-integration-tests@devel
         env:
