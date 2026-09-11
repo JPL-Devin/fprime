@@ -245,6 +245,22 @@ Make sure to [package and install the plugin in your virtual environment](../ope
 fprime-gds --framing-selection MyCustomProtocol
 ```
 
+For a plugin that does not need packaging, `FPRIME_GDS_EXTRA_PLUGINS` accepts `module:Class` tokens
+(`;`-separated) found on `PYTHONPATH`. The framework's own uplink test plugin is loaded this way: it
+segments Space Packets into CCSDS TC Transfer Frames carrying a Segment Header (FIRST / CONTINUING /
+LAST / UNSEGMENTED, MAP IDs, optional SDLS AES-GCM) for the `Svc::Ccsds::TcMapReassembler`
+integration tests.
+
+```
+export PYTHONPATH=<fprime>/Svc/Ccsds/TcMapReassembler/test/int
+export FPRIME_GDS_EXTRA_PLUGINS=tc_segment_plugin.framing:TcSegmentFraming
+fprime-gds --framing-selection tc-segment ...
+```
+
+See `Svc/Ccsds/TcMapReassembler/test/int/tc_segment_plugin/framing.py` and the
+[TcMapReassembler SDD](../../../Svc/Ccsds/TcMapReassembler/docs/sdd.md); the segmented `Ref` variant
+it is exercised against is described in the [Ref README](../../../TestDeploymentsProject/Ref/README.md).
+
 ## References
 
 - [C++ CustomFraming Example](https://github.com/nasa/fprime-examples/tree/devel/FlightExamples/CustomFraming)
