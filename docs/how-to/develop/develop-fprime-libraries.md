@@ -91,7 +91,8 @@ The `cmake/platform` folder may contain any number of platform files and must be
 A library with configurable settings (FPP constants, `<Component>Cfg.hpp` headers) ships its defaults as a configuration
 module so that projects can override them file by file. Place the files in `default-config/config-<library name>/` and
 register them from that directory with `register_fprime_config(config-<library name> ...)`; modules in the library
-include them as `#include <config-<library name>/File.hpp>` and list `config-<library name>` in `DEPENDS`.
+include them as `#include <config-<library name>/File.hpp>` and list `config-<library name>` in `DEPENDS` (or the
+module is registered with `GLOBAL_IMPLICIT_DEPENDENCY` to make it available to every module without `DEPENDS`).
 
 The configuration directory must not be placed directly at the library root: the root is an include root, so a
 directory there would shadow the build cache copy and could never be overridden. See

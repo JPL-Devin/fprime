@@ -88,22 +88,22 @@ register_fprime_config(
         "${CMAKE_CURRENT_LIST_DIR}/FpConfig.h"
         "${CMAKE_CURRENT_LIST_DIR}/FPrimeNumericalConfig.h"
         ...
-    BASE_CONFIG
+    GLOBAL_IMPLICIT_DEPENDENCY
     DEPENDS
         "${FPRIME_GLOBAL_INTERFACE_TARGET}"
 )
 ```
 
-It is registered with `BASE_CONFIG`, which makes it visible to every module in the build without an explicit
-dependency. The directory is `default/config`, not `config`, so that `config/FpConfig.h` is only found in the
-build cache.
+It is registered with `GLOBAL_IMPLICIT_DEPENDENCY`, which links it into the global interface target so that every
+module in the build (everything depending on `Fw_Types`) sees it without an explicit dependency. The directory is
+`default/config`, not `config`, so that `config/FpConfig.h` is only found in the build cache.
 
 ### Platform Packages
 
 A platform supplies the platform-dependent types and chooses the implementations (OSAL, string formatting,
 ...) used on that platform. The platform CMake file registers a configuration module with `AUTOCODER_INPUTS`
 for `PlatformTypes.fpp`, `HEADERS` for `PlatformTypes.h`, `CHOOSES_IMPLEMENTATIONS` for the implementation
-selections, and `BASE_CONFIG` so that all modules see the platform types. For example, the shared Unix
+selections, and `GLOBAL_IMPLICIT_DEPENDENCY` so that all modules see the platform types. For example, the shared Unix
 platform module (`cmake/platform/unix/Platform/CMakeLists.txt`) and the Linux platform file
 (`cmake/platform/Linux.cmake`):
 
@@ -119,7 +119,7 @@ register_fprime_config(
         Os_Task_Posix
         ...
     INTERFACE
-    BASE_CONFIG
+    GLOBAL_IMPLICIT_DEPENDENCY
 )
 ```
 
@@ -131,7 +131,7 @@ register_fprime_config(
         Os_Cpu_Linux
         Os_Memory_Linux
         Os_CountingSemaphore_Posix
-    BASE_CONFIG
+    GLOBAL_IMPLICIT_DEPENDENCY
 )
 target_compile_definitions(PlatformLinux INTERFACE -DTGT_OS_TYPE_LINUX)
 ```
@@ -187,8 +187,8 @@ Three rules follow from [how configuration is assembled](#how-configuration-is-a
    the source-tree path (`default-config/config-my-library/...`) different from the include path.
 2. **Include path.** Library code includes its configuration by the configuration directory name, not by the
    path from the library root: `#include <config-my-library/MyDriverCfg.hpp>`.
-3. **Dependency.** Library configuration is not `BASE_CONFIG`, so every module that includes one of its headers
-   or uses one of its FPP constants must list the configuration module in `DEPENDS`:
+3. **Dependency.** Every module that includes one of the library's configuration headers or uses one of its FPP
+   constants must list the configuration module in `DEPENDS`:
 
    ```cmake
    # my-library/MyDriver/CMakeLists.txt
@@ -202,7 +202,11 @@ Three rules follow from [how configuration is assembled](#how-configuration-is-a
    )
    ```
 
-   Use `BASE_CONFIG` only for configuration every module in the build needs, as platform packages do.
+   Alternatively, a library may register its configuration with `GLOBAL_IMPLICIT_DEPENDENCY`, as the framework
+   defaults and platform packages do. The configuration is then linked into the global interface target and
+   reaches every module in the build without a `DEPENDS` entry. This suits configuration that all of a library's
+   modules (or code outside the library) need; explicit `DEPENDS` keeps the dependency visible and is preferred
+   when only a few modules consume the configuration. Projects override the files the same way in both cases.
 
 A library may also override framework defaults on behalf of the projects using it, by adding a
 `CONFIGURATION_OVERRIDES` module exactly as a project would (see below). Libraries are processed after the
@@ -315,7 +319,7 @@ overrides `CdhCoreTlmConfig.fpp`.
 | `SOURCES`, `HEADERS`, `AUTOCODER_INPUTS` | New configuration files, copied into the build cache. A file name already supplied by an earlier module is an error; use `CONFIGURATION_OVERRIDES` instead. |
 | `CONFIGURATION_OVERRIDES` | Replacements for files supplied by an earlier module, matched by file name. A name no earlier module supplied is an error. |
 | `INTERFACE` | Header-only or override-only module. Required when the module has no `SOURCES`/`AUTOCODER_INPUTS`. |
-| `BASE_CONFIG` | Visible to every module without `DEPENDS`. Framework defaults and platform packages only. |
+| `GLOBAL_IMPLICIT_DEPENDENCY` | Linked into the global interface target: visible to every module without `DEPENDS`. Used by framework defaults and platform packages; available to library defaults. Replaces the deprecated `BASE_CONFIG`, which still works as a synonym and emits a warning. |
 | `DEPENDS` | Modules this configuration needs, typically `Fw_Types` or a library's `_Types` module for FPP overrides. |
 | `CHOOSES_IMPLEMENTATIONS` | Implementation selections (see [CMake Implementations](./cmake-implementations.md)). Platform packages must choose every required implementation; projects may override. |
 | `EXCLUDE_FROM_ALL` | Build only when depended upon. Used by subtopology configuration. |

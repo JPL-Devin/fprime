@@ -73,7 +73,8 @@ endif()
 
 # STEP 5: Register the platform configuration. A platform supplies "PlatformTypes.fpp" and
 #         "PlatformTypes.h" from a configuration module, chooses an implementation for every Os
-#         package, and marks the module BASE_CONFIG so every module sees the platform types.
+#         package, and marks the module GLOBAL_IMPLICIT_DEPENDENCY so every module sees the
+#         platform types.
 #         Note: Typically, the unix platform directory is a good default, as it grabs standard
 #         types from <cstdint> and chooses the POSIX implementations. Additional platform-specific
 #         choices and definitions are then registered in a second, INTERFACE-only configuration
@@ -86,6 +87,6 @@ register_fprime_config(
     INTERFACE
     CHOOSES_IMPLEMENTATIONS
         <OS-IMPLEMENTATIONS-SPECIFIC-TO-THIS-PLATFORM>
-    BASE_CONFIG
+    GLOBAL_IMPLICIT_DEPENDENCY
 )
 target_compile_definitions(Platform<PLATFORM-NAME> INTERFACE ${PLATFORM_OS_TYPE_DEFINITION})

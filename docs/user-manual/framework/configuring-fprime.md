@@ -19,6 +19,8 @@ This guide includes:
     - [Text Logging](#text-logging)
     - [Misc Configuration Settings](#misc-configuration-settings)
 - [Component Configuration](#component-configuration)
+- [OSAL Configuration](#osal-configuration)
+- [Library Default Configuration](#library-default-configuration)
 - [Conclusion](#conclusion)
 
 
@@ -403,6 +405,19 @@ Individual instances may select another source via `Os::RawTime(Os::RawTimeSourc
 > `Os::RawTime` intervals are only defined between instances reading the same clock; on POSIX `getTimeInterval()` and
 > `getDiffUsec()` return `INVALID_PARAMS` when the sources differ. Enumerator values are platform-specific and are not
 > part of the serialized `Os::RawTime` form.
+
+## Library Default Configuration
+
+Libraries may ship default configuration of their own, registered with `register_fprime_config` from a
+`default-config/config-<library name>/` directory. Consumers list the configuration module in `DEPENDS`, or the
+library marks it `GLOBAL_IMPLICIT_DEPENDENCY` (the flag the framework uses for `default/config` and for platform
+configuration) so that every module in the build receives it implicitly. Projects override library files exactly as
+they override framework files, with `CONFIGURATION_OVERRIDES`. See
+[Library Defaults](../build-system/configuration.md#library-defaults) for the layout, include path, and dependency
+rules.
+
+> [!NOTE]
+> `GLOBAL_IMPLICIT_DEPENDENCY` replaces the `BASE_CONFIG` flag, which is deprecated and emits a warning when used.
 
 ## Conclusion
 
