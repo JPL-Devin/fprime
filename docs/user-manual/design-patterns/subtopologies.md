@@ -65,7 +65,7 @@ topology ExamplesDeployment {
 
 ### Configuration Overview
 
-Subtopologies _can_ be designed with configurability in mind. This means that parameters can be defined and used at the subtopology definition level and then overridden when the subtopology is instantiated by a user in their own project. This is enabled by the use of F´ config modules (see [`register_fprime_config` API](https://fprime.jpl.nasa.gov/latest/docs/reference/api/cmake/API/#function-register_fprime_config) in the build system), which allow subtopology developers to define default configuration files, and projects to optionally override those files at build time.
+Subtopologies _can_ be designed with configurability in mind. This means that parameters can be defined and used at the subtopology definition level and then overridden when the subtopology is instantiated by a user in their own project. This is enabled by the use of F´ config modules (see [Configuration Modules](../build-system/configuration.md) and the [`register_fprime_config` API](../../reference/api/cmake/API.md)), which allow subtopology developers to define default configuration files, and projects to optionally override those files at build time.
 
 Let's look at the [Svc.CdhCore](../../../Svc/Subtopologies/CdhCore) subtopology, and specifically the `CdhCoreConfig` directory.
 

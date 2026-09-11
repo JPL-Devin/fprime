@@ -388,21 +388,36 @@ endfunction()
 ####
 # Function `register_fprime_config`:
 #
-# Registers a configuration build target using the fprime build system. This comes with dependency management and
-# fprime autocoding capabilities. The call format is identical to `register_fprime_library` and additionally supports
-# the CONFIGURATION_OVERRIDES directive. This allows users to override the configuration files supplied by previous
-# configuration modules supplied by the build (e.g. fprime default configuration and library configuration). DEPENDS
-# and EXCLUDE_FROM_ALL are not supported.
+# Registers a configuration module using the fprime build system. This comes with dependency management and fprime
+# autocoding capabilities. The call format is identical to `register_fprime_library` (SOURCES, AUTOCODER_INPUTS,
+# HEADERS, DEPENDS, INTERFACE, EXCLUDE_FROM_ALL) and additionally supports the following directives:
 #
-# All configuration module sources (SOURCES, HEADERS, and AUTOCODER_INPUTS) are copied into the build cache.
-# Overrides are copied into the original module's build that the file overrides as this preserves the original build
-# module set up. Overrides only work in order of detection within the CMakeList.txt tree:
+# - **CONFIGURATION_OVERRIDES**: files replacing configuration files supplied by a previously registered configuration
+#   module (fprime default configuration, platform, or library configuration). An override is matched to the file it
+#   replaces by file name only and is copied into the original module's location in the build cache. Listing a file
+#   that no earlier module supplied is an error.
+# - **BASE_CONFIG**: makes this module's configuration visible to every module in the build without an explicit
+#   DEPENDS. Used by the fprime default configuration and by platform configuration. Other configuration modules must
+#   be listed in DEPENDS by the modules that use them.
+# - **CHOOSES_IMPLEMENTATIONS**: implementations (e.g. `Os_File_Posix`) selected by this configuration. See
+#   `register_fprime_implementation`.
+#
+# All configuration module sources (SOURCES, HEADERS, and AUTOCODER_INPUTS) are copied into the build cache and are
+# included via the parent of the module's build directory, i.e. a header registered from `default/config/FpConfig.h`
+# is included as `config/FpConfig.h`. The source directory must therefore not sit directly under a source include
+# root (project root, framework root, or library root), otherwise the source-tree file shadows the build cache copy;
+# this is detected and reported as an error. Configuration files are processed in order of detection within the
+# CMakeLists.txt tree, and the last registration of a given file name wins:
 #
 #    platform -> fprime config -> library -> project.
 #
+# Modules supplying SOURCES or AUTOCODER_INPUTS are built as STATIC libraries unless INTERFACE is given. Modules
+# supplying only HEADERS and/or CONFIGURATION_OVERRIDES should be declared INTERFACE.
+#
+# See the user manual for the full description: docs/user-manual/build-system/configuration.md
 #
 # > [!WARNING]
-# > Specifying headers in this command is crucial to providing as configuration.
+# > Headers must be listed under HEADERS to be treated as configuration.
 #
 # > [!NOTE]
 # > Configuration is built as a series of STATIC libraries in order to allow for interdependencies between config and

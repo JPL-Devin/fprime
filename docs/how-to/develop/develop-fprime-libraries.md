@@ -17,6 +17,7 @@ In this section, you will learn about the expected structure of an F´ library.
 1. Module Directories and Modules (Components, Ports, Topologies, etc.)
 2. `cmake/toolchain` Folder and Toolchain Files
 3. `cmake/platform` Folder and Platform Files
+4. `default-config/config-<library name>` Folder and Default Configuration Files
 
 That means that a complete F´ library might look like the following:
 
@@ -25,6 +26,9 @@ my-library/
 ├── cmake
 │   ├── platform
 │   └── toolchain
+├── default-config
+│   └── config-my-library
+│       └── ...
 ├── MyLibrary
 │   ├── Components
 │   │   └── MyComponent
@@ -81,6 +85,18 @@ In a similar manner to toolchains, platforms may be provided in the `cmake/platf
 The example platform would thus need to include `set(FPRIME_PLATFORM "my-platform")`.
 
 The `cmake/platform` folder may contain any number of platform files and must be placed in the root of the library's directory structure.
+
+## Optional: Default Configuration Folder
+
+A library with configurable settings (FPP constants, `<Component>Cfg.hpp` headers) ships its defaults as a configuration
+module so that projects can override them file by file. Place the files in `default-config/config-<library name>/` and
+register them from that directory with `register_fprime_config(config-<library name> ...)`; modules in the library
+include them as `#include <config-<library name>/File.hpp>` and list `config-<library name>` in `DEPENDS`.
+
+The configuration directory must not be placed directly at the library root: the root is an include root, so a
+directory there would shadow the build cache copy and could never be overridden. See
+[Configuration Modules](../../user-manual/build-system/configuration.md#library-defaults) for the full explanation and
+example.
 
 ## Conclusion
 
