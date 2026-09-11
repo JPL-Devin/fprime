@@ -91,8 +91,16 @@ a framer/deframer pair on the other, so the standard framing stack carries hub
 traffic:
 
 ```text
-GenericHub <-> ComDataBufferAdapter <-> Framer / Deframer <-> ComStub <-> ByteStreamDriver ~~> (peer, mirrored)
+GenericHub <-> ComDataBufferAdapter <-> FprimeFramer / FprimeDeframer <-> ComStub <-> ByteStreamDriver ~~> (peer, mirrored)
 ```
+
+> [!IMPORTANT]
+> Use F Prime framing (`Svc::FprimeFramer` / `Svc::FprimeDeframer`) here. The
+> adapter forwards each hub buffer to the framer immediately, without flow
+> control, so the framer must accept a new input while previous frames are
+> still in flight. `Svc::FprimeFramer` allocates a frame per input and does;
+> the CCSDS `TmFramer` and `AosFramer` hold a single frame and are not
+> supported behind the adapter.
 
 ```fpp
 hub.toBufferDriver         -> hubAdapter.bufferIn
@@ -109,8 +117,7 @@ hub.fromBufferDriverReturn -> hubAdapter.bufferOutReturn
 The framer, deframer, and (for the deframer) frame accumulator are wired to the
 com driver as in the [ComFprime subtopology](../../../Svc/Subtopologies/ComFprime/docs/sdd.md),
 but must be dedicated to the hub rather than shared with the deployment's own
-downlink/uplink stack. Framers that read the frame context (e.g. CCSDS) are
-served by `hubAdapter.configure(context)`.
+downlink/uplink stack.
 
 For a runnable worked example, see
 [`fprime-community/fprime-generic-hub-reference`](https://github.com/fprime-community/fprime-generic-hub-reference).

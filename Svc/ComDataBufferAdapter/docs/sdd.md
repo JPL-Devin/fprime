@@ -19,6 +19,14 @@ a hub run over a transport that does not preserve message boundaries, where
 The adapter neither allocates nor copies: every buffer is forwarded by reference and ownership follows the
 return-to-sender pattern on both sides.
 
+> [!IMPORTANT]
+> Use the adapter with F Prime framing ([`Svc::FprimeFramer`](../../FprimeFramer/docs/sdd.md) and
+> [`Svc::FprimeDeframer`](../../FprimeDeframer/docs/sdd.md)). The adapter applies no flow control: each
+> buffer received on `bufferIn` is forwarded to the framer immediately, so the framer must accept a new input
+> while previous frames are still in flight. `Svc::FprimeFramer` allocates a frame per input and does.
+> The CCSDS `Svc::Ccsds::TmFramer` and `Svc::Ccsds::AosFramer` hold a single frame and assert if one is
+> still outstanding; they are not supported behind this adapter.
+
 ## 2. Requirements
 
 | Name | Description | Validation |
@@ -69,8 +77,8 @@ sent on `dataReturnOut`. The framework deframers pass this context through uncha
 
 `configure(const ComCfg::FrameContext& context)` sets the context stamped on every buffer emitted on
 `dataOut`. It defaults to a default-constructed `ComCfg::FrameContext`, which is sufficient for
-`Svc::FprimeFramer`. Framers that read the context (e.g. the CCSDS `SpacePacketFramer` reads `apid`, the
-`TmFramer` reads `vcId`) require it to be configured in the topology `configComponents` phase.
+`Svc::FprimeFramer`. A framer that reads the context requires it to be configured in the topology
+`configComponents` phase.
 
 ### 3.4 Assumptions
 
@@ -78,9 +86,10 @@ sent on `dataReturnOut`. The framework deframers pass this context through uncha
 2. The framer and deframer connected to the adapter are dedicated to it. `dataOut`/`dataReturnIn` form a
    single ownership loop with one framer, and `dataIn`/`dataReturnOut` with one deframer, so a framer
    cannot be shared with e.g. a `Svc::ComQueue`.
-3. The com interface downstream of the framer (e.g. `Svc::ComStub`) still requires `comStatusOut` to be
-   connected to the framer's `comStatusIn`. The framer's `comStatusOut` may be left unconnected: the adapter
-   applies no flow control, matching `Svc::GenericHub`.
+3. The framer accepts a new input while previously emitted frames are still outstanding (see the note in
+   Section 1). The com interface downstream of the framer (e.g. `Svc::ComStub`) still requires
+   `comStatusOut` to be connected to the framer's `comStatusIn`. The framer's `comStatusOut` may be left
+   unconnected: the adapter applies no flow control, matching `Svc::GenericHub`.
 
 ### 3.5 Sample topology
 
