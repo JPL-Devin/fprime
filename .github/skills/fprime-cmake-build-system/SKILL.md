@@ -66,6 +66,7 @@ directory must also be pulled in with `add_fprime_subdirectory` from
 the including `CMakeLists.txt`.
 
 Guides: [customization / custom targets](../../../docs/user-manual/build-system/cmake-customization.md),
+[configuration modules](../../../docs/user-manual/build-system/configuration.md),
 [implementations](../../../docs/user-manual/build-system/cmake-implementations.md),
 [platforms](../../../docs/user-manual/build-system/cmake-platforms.md),
 [toolchains](../../../docs/user-manual/build-system/cmake-toolchains.md),
