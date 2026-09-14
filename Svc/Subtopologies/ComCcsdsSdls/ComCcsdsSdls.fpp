@@ -303,4 +303,171 @@ module ComCcsdsSdls {
 
     } # end Subtopology
 
+    # ----------------------------------------------------------------------
+    # Segmented TC uplink variants (CCSDS 232.0-B-4 Segment Header / MAP packet extraction)
+    # ----------------------------------------------------------------------
+
+    # FramingSubtopology with the segmented TC uplink and SDLS. Uplink order:
+    # frameAccumulator -> tcDeframerSeg -> SdlsDecryption (SUCCESS gate) -> TcMapExtraction -> spacePacketDeframer
+    # SdlsDecryption is reused unchanged: its dataOut is taken only on SdlsStatus::SUCCESS, so no
+    # unauthenticated frame can allocate, append to, complete or abandon MAP reassembly state.
+    topology FramingSubtopologySegmented {
+        # Usage Note: same external connections as FramingSubtopology (see above).
+
+        # Packet layer (router, ComQueue, space packet framer/deframer, buffer manager)
+        import ComCcsds.SpacePacketFraming
+
+        # TM/TC transfer frame layer with the TC deframer in Segment Header mode
+        import ComCcsds.TmTcFramingSegmented
+
+        # MAP packet extraction layer (reassembler + dedicated pool)
+        import ComCcsds.TcMapExtraction
+
+        # SDLS decryption layer (SDLS deframer, SA router, decryptor)
+        import SdlsDecryption
+
+        # SDLS encryption layer (SDLS framer, SA router, encryptor)
+        import SdlsEncryption
+
+        connections Downlink {
+            # Identical to FramingSubtopology with TmTcFraming -> TmTcFramingSegmented
+            # SpacePacketFraming <-> SdlsEncryption (SDLS encryption step)
+            ComCcsds.SpacePacketFraming.dataOut -> SdlsEncryption.dataIn
+            SdlsEncryption.dataReturnOut        -> ComCcsds.SpacePacketFraming.dataReturnIn
+
+            # SdlsEncryption <-> TmTcFramingSegmented
+            SdlsEncryption.dataOut                      -> ComCcsds.TmTcFramingSegmented.dataIn
+            ComCcsds.TmTcFramingSegmented.dataReturnOut -> SdlsEncryption.dataReturnIn
+
+            # SdlsEncryption frame buffer allocations
+            SdlsEncryption.bufferAllocate   -> ComCcsds.SpacePacketFraming.bufferGetCallee
+            SdlsEncryption.bufferDeallocate -> ComCcsds.SpacePacketFraming.bufferSendIn
+
+            # ComStatus
+            ComCcsds.TmTcFramingSegmented.comStatusOut -> SdlsEncryption.comStatusIn
+            SdlsEncryption.comStatusOut                -> ComCcsds.SpacePacketFraming.comStatusIn
+            # (Outgoing) TmTcFramingSegmented <-> ComInterface connections shall be established by the user
+        }
+
+        connections Uplink {
+            # (Incoming) ComInterface <-> TmTcFramingSegmented connections shall be established by the user
+            # TmTcFramingSegmented buffer allocations
+            ComCcsds.TmTcFramingSegmented.bufferDeallocate -> ComCcsds.SpacePacketFraming.bufferSendIn
+            ComCcsds.TmTcFramingSegmented.bufferAllocate   -> ComCcsds.SpacePacketFraming.bufferGetCallee
+
+            # TC deframer (Segment Header mode) -> SDLS decryption (Segment Header already in FrameContext for the AAD)
+            ComCcsds.TmTcFramingSegmented.dataOut -> SdlsDecryption.dataIn
+            SdlsDecryption.dataReturnOut          -> ComCcsds.TmTcFramingSegmented.dataReturnIn
+
+            # SDLS SUCCESS gate -> MAP reassembler (only authenticated segments touch MAP state)
+            SdlsDecryption.dataOut                 -> ComCcsds.TcMapExtraction.dataIn
+            ComCcsds.TcMapExtraction.dataReturnOut -> SdlsDecryption.dataReturnIn
+
+            # MAP reassembler -> Space Packet deframer
+            ComCcsds.TcMapExtraction.dataOut          -> ComCcsds.SpacePacketFraming.dataIn
+            ComCcsds.SpacePacketFraming.dataReturnOut -> ComCcsds.TcMapExtraction.dataReturnIn
+        }
+
+        # ----------------------------------------------------------------------
+        # Topology ports (Svc.Com boundary)
+        # ----------------------------------------------------------------------
+
+        @ Output port sending TM transfer frames to the com interface
+        port dataOut       = ComCcsds.framer.dataOut
+
+        @ Input port receiving back ownership of transmitted frame buffers from the com interface
+        port dataReturnIn  = ComCcsds.framer.dataReturnIn
+
+        @ Input port receiving com status from the com interface
+        port comStatusIn   = ComCcsds.framer.comStatusIn
+
+        @ Input port receiving raw uplink data from the com interface
+        port dataIn        = ComCcsds.frameAccumulator.dataIn
+
+        @ Output port returning ownership of received uplink buffers to the com interface
+        port dataReturnOut = ComCcsds.frameAccumulator.dataReturnOut
+    } # end FramingSubtopologySegmented
+
+    @ SDLS uplink with TC Segment Header / MAP reassembly after the SUCCESS gate.
+    @ PRECONDITION: `decryptor` must be a MAC-verifying Svc.Ccsds.Decryptor (AesGcmDecryptor);
+    @ with the shipped ClearTextDecryptor nothing is authenticated. Misconfiguration signature:
+    @ event `decryptor.NullCipherInUse` (WARNING_HI, throttled at 5) on the uplink.
+    topology SegmentedSubtopology {
+        import FramingSubtopologySegmented
+
+        instance ComCcsds.comStub
+
+        connections ComStub {
+            # FramingSubtopologySegmented <-> ComStub (Downlink)
+            FramingSubtopologySegmented.dataOut  -> ComCcsds.comStub.dataIn
+            ComCcsds.comStub.dataReturnOut -> FramingSubtopologySegmented.dataReturnIn
+            ComCcsds.comStub.comStatusOut  -> FramingSubtopologySegmented.comStatusIn
+
+            # ComStub <-> FramingSubtopologySegmented (Uplink)
+            ComCcsds.comStub.dataOut       -> FramingSubtopologySegmented.dataIn
+            FramingSubtopologySegmented.dataReturnOut -> ComCcsds.comStub.dataReturnIn
+        }
+
+        # ----------------------------------------------------------------------
+        # Topology ports (identical to Subtopology, plus tcPacketBufferManagerSchedIn)
+        # ----------------------------------------------------------------------
+
+        # Command routing
+        @ Output port sending routed command packets to the command dispatcher
+        port commandOut         = ComCcsds.fprimeRouter.commandOut
+
+        @ Input port receiving command response messages back into the router
+        port cmdResponseIn      = ComCcsds.fprimeRouter.cmdResponseIn
+
+        @ Output port sending uplinked file packets to the file handling stack
+        port fileUplinkOut          = ComCcsds.fprimeRouter.fileOut
+
+        @ Input port receiving back buffer ownership from the file handling stack
+        port fileUplinkReturnIn = ComCcsds.fprimeRouter.fileBufferReturnIn
+
+        # Telemetry/events/file queuing (array ports - index at connection site)
+        @ Input port array for queueing Fw::ComBuffers
+        port comPacketQueueIn = ComCcsds.comQueue.comPacketQueueIn
+
+        @ Input port array for queueing Fw::Buffers
+        port bufferQueueIn    = ComCcsds.comQueue.bufferQueueIn
+
+        @ Output port array returning ownership of Fw::Buffers to their original sender after dequeuing
+        port bufferReturnOut  = ComCcsds.comQueue.bufferReturnOut
+
+        # ComDriver interface (via ComStub)
+        @ Input port receiving data read from the ByteStream driver
+        port drvReceiveIn        = ComCcsds.comStub.drvReceiveIn
+
+        @ Output port returning ownership of the buffer that came in on drvReceiveIn back to the driver
+        port drvReceiveReturnOut = ComCcsds.comStub.drvReceiveReturnOut
+
+        @ Output port sending framed data to the ByteStream driver for transmission
+        port drvSendOut          = ComCcsds.comStub.drvSendOut
+
+        @ Input port receiving the ready signal when the ByteStream driver has connected
+        port drvConnected        = ComCcsds.comStub.drvConnected
+
+        # Buffer management for ComDriver
+        @ Input port for requesting (allocating) a new Fw::Buffer from the comms buffer pool
+        port commsBufferGetCallee = ComCcsds.commsBufferManager.bufferGetCallee
+
+        @ Input port for deallocating Fw::Buffers back into the comms buffer pool
+        port commsBufferSendIn    = ComCcsds.commsBufferManager.bufferSendIn
+
+        # Scheduling
+        @ Input port for scheduling ComQueue telemetry output
+        port comQueueRun          = ComCcsds.comQueue.run
+
+        @ Rate-group driven timeout to flush the ComAggregator buffer
+        port aggregatorTimeout    = ComCcsds.aggregator.timeout
+
+        @ Input port triggering commsBufferManager telemetry output
+        port bufferManagerSchedIn = ComCcsds.commsBufferManager.schedIn
+
+        @ Input port triggering the dedicated TC packet pool (tcPacketBufferManager) telemetry output
+        port tcPacketBufferManagerSchedIn = ComCcsds.tcPacketBufferManager.schedIn
+
+    } # end SegmentedSubtopology
+
 } # end ComCcsdsSdls

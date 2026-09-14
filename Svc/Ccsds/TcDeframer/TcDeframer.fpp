@@ -34,6 +34,18 @@ module Ccsds {
             severity warning high \
             format "Invalid checksum received. Trailer specified: {} | Computed on board: {}"
 
+        @ Segment Header mode on: frame carries no octet after the primary header (CCSDS 232.0-B-4 4.1.3.2.2.1)
+        event MissingSegmentHeader(frameLength: U16) \
+            severity warning high \
+            format "TC frame of {} octets has no Segment Header; frame dropped" \
+            throttle 10
+
+        @ Segment Header mode on: Type-BC/AC control frame received; control frames carry no Segment Header (CCSDS 232.0-B-4 4.1.3.2.1.4, 4.1.3.3)
+        event ControlFrameDropped(flagsAndScId: U16) \
+            severity warning low \
+            format "TC control frame (flags/SCID 0x{x}) dropped in Segment Header mode" \
+            throttle 10
+
         ###############################################################################
         # Standard AC Ports: Required for Channels, Events, Commands, and Parameters  #
         ###############################################################################

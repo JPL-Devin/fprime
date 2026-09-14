@@ -23,6 +23,7 @@ Both variants provide the standard **router + ComQueue + CCSDS framers/deframers
 | SVC-COMCCSDS-005 | Provide a **subtopology variant that expects an external `Svc::ComInterface`** supplied by the deployment.     | Inspection |
 | SVC-COMCCSDS-006 | Support **configurable instance properties** (IDs, queue sizes, stack sizes, priorities, CPU affinities, packet spanning) via `ComCcsdsConfig`. | Inspection |
 | SVC-COMCCSDS-007 | Provide **composable layer topologies**: a Space Packet packet layer (`SpacePacketFraming`, `SpacePacket`) and a TM/TC transfer frame layer (`TmTcFraming`), from which the full stack is composed. | Inspection |
+| SVC-COMCCSDS-008 | Provide a **segmented uplink variant** (`TmTcFramingSegmented`, `TcMapExtraction`, `FramingSubtopologySegmented`, `SegmentedSubtopology`) that processes the CCSDS TC Segment Header, demultiplexes MAP channels and reassembles Space Packets spanning several TC frames from a **dedicated, bounded** buffer pool, without changing the default topologies. | Inspection, Ref segmented build |
 
 ---
 
@@ -40,6 +41,9 @@ Both variants provide the standard **router + ComQueue + CCSDS framers/deframers
 | `tcDeframer`          | `Svc.Ccsds.tcFramer`            | Passive | Deframes **CCSDS Space Packets** from  **CCSDS TM Transfer Frames** (uplink step 1).            |
 | `frameAccumulator`    | `Svc.FrameAccumulator`          | Passive | Collects bytes from the link and emits complete frames/packets for deframing (uplink path).     |
 | `comStub`             | `Svc.ComStub`                   | Passive | (Variant A only) Implementation of `Svc.ComInterface`, adapting a `Drv::ByteStreamDriverModel`. |
+| `tcDeframerSeg`       | `Svc.Ccsds.TcDeframer` (base id `BASE_ID + 0x0B000`) | Passive | (Segmented variants only) `tcDeframer` in **Segment Header mode** (`configureSegmentHeader(true)` in `configComponents`): strips the 1-octet Segment Header into `FrameContext` and drops Type-BC frames. |
+| `tcPacketBufferManager` | `Svc.BufferManager` (base id `BASE_ID + 0x0C000`) | Passive | (Segmented variants only) **Dedicated** reassembly pool used exclusively by `tcMapReassembler`: one bin of `TcMapCfg::PoolBufferCount` × `TcMapCfg::MaxPacketSize` octets, manager id `TcMapCfg::PoolManagerId`. |
+| `tcMapReassembler`    | `Svc.Ccsds.TcMapReassembler` (base id `BASE_ID + 0x0D000`; defined in `ComCcsdsTcMapConfig.fpp`) | Passive | (Segmented variants only) MAP demultiplexing and Space Packet reassembly from Frame Data Units (uplink step 1b). |
 
 > **Two variants:**
 > **A. “With ComStub”:** Subtopology **includes** `Svc::ComStub` and exposes **ByteStream** ports to your driver.
@@ -57,6 +61,17 @@ alternative stacks (e.g., inserting an SDLS security layer between them) while r
 | `TmTcFraming`       | Transfer frame layer: `framer` (TM), `tcDeframer`, `frameAccumulator`. Open upstream/downstream boundaries. |
 | `FramingSubtopology` | `SpacePacketFraming` composed with `TmTcFraming` (variant B).                                      |
 | `Subtopology`        | `FramingSubtopology` plus `comStub` (variant A).                                                    |
+| `TmTcFramingSegmented` | Transfer frame layer with the TC deframer in Segment Header mode: `framer` (TM), `tcDeframerSeg`, `frameAccumulator`. Same ports as `TmTcFraming`; `dataOut` carries the Frame Data Unit (Segment Header stripped into `FrameContext`). |
+| `TcMapExtraction`    | MAP packet extraction layer: `tcMapReassembler`, `tcPacketBufferManager`. Ports `dataIn`/`dataReturnOut` (from the frame layer or an SDLS layer), `dataOut`/`dataReturnIn` (to the packet layer), `poolSchedIn`. |
+| `FramingSubtopologySegmented` | `SpacePacketFraming` + `TcMapExtraction` + `TmTcFramingSegmented` (variant C, external `Svc.ComInterface`). |
+| `SegmentedSubtopology` | `FramingSubtopologySegmented` plus `comStub` (variant C with `Svc::ComStub`).                        |
+
+The segmented topologies are **additive**: they define new instances only (`tcDeframerSeg`,
+`tcPacketBufferManager`, `tcMapReassembler`) and reuse the others. The default topologies, the default
+`tcDeframer` (Segment Header mode off) and the generated code of a default deployment are unchanged when the
+segmented topologies are not imported. Exactly **one** of `Subtopology`/`FramingSubtopology` and
+`SegmentedSubtopology`/`FramingSubtopologySegmented` may be imported by a deployment (they share the packet
+layer instances); the switch is the import, there is no runtime mode.
 
 Each layer topology exposes its open boundary as **topology ports** (e.g. `SpacePacketFraming.dataOut`,
 `TmTcFraming.framedDataIn`, `FramingSubtopology.comStatusIn`), so composing topologies and deployments wire
@@ -88,6 +103,47 @@ flowchart LR
     spacePacketDeframer -->|F´ packet| fprimeRouter
     fprimeRouter -->|commands / files| fsw
 ```
+
+#### Segmented uplink (variant C)
+
+In the segmented variants each TC Transfer Frame carries a 1-octet **Segment Header**
+(CCSDS 232.0-B-4 4.1.3.2.2: bits 7-6 Sequence Flags `01` FIRST / `00` CONTINUING / `10` LAST /
+`11` UNSEGMENTED, bits 5-0 MAP ID). `tcDeframerSeg` strips it into `FrameContext`
+(`tcSegmentHeaderPresent`, `tcSegmentHeader`) and `tcMapReassembler` reassembles one Space Packet per MAP
+from the Frame Data Units (no blocking: exactly one Space Packet per Frame Data Unit sequence).
+
+```mermaid
+flowchart LR
+    subgraph TMTC["ComCcsds.TmTcFramingSegmented"]
+        frameAccumulator["frameAccumulator<br>Svc.FrameAccumulator"]
+        tcDeframerSeg["tcDeframerSeg<br>Svc.Ccsds.TcDeframer (SH mode)"]
+    end
+
+    subgraph MAP["ComCcsds.TcMapExtraction"]
+        tcMapReassembler["tcMapReassembler<br>Svc.Ccsds.TcMapReassembler"]
+        tcPacketBufferManager["tcPacketBufferManager<br>Svc.BufferManager (dedicated pool)"]
+    end
+
+    subgraph SPF["ComCcsds.SpacePacketFraming (packet layer)"]
+        spacePacketDeframer["spacePacketDeframer<br>Svc.Ccsds.SpacePacketDeframer"]
+        fprimeRouter["fprimeRouter<br>Svc.FprimeRouter"]
+    end
+
+    com["ComInterface"]
+
+    com -->|raw bytes| frameAccumulator
+    frameAccumulator -->|TC Transfer Frame| tcDeframerSeg
+    tcDeframerSeg -->|Frame Data Unit + FrameContext| tcMapReassembler
+    tcMapReassembler <-->|allocate / deallocate| tcPacketBufferManager
+    tcMapReassembler -->|reassembled Space Packet| spacePacketDeframer
+    spacePacketDeframer -->|F´ packet| fprimeRouter
+```
+
+Every frame buffer is returned upstream synchronously (copy-always): `tcMapReassembler` copies the User
+Data portion into a pool buffer and returns the frame on `dataReturnOut`; the completed packet is handed to
+`spacePacketDeframer` in the pool buffer and released to `tcPacketBufferManager` when it comes back on
+`dataReturnIn`. See the [TcMapReassembler SDD](../../../Ccsds/TcMapReassembler/docs/sdd.md) for the
+state machine, every error path and the held-buffer behaviour.
 
 ### 2.3 Data Flow - Downlink
 
@@ -131,6 +187,20 @@ transfer frame layers, see the [ComCcsdsSdls subtopology](../../ComCcsdsSdls/doc
 ### 2.5 Limitations
 
 These subtopologies focus on the **CCSDS framing and deframing setup** and does not provide wider CDH.
+
+Segmented variants (see the TcMapReassembler and TcDeframer SDDs for the full list):
+
+* **No blocking** — one Space Packet per Frame Data Unit sequence; a Frame Data Unit carrying more than
+  one packet, or fill, is rejected by the exact-length check (`LengthMismatch`).
+* **Type-BC (control) frames are dropped** in Segment Header mode (`tcDeframerSeg.ControlFrameDropped`);
+  there is no FARM-1/COP-1, so Unlock/SetV(R) are not processed.
+* **(VCID, MAP ID) pairs** — only the pairs passed to `TcMapReassembler::configure()` are accepted
+  (default: VCID 1, MAP 0); segments for any other pair are discarded (`InvalidMapId`). The same MAP ID on
+  two Virtual Channels is two independent reassembly channels.
+* **Largest packet** — `TcMapCfg::MaxPacketSize` (4096 octets by default); a larger packet is rejected
+  loudly at its first segment (`PacketTooLarge`).
+* **No stall timeout** — a partial packet whose remaining segments never arrive holds one pool buffer until
+  the next FIRST/UNSEGMENTED on that MAP, a LAST (length mismatch) or an overflow.
 
 ---
 
@@ -192,6 +262,28 @@ topology Flight {
 }
 ```
 
+### 3.3 Variant C — Segmented uplink (Segment Header / MAP reassembly)
+
+Import the segmented topology **instead of** `Subtopology`/`FramingSubtopology`, wire the com interface and
+rate groups exactly as in variant A/B, and additionally schedule the dedicated pool's `schedIn`:
+
+```fpp
+topology Flight {
+  import ComCcsds.SegmentedSubtopology      # or ComCcsds.FramingSubtopologySegmented (variant B style)
+
+  connections RateGroups {
+    rg.RateGroupMemberOut[0] -> ComCcsds.comQueue.run
+    rg.RateGroupMemberOut[1] -> ComCcsds.SegmentedSubtopology.tcPacketBufferManagerSchedIn
+    # with FramingSubtopologySegmented use: ComCcsds.TcMapExtraction.poolSchedIn
+  }
+
+  # Link wiring: identical to variant A (SegmentedSubtopology) or variant B (FramingSubtopologySegmented)
+}
+```
+
+The secured version of this variant (SDLS between the frame layer and the MAP extraction layer) is
+`ComCcsdsSdls.SegmentedSubtopology`, see the [ComCcsdsSdls SDD](../../ComCcsdsSdls/docs/sdd.md).
+
 ---
 
 ## 4. Configuration
@@ -212,6 +304,49 @@ topology Flight {
 
 `module BuffMgr` provides constants for the bins configured for `commsBufferManager`.
 
+### 4.3 Segmented variant: `TcMapCfg` and the dedicated reassembly pool
+
+The segmented variants are configured by two files, both overridable through `register_fprime_config(CONFIGURATION_OVERRIDES ...)`:
+
+* `Svc/Ccsds/TcMapReassembler/config/TcMapReassemblerConfig/TcMapCfg.fpp` — `module TcMapCfg`:
+
+  | Constant            | Default | Meaning                                                                      |
+  | ------------------- | ------- | ---------------------------------------------------------------------------- |
+  | `MapChannelCount`   | 1       | MAP channels tracked (one reassembly slot each), 1..64                       |
+  | `MaxPacketSize`     | 4096    | Largest reassembled Space Packet, 7..65542                                   |
+  | `MaxPacketsInFlight`| 4       | Completed packets outstanding downstream (delivered, not yet returned)       |
+  | `PoolBufferCount`   | `MapChannelCount + MaxPacketsInFlight` (5) | Buffers in the dedicated pool         |
+  | `PoolBytes`         | `PoolBufferCount * MaxPacketSize` (20 480) | Backing memory of the dedicated pool  |
+  | `PoolManagerId`     | 201     | `Svc.BufferManager` manager id of the pool (the comms pool is 200)           |
+
+* `Svc/Subtopologies/ComCcsds/ComCcsdsConfig/ComCcsdsTcMapConfig.fpp` — defines `instance tcMapReassembler`
+  and its `configComponents` phase, which passes the accepted **(VCID, MAP ID) table** to
+  `TcMapReassembler::configure(channels, TcMapCfg::MapChannelCount)`. The default table is `{{1, 0}}`; a
+  project overrides this file to accept other pairs (the table must hold exactly `MapChannelCount` distinct
+  pairs, every VCID and MAP ID in `0..63`).
+
+**Pool arithmetic.** `tcPacketBufferManager` is set up in `configComponents` with a single bin
+`bufferSize = TcMapCfg::MaxPacketSize`, `numBuffers = TcMapCfg::PoolBufferCount`, carved from
+`ComCcsds::Allocation::memAllocator` at initialization (no post-init allocation). One buffer per MAP may be
+held by an in-progress packet and `MaxPacketsInFlight` completed packets may be outstanding downstream; the
+next FIRST/UNSEGMENTED beyond that fails allocation deterministically (`AllocationFailed`, MAP state
+unchanged). The instance's `configObjects` phase binds the FPP constants to named `constexpr` values and
+`static_assert`s that `PoolManagerId != BuffMgr.commsBuffMgrId`, `PoolBufferCount == MapChannelCount +
+MaxPacketsInFlight` and `PoolBytes == PoolBufferCount * MaxPacketSize`.
+
+| Configuration                                                    | `PoolBufferCount` | `PoolBytes`   |
+| ---------------------------------------------------------------- | ----------------- | ------------- |
+| Default (`MapChannelCount=1, MaxPacketSize=4096, MaxPacketsInFlight=4`) | 5          | 20 480 octets |
+| Largest Space Packet, one MAP (`MaxPacketSize=65542`)             | 5                 | 327 710 octets |
+| Largest Space Packet, file uplink sized (`MaxPacketsInFlight=10`) | 11                | 720 962 octets |
+
+Projects routing **file uplink** through a segmented MAP must set
+`MaxPacketsInFlight >= FileHandlingConfig.QueueSizes.fileUplink` (10 by default) so that a burst of queued
+file packets cannot exhaust the pool. The pool is separate from `commsBufferManager` on purpose:
+`Svc.BufferManager` allocates first-fit across all its bins, so a reassembly bin inside the comms manager
+could be consumed by comms traffic (and vice versa); a dedicated instance is the only isolation the
+component offers.
+
 ---
 
 ## 5. Traceability Matrix
@@ -225,3 +360,4 @@ topology Flight {
 | SVC-COMCCSDS-005 | `FramingSubtopology` (variant expecting external `Svc.ComInterface`)                   |
 | SVC-COMCCSDS-006 | `ComCcsdsConfig` module                                                                |
 | SVC-COMCCSDS-007 | `SpacePacketFraming`, `SpacePacket`, and `TmTcFraming` topologies                     |
+| SVC-COMCCSDS-008 | `TmTcFramingSegmented`, `TcMapExtraction`, `FramingSubtopologySegmented`, `SegmentedSubtopology`; `tcDeframerSeg` — `Svc.Ccsds.TcDeframer`, `tcMapReassembler` — `Svc.Ccsds.TcMapReassembler`, `tcPacketBufferManager` — `Svc.BufferManager` |

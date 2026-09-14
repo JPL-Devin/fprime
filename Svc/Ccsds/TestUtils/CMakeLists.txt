@@ -3,7 +3,9 @@ if (BUILD_TESTING)
     SOURCES
       "${CMAKE_CURRENT_LIST_DIR}/TestUtils.cpp"
     DEPENDS
+      Fw_Buffer
       Svc_Ccsds_Types
+      Svc_Ccsds_Utils
       STest
   )
 endif()

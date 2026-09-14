@@ -18,6 +18,24 @@ module Ccsds {
         AOS_INVALID_EPP = 11      @< CCSDS 133.1-B-3: Encapsulation Packet Protocol error
         AOS_VC_FRAME_COUNT_GAP = 12 @< CCSDS 732.0-B-5: AOS VC frame count discontinuity detected
         SDLS_DECRYPTION_FAILURE = 13 @< SDLS decryption failed
+        TC_MISSING_SEGMENT_HEADER = 14   @< CCSDS 232.0-B-4: Segment Header mode on, frame has no octet after the primary header (4.1.3.2.2.1)
+        TC_SEGMENT_HEADER_ABSENT = 15    @< Reassembler received a frame whose context carries no Segment Header (fail closed)
+        TC_INVALID_MAP_ID = 16           @< CCSDS 232.0-B-4: MAP ID not in the configured set (4.4.3.3)
+        TC_SEGMENT_EMPTY = 17            @< Zero-length segment data portion
+        TC_SEGMENT_UNEXPECTED_FIRST = 18 @< FIRST while a packet was in progress on that MAP (partial abandoned)
+        TC_SEGMENT_UNEXPECTED_UNSEGMENTED = 19 @< UNSEGMENTED while a packet was in progress on that MAP (partial abandoned)
+        TC_SEGMENT_ORPHAN = 20           @< CONTINUING or LAST while the MAP was idle
+        TC_SEGMENT_OVERFLOW = 21         @< Segment, accumulated, or declared Space Packet length exceeds the configured maximum
+        TC_SEGMENT_ALLOC_FAILED = 22     @< Dedicated pool returned an invalid or short buffer
+        TC_SEGMENT_LENGTH_MISMATCH = 23  @< Accumulated length differs from the Space Packet declared length at LAST/UNSEGMENTED
+    }
+
+    @ TC Segment Header Sequence Flags (CCSDS 232.0-B-4 table 4-2, 4.1.3.2.2.2)
+    enum TcSequenceFlags: U8 {
+        CONTINUING = 0   @< 0b00 - continuing portion of a segmented packet
+        FIRST = 1        @< 0b01 - first portion of a segmented packet
+        LAST = 2         @< 0b10 - last portion of a segmented packet
+        UNSEGMENTED = 3  @< 0b11 - no segmentation, whole packet in this frame
     }
 
     @ Status of an SDLS (Space Data Link Security) encryption/decryption request
@@ -124,6 +142,14 @@ module Ccsds {
         constant VcIdMask         = 0xFC00  @< 0b1111110000000000
         constant FrameLengthMask  = 0x03FF  @< 0b0000001111111111
         constant VcIdOffset       = 10
+    }
+    @ Masks and Offsets for the one-octet TC Segment Header (CCSDS 232.0-B-4 4.1.3.2.2)
+    module TCSegmentHeader {
+        constant Size                = 1     @< Segment Header length in octets
+        constant SequenceFlagsMask   = 0xC0  @< 0b11000000 - bits 0-1 of the octet, MSB first
+        constant SequenceFlagsOffset = 6
+        constant MapIdMask           = 0x3F  @< 0b00111111 - bits 2-7
+        constant MapIdMax            = 63    @< Largest 6-bit MAP ID (4.1.3.2.2.3.1)
     }
 
     # ------------------------------------------------
