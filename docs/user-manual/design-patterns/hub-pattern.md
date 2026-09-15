@@ -123,7 +123,18 @@ depth plus one in flight: `ComQueue` stores buffer handles, not copies, and
 returns each buffer to the hub through `bufferReturnOut` once the framer is done
 with it. On overflow the incoming buffer is returned to the hub immediately
 (default `QUEUE_DROP_NEWEST`) and a `QueueOverflow` event is emitted; hub
-traffic is best-effort.
+traffic is best-effort. `bufferQueueIn` is an asynchronous port, so a burst
+first passes through the `ComQueue` instance's message queue: give the instance
+a `queue size` at least as large as the buffer queue depth, otherwise buffers
+are returned to the hub from the port's overflow hook without a `QueueOverflow`
+event.
+
+The framer needs its own frame pool: `FprimeFramer` allocates a frame buffer of
+message size plus `FprimeProtocol` header and trailer for every hub message.
+Size the pool for the largest hub message and connect `bufferAllocate` /
+`bufferDeallocate`; if allocation fails the framer returns the message without
+reporting `comStatus`, which leaves `ComQueue` waiting until the next status
+from the driver.
 
 ```fpp
 # GenericHub -> ComQueue -> framer
@@ -132,6 +143,8 @@ hubComQueue.bufferReturnOut[0] -> hub.toBufferDriverReturn
 hubComQueue.dataOut         -> hubFramer.dataIn
 hubFramer.dataReturnOut     -> hubComQueue.dataReturnIn
 hubFramer.comStatusOut      -> hubComQueue.comStatusIn
+hubFramer.bufferAllocate    -> hubBufferManager.bufferGetCallee
+hubFramer.bufferDeallocate  -> hubBufferManager.bufferSendIn
 rateGroup.RateGroupMemberOut[n] -> hubComQueue.run
 
 # deframer -> PassThroughRouter -> GenericHub
