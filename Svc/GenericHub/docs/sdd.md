@@ -27,10 +27,12 @@ For example, logical connections between components in deployments A and B:
 The driver paired with each hub must be a **buffer driver**: a combination of
 components that sends and receives `Fw::Buffer` objects across the transport.
 The reference implementation uses a `Drv::ByteStreamDriver` together with a
-`Drv::ByteStreamBufferAdapter`. Over a raw byte stream (e.g. a UART),
-[`Svc::ComDataBufferAdapter`](../../ComDataBufferAdapter/docs/sdd.md) pairs the
-hub with a framer and deframer so that message boundaries are preserved. Other
-transport-specific drivers may be used provided that they implement the
+`Drv::ByteStreamBufferAdapter`. Over a raw byte stream (e.g. a UART), message
+boundaries must be recovered by framing: place [`Svc::ComQueue`](../../ComQueue/docs/sdd.md)
+(send) and [`Svc::PassThroughRouter`](../../PassThroughRouter/docs/sdd.md)
+(receive) between the hub and an F Prime framer/deframer stack, as described in
+the [hub pattern](../../../docs/user-manual/design-patterns/hub-pattern.md#framed-byte-stream-transport).
+Other transport-specific drivers may be used provided that they implement the
 buffer-driver interfaces described below.
 
 ## Design

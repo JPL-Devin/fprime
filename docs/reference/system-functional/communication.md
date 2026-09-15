@@ -16,7 +16,6 @@
 - [F Prime ComLogger](https://github.com/nasa/fprime/blob/devel/Svc/ComLogger/docs/sdd.md)
 - [F Prime CmdSplitter SDD](https://github.com/nasa/fprime/blob/devel/Svc/CmdSplitter/docs/sdd.md)
 - [F Prime PassThroughRouter SDD](https://github.com/nasa/fprime/blob/devel/Svc/PassThroughRouter/docs/sdd.md)
-- [F Prime ComDataBufferAdapter SDD](https://github.com/nasa/fprime/blob/devel/Svc/ComDataBufferAdapter/docs/sdd.md)
 - [Communication Adapter Interface](https://github.com/nasa/fprime/blob/devel/docs/reference/communication-adapter-interface.md)
 
 ## Overview
@@ -76,7 +75,7 @@ This protocol is designed for simplicity and is commonly used for development an
 
 ### Hub Transport
 
-[ComDataBufferAdapter](https://github.com/nasa/fprime/blob/devel/Svc/ComDataBufferAdapter/docs/sdd.md) presents a framer/deframer pair as the buffer driver expected by [GenericHub](https://github.com/nasa/fprime/blob/devel/Svc/GenericHub/docs/sdd.md), so hub traffic can be carried over a framed byte stream (e.g. a UART) instead of a transport that preserves message boundaries. See the [hub pattern](../../user-manual/design-patterns/hub-pattern.md).
+[GenericHub](https://github.com/nasa/fprime/blob/devel/Svc/GenericHub/docs/sdd.md) traffic can be carried over a framed byte stream (e.g. a UART) instead of a transport that preserves message boundaries by reusing the stack above: [ComQueue](https://github.com/nasa/fprime/blob/devel/Svc/ComQueue/docs/sdd.md) accepts the hub's `Fw::Buffer` output and feeds the framer with Communication Adapter Protocol flow control, and [PassThroughRouter](https://github.com/nasa/fprime/blob/devel/Svc/PassThroughRouter/docs/sdd.md) delivers deframed data back to the hub. See the [hub pattern](../../user-manual/design-patterns/hub-pattern.md#framed-byte-stream-transport).
 
 ### CCSDS Protocol Support
 
