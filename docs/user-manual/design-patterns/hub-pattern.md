@@ -99,10 +99,10 @@ GenericHub <- PassThroughRouter <- FprimeDeframer <- FrameAccumulator <- ComStub
 
 > [!IMPORTANT]
 > Use F Prime framing (`Svc::FprimeFramer` / `Svc::FprimeDeframer`) for the
-> hub link. `ComQueue` fills the frame context's APID from the first word of
-> each buffer, which for a hub buffer is the hub message type rather than a
-> packet descriptor. `FprimeFramer` ignores the APID; the CCSDS
-> `TmFramer`/`AosFramer` are not intended for this use case.
+> hub link. `ComQueue` fills the frame context's APID from the leading
+> `FwPacketDescriptorType` of each buffer, which for a hub buffer is the hub
+> message type rather than a packet descriptor. `FprimeFramer` ignores the
+> APID; the CCSDS `TmFramer`/`AosFramer` are not intended for this use case.
 
 `ComQueue` is the [Communication Adapter Protocol](../../reference/communication-adapter-interface.md)
 client the framing stack expects: it keeps one frame in flight and releases the
@@ -111,7 +111,10 @@ driver reports a send failure (peer gone, UART error), `ComStub` enters a
 reinitialize state and asserts if another frame arrives before the driver
 reconnects; `ComQueue` holds outgoing hub buffers across that outage and drains
 them when SUCCESS is reported again. The one message being sent when the link
-failed is lost; everything queued after it is delivered on reconnect.
+failed is lost unless [`Svc::ComRetry`](../../../Svc/ComRetry/docs/sdd.md) is
+placed between the framer and `ComStub`; everything queued after it is delivered
+on reconnect. `ComQueue` starts in the waiting state, so hub sends issued before
+the driver first connects are queued as well.
 
 Configure `ComQueue` with a single `Fw::Buffer` queue (leave the `Fw::Com`
 queues at depth 0) and size its depth for the number of hub sends that may
