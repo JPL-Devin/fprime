@@ -66,7 +66,10 @@ port.
   itself an event source or telemetry database.
 - Use a buffer driver at each end of the transport. The
   `Drv::ByteStreamBufferAdapter` can pair a byte-stream driver with the
-  buffer-driver interface expected by GenericHub.
+  buffer-driver interface expected by GenericHub when each received buffer
+  carries exactly one hub message. When the transport is a raw byte stream
+  (e.g. a UART), place the standard framing stack between the hub and the
+  driver instead (see below).
 
 ## Putting it together
 
@@ -77,6 +80,92 @@ Deployment A                         Deployment B
 -------------                        -------------
 FSW -> GenericHub -> transport -> GenericHub -> FSW
 ```
+
+### Framed byte-stream transport
+
+Over a raw byte stream, hub messages must be framed so the receiving end can
+recover message boundaries. No new component is needed: the existing
+communication stack already speaks both the hub's `Fw.BufferSend` interface
+and the framing stack's `Svc.ComDataWithContext` interface.
+[`Svc::ComQueue`](../../../Svc/ComQueue/docs/sdd.md) takes the hub's outgoing
+buffers on `bufferQueueIn` and feeds the framer;
+[`Svc::PassThroughRouter`](../../../Svc/PassThroughRouter/docs/sdd.md) takes
+the deframer's output and delivers it to the hub:
+
+```text
+GenericHub -> ComQueue         -> FprimeFramer   -> ComStub -> ByteStreamDriver ~~> (peer, mirrored)
+GenericHub <- PassThroughRouter <- FprimeDeframer <- FrameAccumulator <- ComStub <- ByteStreamDriver
+```
+
+> [!IMPORTANT]
+> Use F Prime framing (`Svc::FprimeFramer` / `Svc::FprimeDeframer`) for the
+> hub link. `ComQueue` fills the frame context's APID from the leading
+> `FwPacketDescriptorType` of each buffer, which for a hub buffer is the hub
+> message type rather than a packet descriptor. `FprimeFramer` ignores the
+> APID; the CCSDS `TmFramer`/`AosFramer` are not intended for this use case.
+
+`ComQueue` is the [Communication Adapter Protocol](../../reference/communication-adapter-interface.md)
+client the framing stack expects: it keeps one frame in flight and releases the
+next hub buffer only after the framer reports `comStatus` SUCCESS. When the
+driver reports a send failure (peer gone, UART error), `ComStub` enters a
+reinitialize state and asserts if another frame arrives before the driver
+reconnects; `ComQueue` holds outgoing hub buffers across that outage and drains
+them when SUCCESS is reported again. The one message being sent when the link
+failed is lost unless [`Svc::ComRetry`](../../../Svc/ComRetry/docs/sdd.md) is
+placed between the framer and `ComStub`; everything queued after it is delivered
+on reconnect. `ComQueue` starts in the waiting state, so hub sends issued before
+the driver first connects are queued as well.
+
+Configure `ComQueue` with a single `Fw::Buffer` queue (leave the `Fw::Com`
+queues at depth 0) and size its depth for the number of hub sends that may
+accumulate during an outage. The hub's `Fw::Buffer` pool must cover that queue
+depth plus one in flight: `ComQueue` stores buffer handles, not copies, and
+returns each buffer to the hub through `bufferReturnOut` once the framer is done
+with it. On overflow the incoming buffer is returned to the hub immediately
+(default `QUEUE_DROP_NEWEST`) and a `QueueOverflow` event is emitted; hub
+traffic is best-effort. `bufferQueueIn` is an asynchronous port, so a burst
+first passes through the `ComQueue` instance's message queue: give the instance
+a `queue size` at least as large as the buffer queue depth, otherwise buffers
+are returned to the hub from the port's overflow hook without a `QueueOverflow`
+event.
+
+The framer needs its own frame pool: `FprimeFramer` allocates a frame buffer of
+message size plus `FprimeProtocol` header and trailer for every hub message.
+Size the pool for the largest hub message and connect `bufferAllocate` /
+`bufferDeallocate`; if allocation fails the framer returns the message without
+reporting `comStatus`, which leaves `ComQueue` waiting until the next status
+from the driver.
+
+```fpp
+# GenericHub -> ComQueue -> framer
+hub.toBufferDriver          -> hubComQueue.bufferQueueIn[0]
+hubComQueue.bufferReturnOut[0] -> hub.toBufferDriverReturn
+hubComQueue.dataOut         -> hubFramer.dataIn
+hubFramer.dataReturnOut     -> hubComQueue.dataReturnIn
+hubFramer.comStatusOut      -> hubComQueue.comStatusIn
+hubFramer.bufferAllocate    -> hubBufferManager.bufferGetCallee
+hubFramer.bufferDeallocate  -> hubBufferManager.bufferSendIn
+rateGroup.RateGroupMemberOut[n] -> hubComQueue.run
+
+# deframer -> PassThroughRouter -> GenericHub
+hubDeframer.dataOut         -> hubRouter.dataIn
+hubRouter.dataReturnOut     -> hubDeframer.dataReturnIn
+hubRouter.allPacketsOut     -> hub.fromBufferDriver
+hub.fromBufferDriverReturn  -> hubRouter.allPacketsReturnIn
+```
+
+```cpp
+Svc::ComQueue::QueueConfigurationTable hubQueueTable;  // all depths default to 0
+hubQueueTable.entries[Svc::ComQueue::COM_PORT_COUNT + 0].depth = HUB_QUEUE_DEPTH;
+hubQueueTable.entries[Svc::ComQueue::COM_PORT_COUNT + 0].priority = 0;
+hubComQueue.configure(hubQueueTable, 0, allocator);
+```
+
+The framer, deframer, frame accumulator, and `ComStub` are wired to the com
+driver as in the [ComFprime subtopology](../../../Svc/Subtopologies/ComFprime/docs/sdd.md)
+(`comStub.comStatusOut -> framer.comStatusIn`, etc.), but must be dedicated to
+the hub rather than shared with the deployment's own downlink/uplink stack: the
+hub link carries hub messages, not ground packets.
 
 For a runnable worked example, see
 [`fprime-community/fprime-generic-hub-reference`](https://github.com/fprime-community/fprime-generic-hub-reference).

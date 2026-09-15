@@ -73,6 +73,10 @@ This protocol is designed for simplicity and is commonly used for development an
 - [ComSplitter](https://github.com/nasa/fprime/blob/devel/Svc/ComSplitter/ComSplitter.fpp) — Distributes outgoing communication buffers to multiple output ports.
 - [ComAggregator](https://github.com/nasa/fprime/blob/devel/Svc/ComAggregator/docs/sdd.md) — Merges data from multiple input sources into a single output stream.
 
+### Hub Transport
+
+[GenericHub](https://github.com/nasa/fprime/blob/devel/Svc/GenericHub/docs/sdd.md) traffic can be carried over a framed byte stream (e.g. a UART) instead of a transport that preserves message boundaries by reusing the stack above: [ComQueue](https://github.com/nasa/fprime/blob/devel/Svc/ComQueue/docs/sdd.md) accepts the hub's `Fw::Buffer` output and feeds the framer with Communication Adapter Protocol flow control, and [PassThroughRouter](https://github.com/nasa/fprime/blob/devel/Svc/PassThroughRouter/docs/sdd.md) delivers deframed data back to the hub. See the [hub pattern](../../user-manual/design-patterns/hub-pattern.md#framed-byte-stream-transport).
+
 ### CCSDS Protocol Support
 
 For missions requiring standards-compliant space communication, the F Prime and CCSDS protocol components can be swapped in the communication stack. CCSDS components provide Space Packet framing, TM/TC Space Data Link framing, and AOS framing at various protocol layers. See the [CCSDS Protocol Functionality](ccsds-protocol.md) document for details.
