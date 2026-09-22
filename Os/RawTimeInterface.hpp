@@ -9,7 +9,7 @@
 #include <Fw/Time/TimeInterval.hpp>
 #include <Fw/Types/Serializable.hpp>
 #include <Os/Os.hpp>
-#include "config/OsDelegateRawTime.hpp"
+#include "config/OsDelegates.hpp"
 #include "config/RawTimeSource.hpp"
 
 namespace Os {

@@ -137,7 +137,7 @@ Most OSAL services use **link-time selection** with runtime virtual dispatch:
 
 For performance-critical services, the OSAL supports **compile-time selection** that eliminates virtual dispatch:
 
-1. A configuration header (e.g., `default/config/OsDelegateRawTime.hpp`) defines a type alias
+1. A single configuration header, `config/OsDelegates.hpp`, defines one type alias per aliased service
 2. The wrapper type (e.g., `Os::RawTime`) directly aliases the concrete implementation
 3. All calls are direct function calls that the compiler can inline
 4. With LTO enabled, the entire call chain can be optimized away for simple operations
@@ -152,25 +152,28 @@ For performance-critical services, the OSAL supports **compile-time selection** 
 - Different builds using different overrides have incompatible ABIs
 - More complex build configuration
 
-**Currently Supported Services:**
-- **RawTime** (`config/OsDelegateRawTime.hpp`, `OS_RAW_TIME_HEADER`)
-- **Mutex** (`config/OsDelegateMutex.hpp`, `OS_MUTEX_HEADER`)
+**Currently Supported Services** (all configured in `config/OsDelegates.hpp`):
+- **RawTime** (`Os::RawTime` alias, `OS_RAW_TIME_HEADER`)
+- **Mutex** (`Os::Mutex` alias, `OS_MUTEX_HEADER`)
 
-The configuration header mechanism allows projects to opt into compile-time selection while maintaining link-time selection as the default for backward compatibility.
+The configuration header mechanism allows projects to opt into compile-time selection while maintaining link-time selection as the default for backward compatibility. Because all services live in one header, a project overrides that single file and changes only the services it wants to select at compile time; the remaining services keep their link-time delegate.
 
-**Example: RawTime Configuration Header**
+**Example: Configuration Header**
 
-F´ provides a default `default/config/OsDelegateRawTime.hpp` that enables link-time selection:
+F´ provides a default `default/config/OsDelegates.hpp` that enables link-time selection for every service:
 
 ```c++
 namespace Os {
     class DelegateRawTime;
     using RawTime = DelegateRawTime;  // Wrapper with virtual dispatch
+    class DelegateMutex;
+    using Mutex = DelegateMutex;      // Wrapper with virtual dispatch
 }
 #define OS_RAW_TIME_HEADER <Os/DelegateRawTime.hpp>
+#define OS_MUTEX_HEADER <Os/DelegateMutex.hpp>
 ```
 
-Projects can override this header to enable compile-time selection:
+Projects can override this header to enable compile-time selection for one or more services, here `RawTime` only:
 
 ```c++
 namespace MyPlatform {
@@ -178,8 +181,11 @@ namespace MyPlatform {
 }
 namespace Os {
     using RawTime = MyPlatform::MyRawTime;  // Direct alias, no wrapper
+    class DelegateMutex;
+    using Mutex = DelegateMutex;            // Unchanged: link-time selection
 }
 #define OS_RAW_TIME_HEADER "MyPlatform/Os/RawTime.hpp"
+#define OS_MUTEX_HEADER <Os/DelegateMutex.hpp>
 ```
 
 > [!IMPORTANT]

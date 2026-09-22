@@ -161,7 +161,7 @@ MutexHandle* MyOsMutex::getHandle() {
 By default, F´ uses **link-time selection** with runtime virtual dispatch through the delegate pattern (see [OSAL SDD §5.2](../../../Os/docs/sdd.md#52-selection-mechanisms-link-time-vs-compile-time)). For performance-critical platforms (e.g., bare-metal embedded systems with tight timing constraints), projects can override the default configuration to enable compile-time selection that eliminates virtual dispatch overhead and enables aggressive compiler optimizations including function inlining and link-time optimization (LTO).
 
 > [!NOTE]
-> The F´ OSAL provides default configuration headers (e.g., `default/config/OsDelegateRawTime.hpp`) that enable aliasing and default to link-time selection. These are part of F´'s core configuration. This step describes how **projects** can override these defaults for their specific deployments.
+> The F´ OSAL provides a single default configuration header, `default/config/OsDelegates.hpp`, that defines the alias for every selectable service (`Os::RawTime`, `Os::Mutex`, ...) and defaults each to link-time selection. It is part of F´'s core configuration. This step describes how **projects** can override it for their specific deployments, selecting one, several, or all services at compile time.
 
 ### Why Compile-Time Selection?
 
@@ -174,19 +174,14 @@ This optimization is most valuable for bare-metal systems with high-frequency op
 
 ### How Projects Override for Compile-Time Selection
 
-Projects override compile-time selection by providing their own configuration header that replaces F´'s default. For `RawTime`, create a project-specific override of `config/OsDelegateRawTime.hpp`:
+Projects override compile-time selection by providing their own copy of `config/OsDelegates.hpp` that replaces F´'s default. Only the services you want to select at compile time need to change; keep the default delegate lines for the others. The example below selects `RawTime` at compile time and leaves `Mutex` at its link-time default:
 
-**Step 1:** In your project's config directory, create `config/OsDelegateRawTime.hpp`:
+**Step 1:** In your project's config directory, create `config/OsDelegates.hpp`:
 
 ```c++
-// my-project/config/OsDelegateRawTime.hpp
-#ifndef CONFIG_OS_DELEGATERAWTIME_HPP
-#define CONFIG_OS_DELEGATERAWTIME_HPP
-
-// Guard against circular dependencies (same as F´ default)
-#if defined(OS_RAWTIME_HPP_) || defined(OS_RAWTIMEINTERFACE_HPP_) || defined(OS_DELEGATERAWTIME_HPP_)
-#error "config/OsDelegateRawTime.hpp must not include Os OSAL headers - circular dependency detected"
-#endif
+// my-project/config/OsDelegates.hpp
+#ifndef CONFIG_OS_DELEGATES_HPP
+#define CONFIG_OS_DELEGATES_HPP
 
 // Forward-declare your concrete implementation class
 namespace MyPlatform {
@@ -196,12 +191,18 @@ namespace MyPlatform {
 namespace Os {
     // Alias Os::RawTime directly to your implementation (no delegate wrapper)
     using RawTime = MyPlatform::MyRawTime;
+
+    // Mutex: unchanged from the F´ default (link-time selection)
+    class DelegateMutex;
+    using Mutex = DelegateMutex;
 }
 
 // Point to your implementation header (will be included after RawTimeInterface.hpp)
 #define OS_RAW_TIME_HEADER "MyPlatform/Os/RawTime.hpp"
+// Mutex: unchanged from the F´ default
+#define OS_MUTEX_HEADER <Os/DelegateMutex.hpp>
 
-#endif  // CONFIG_OS_DELEGATERAWTIME_HPP
+#endif  // CONFIG_OS_DELEGATES_HPP
 ```
 
 **Step 2:** Register the config header in your project's `config/CMakeLists.txt`:
@@ -210,7 +211,7 @@ namespace Os {
 register_fprime_config(
     # ... project config name & other options 
     CONFIGURATION_OVERRIDES
-        "${CMAKE_CURRENT_LIST_DIR}/OsDelegateRawTime.hpp"
+        "${CMAKE_CURRENT_LIST_DIR}/OsDelegates.hpp"
         # ... other project override config headers
 )
 ```
