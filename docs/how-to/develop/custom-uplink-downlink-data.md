@@ -103,6 +103,9 @@ Notes:
 
   These ports are deprecated and will be removed in a future release. The standard F´ data types continue to carry their packet descriptor as part of their packet format, which remains valid (the descriptor is simply redundant with the context APID on the context-aware ports).
 
+> [!WARNING]
+> Omitting the leading descriptor is only possible when the framing protocol carries the APID out of band, as the CCSDS Space Packet header does. The F´ Protocol frame (`Svc.ComFprime`, `Svc.FprimeFramer`) has no APID field: the ground deframer reads the APID from the first bytes of the payload. On that stack, data sent through the context-aware ports must still begin with a packet descriptor equal to `context.apid`.
+
 ### Add a queue input port
 
 `Svc.ComQueue` has a configurable number of `Fw::Com` and `Fw::Buffer` input ports, set by the `ComQueueComPorts` and `ComQueueBufferPorts` constants in `config/AcConstants.fpp`. Override this file in your project configuration and increment the relevant constant, e.g.:
