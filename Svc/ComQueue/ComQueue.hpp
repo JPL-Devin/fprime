@@ -86,6 +86,60 @@ class ComQueue final : public ComQueueComponentBase {
     // ----------------------------------------------------------------------
 
     /**
+     * Serializes a (data, FrameContext) pair into a fixed-size queue slot. Data may be an
+     * Fw::ComBuffer or an Fw::Buffer. Deserialization is not supported; see PairDeserializer.
+     */
+    template <typename DataType>
+    class PairSerializer final : public Fw::Serializable {
+      public:
+        PairSerializer(const DataType& data, const ComCfg::FrameContext& context) : m_data(data), m_context(context) {}
+        Fw::SerializeStatus serializeTo(Fw::SerialBufferBase& buffer,
+                                        Fw::Endianness mode = Fw::Endianness::BIG) const override {
+            Fw::SerializeStatus status = buffer.serializeFrom(this->m_data, mode);
+            if (status == Fw::FW_SERIALIZE_OK) {
+                status = buffer.serializeFrom(this->m_context, mode);
+            }
+            return status;
+        }
+        Fw::SerializeStatus deserializeFrom(Fw::SerialBufferBase& buffer,
+                                            Fw::Endianness mode = Fw::Endianness::BIG) override {
+            FW_ASSERT(false);  // PairSerializer is write-only
+            return Fw::FW_DESERIALIZE_TYPE_MISMATCH;
+        }
+
+      private:
+        const DataType& m_data;
+        const ComCfg::FrameContext& m_context;
+    };
+
+    /**
+     * Deserializes a (data, FrameContext) pair out of a fixed-size queue slot. Data may be an
+     * Fw::ComBuffer or an Fw::Buffer. Serialization is not supported; see PairSerializer.
+     */
+    template <typename DataType>
+    class PairDeserializer final : public Fw::Serializable {
+      public:
+        PairDeserializer(DataType& data, ComCfg::FrameContext& context) : m_data(data), m_context(context) {}
+        Fw::SerializeStatus serializeTo(Fw::SerialBufferBase& buffer,
+                                        Fw::Endianness mode = Fw::Endianness::BIG) const override {
+            FW_ASSERT(false);  // PairDeserializer is read-only
+            return Fw::FW_SERIALIZE_FORMAT_ERROR;
+        }
+        Fw::SerializeStatus deserializeFrom(Fw::SerialBufferBase& buffer,
+                                            Fw::Endianness mode = Fw::Endianness::BIG) override {
+            Fw::SerializeStatus status = buffer.deserializeTo(this->m_data, mode);
+            if (status == Fw::FW_SERIALIZE_OK) {
+                status = buffer.deserializeTo(this->m_context, mode);
+            }
+            return status;
+        }
+
+      private:
+        DataType& m_data;
+        ComCfg::FrameContext& m_context;
+    };
+
+    /**
      * Storage for internal queue metadata. This is stored in the prioritized list and contains indices to the the
      * un-prioritized queue objects. Depth and priority is copied from the configuration supplied by the configure
      * method. Index and message size are calculated by the configuration call.
@@ -178,12 +232,26 @@ class ComQueue final : public ComQueueComponentBase {
     void bufferQueueIn_handler(const FwIndexType portNum, /*!< The port number*/
                                Fw::Buffer& fwBuffer /*!< Buffer containing packet data*/) override;
 
+    //! Receive and queue a Fw::Buffer along with its frame context
+    //!
+    void bufferQueueWithContextIn_handler(FwIndexType portNum,                 //!< The port number
+                                          Fw::Buffer& data,                    //!< Buffer containing packet data
+                                          const ComCfg::FrameContext& context  //!< Frame context set by the sender
+                                          ) override;
+
     //! Receive and queue a Fw::ComBuffer
     //!
     void comPacketQueueIn_handler(const FwIndexType portNum, /*!< The port number*/
                                   Fw::ComBuffer& data,       /*!< Buffer containing packet data*/
                                   U32 context                /*!< Call context value; meaning chosen by user*/
                                   ) override;
+
+    //! Receive and queue a Fw::ComBuffer along with its frame context
+    //!
+    void comPacketQueueWithContextIn_handler(FwIndexType portNum,                 //!< The port number
+                                             Fw::ComBuffer& data,                 //!< Buffer containing packet data
+                                             const ComCfg::FrameContext& context  //!< Frame context set by the sender
+                                             ) override;
 
     //! Handle the status of the last sent message
     //!
@@ -214,20 +282,35 @@ class ComQueue final : public ComQueueComponentBase {
                                     Fw::Buffer& fwBuffer  //!< The buffer
                                     ) override;
 
+    //! Queue overflow hook method that returns the buffer to its sender
+    //!
+    void bufferQueueWithContextIn_overflowHook(FwIndexType portNum,                 //!< The port number
+                                               Fw::Buffer& data,                    //!< The buffer
+                                               const ComCfg::FrameContext& context  //!< The frame context
+                                               ) override;
+
     // ----------------------------------------------------------------------
     // Helper Functions
     // ----------------------------------------------------------------------
 
-    //! Enqueues an Fw::ComBuffer on the appropriate com queue
+    //! Enqueues an Fw::ComBuffer and its frame context on the appropriate com queue
     //!
-    bool enqueue(const FwIndexType queueNum,  //!< Index of the queue to enqueue the message
-                 const Fw::ComBuffer& data    //!< Com buffer to enqueue
+    bool enqueue(const FwIndexType queueNum,          //!< Index of the queue to enqueue the message
+                 const Fw::ComBuffer& data,           //!< Com buffer to enqueue
+                 const ComCfg::FrameContext& context  //!< Frame context to enqueue with the data
     );
 
-    //! Enqueues an Fw::Buffer on the appropriate buffer queue
+    //! Enqueues an Fw::Buffer and its frame context on the appropriate buffer queue
     //!
-    bool enqueue(const FwIndexType queueNum,  //!< Index of the queue to enqueue the message
-                 const Fw::Buffer& data       //!< Buffer to enqueue
+    bool enqueue(const FwIndexType queueNum,          //!< Index of the queue to enqueue the message
+                 const Fw::Buffer& data,              //!< Buffer to enqueue
+                 const ComCfg::FrameContext& context  //!< Frame context to enqueue with the data
+    );
+
+    //! Builds a frame context whose APID is peeked from the packet descriptor at the front of the data
+    //!
+    static ComCfg::FrameContext contextFromDescriptor(const U8* data,  //!< Pointer to the packet data
+                                                      FwSizeType size  //!< Size of the packet data
     );
 
     //! Handles overflow events, throttling, and queue processing after an enqueue attempt
@@ -242,14 +325,16 @@ class ComQueue final : public ComQueueComponentBase {
 
     //! Send a chosen Fw::ComBuffer
     //!
-    void sendComBuffer(Fw::ComBuffer& comBuffer,  //!< Reference to buffer to send
-                       FwIndexType queueIndex     //!< Index of the queue emitting the message
+    void sendComBuffer(Fw::ComBuffer& comBuffer,      //!< Reference to buffer to send
+                       FwIndexType queueIndex,        //!< Index of the queue emitting the message
+                       ComCfg::FrameContext& context  //!< Frame context stored with the buffer
     );
 
     //! Send a chosen Fw::Buffer
     //!
-    void sendBuffer(Fw::Buffer& buffer,     //!< Reference to buffer to send
-                    FwIndexType queueIndex  //!< Index of the queue emitting the message
+    void sendBuffer(Fw::Buffer& buffer,            //!< Reference to buffer to send
+                    FwIndexType queueIndex,        //!< Index of the queue emitting the message
+                    ComCfg::FrameContext& context  //!< Frame context stored with the buffer
     );
 
     void drainQueue(FwIndexType queueNum  //!< Index of the queue to drain

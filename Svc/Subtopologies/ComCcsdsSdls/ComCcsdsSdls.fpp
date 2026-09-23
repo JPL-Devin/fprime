@@ -265,8 +265,14 @@ module ComCcsdsSdls {
         @ Input port array for queueing Fw::ComBuffers
         port comPacketQueueIn = ComCcsds.comQueue.comPacketQueueIn
 
+        @ Input port array for queueing Fw::ComBuffers along with a ComCfg.FrameContext
+        port comPacketQueueWithContextIn = ComCcsds.comQueue.comPacketQueueWithContextIn
+
         @ Input port array for queueing Fw::Buffers
         port bufferQueueIn    = ComCcsds.comQueue.bufferQueueIn
+
+        @ Input port array for queueing Fw::Buffers along with a ComCfg.FrameContext
+        port bufferQueueWithContextIn    = ComCcsds.comQueue.bufferQueueWithContextIn
 
         @ Output port array returning ownership of Fw::Buffers to their original sender after dequeuing
         port bufferReturnOut  = ComCcsds.comQueue.bufferReturnOut

@@ -184,8 +184,18 @@ module ComFprime {
         @ Input port array for queueing Fw::ComBuffers
         port comPacketQueueIn = comQueue.comPacketQueueIn
 
+        @ Input port array for queueing Fw::ComBuffers along with a ComCfg.FrameContext.
+        @ The F´ protocol frame carries no APID field: data queued here must still
+        @ begin with a packet descriptor matching context.apid for the ground to route it.
+        port comPacketQueueWithContextIn = comQueue.comPacketQueueWithContextIn
+
         @ Input port array for queueing Fw::Buffers
         port bufferQueueIn    = comQueue.bufferQueueIn
+
+        @ Input port array for queueing Fw::Buffers along with a ComCfg.FrameContext.
+        @ The F´ protocol frame carries no APID field: data queued here must still
+        @ begin with a packet descriptor matching context.apid for the ground to route it.
+        port bufferQueueWithContextIn    = comQueue.bufferQueueWithContextIn
 
         @ Output port array returning ownership of Fw::Buffers to their original sender after dequeuing
         port bufferReturnOut  = comQueue.bufferReturnOut
