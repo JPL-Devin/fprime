@@ -127,7 +127,7 @@ A legacy producer with an `Fw.BufferSend` output port connects to `bufferQueueIn
 
 ### Configure queue depth and priority
 
-`Svc.ComQueue` requires a depth and priority for every queue entry in its `QueueConfigurationTable`. The subtopology configures the standard entries in its `configComponents` phase (see `Svc/Subtopologies/ComCcsds/ComCcsds.fpp`); the entry for the new buffer port must be added. Buffer queue entries are indexed after the `Fw::Com` entries:
+`Svc.ComQueue` requires a depth and priority for every queue entry in its `QueueConfigurationTable`; a depth of 0 disables that port and any data sent to it is dropped with an overflow event. The subtopology configures the standard entries in its `configComponents` phase (see `Svc/Subtopologies/ComCcsds/ComCcsds.fpp`); the entry for the new buffer port must be added. Buffer queue entries are indexed after the `Fw::Com` entries:
 
 ```cpp
 configurationTable.entries[Ports_ComPacketQueue::NUM_CONSTANTS + 1].depth = 10;

@@ -21,7 +21,7 @@ Both variants provide the standard **router + ComQueue + CCSDS framers/deframers
 | SVC-COMCCSDS-003 | Provide an F´ **router** to route deframed packets (e.g., commands/files) into the flight software.            | Inspection |
 | SVC-COMCCSDS-004 | Provide a **subtopology variant that supplies `Svc::ComStub`** designed to connect to a ByteStream driver.     | Inspection |
 | SVC-COMCCSDS-005 | Provide a **subtopology variant that expects an external `Svc::ComInterface`** supplied by the deployment.     | Inspection |
-| SVC-COMCCSDS-006 | Support **configurable instance properties** (IDs, queue sizes, stack sizes, priorities, CPU affinities) via `ComCcsdsConfig`. | Inspection |
+| SVC-COMCCSDS-006 | Support **configurable instance properties** (IDs, queue sizes, stack sizes, priorities, CPU affinities, packet spanning) via `ComCcsdsConfig`. | Inspection |
 | SVC-COMCCSDS-007 | Provide **composable layer topologies**: a Space Packet packet layer (`SpacePacketFraming`, `SpacePacket`) and a TM/TC transfer frame layer (`TmTcFraming`), from which the full stack is composed. | Inspection |
 
 ---
@@ -121,7 +121,11 @@ transfer frame layers, see the [ComCcsdsSdls subtopology](../../ComCcsdsSdls/doc
 
 ### 2.4 Required Inputs for Operation
 
-* **Rate Groups:** Connect a rate group to **`comQueue.run`**. This is not required for the subtopology to function, but defines the rate at which ComQueue will send telemetry.
+* **Rate Groups:** The subtopology exports three scheduling ports; the Ref topology wires all of them.
+
+  * **`comQueueRun`** (`comQueue.run`): defines the rate at which ComQueue sends queued telemetry. Not required for the subtopology to function.
+  * **`aggregatorTimeout`** (`aggregator.timeout`): **required** for timely downlink. ComAggregator otherwise sends an aggregate only when it fills, so a partially filled aggregate would be held indefinitely.
+  * **`bufferManagerSchedIn`** (`commsBufferManager.schedIn`): drives the comms buffer manager's telemetry output. Optional.
 * **Transport Endpoint:**
 
   * **Variant A:** Wire **ByteStream send/recv** between your **`Drv::ByteStreamDriverModel`** and the subtopology’s **`ComStub`**.
@@ -206,6 +210,7 @@ topology Flight {
 * **Stack sizes** — Task stack allocations for active components (if any beyond `ComQueue`).
 * **Priorities** — RTOS priorities for active/queued components as applicable.
 * **CPU affinities** — Core pinning for active component tasks; defaults to `TASK_DEFAULT` (no pinning).
+* **Aggregator** — `Aggregator.enablePacketSpanning` controls whether the `aggregator` instance spans CCSDS TM packets across transfer frames (see `Svc.ComAggregator`); `false` by default. `ComCfg::AggregationSize` is the full TM data field, while non-spanning aggregates are limited to `ComCfg::AggregationSize - 7` so the framer can add an idle packet. Any layer inserted between `aggregator` and `framer` that adds bytes (e.g. `ComCcsdsSdls`, +2-byte SA index) requires the project to reduce `ComCfg::AggregationSize` by that overhead.
 
 ### 4.2 Buffer Manager Bin Configuration
 
@@ -224,4 +229,3 @@ topology Flight {
 | SVC-COMCCSDS-005 | `FramingSubtopology` (variant expecting external `Svc.ComInterface`)                   |
 | SVC-COMCCSDS-006 | `ComCcsdsConfig` module                                                                |
 | SVC-COMCCSDS-007 | `SpacePacketFraming`, `SpacePacket`, and `TmTcFraming` topologies                     |
-

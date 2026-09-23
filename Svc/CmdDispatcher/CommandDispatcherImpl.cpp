@@ -10,6 +10,7 @@
 #include <Svc/CmdDispatcher/CommandDispatcherImpl.hpp>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 
 // Check the CMD_DISPATCHER_DISPATCH_TABLE_SIZE and CMD_DISPATCHER_SEQUENCER_TABLE_SIZE for overflow
 static_assert(CMD_DISPATCHER_DISPATCH_TABLE_SIZE <= std::numeric_limits<FwOpcodeType>::max(),
@@ -19,9 +20,46 @@ static_assert(CMD_DISPATCHER_SEQUENCER_TABLE_SIZE <= std::numeric_limits<U32>::m
 
 namespace Svc {
 CommandDispatcherImpl::CommandDispatcherImpl(const char* name)
-    : CommandDispatcherComponentBase(name), m_seq(0), m_numCmdsDispatched(0), m_numCmdErrors(0), m_numCmdsDropped(0) {}
+    : CommandDispatcherComponentBase(name),
+      m_seq(0),
+      m_seqWrapped(false),
+      m_executeWhenSequenceTableFull(CmdDispatcherCfg::EXECUTE_WHEN_SEQUENCE_TABLE_FULL_DEFAULT),
+      m_numCmdsDispatched(0),
+      m_numCmdErrors(0),
+      m_numCmdsDropped(0) {}
 
 CommandDispatcherImpl::~CommandDispatcherImpl() {}
+
+void CommandDispatcherImpl::configure(bool executeWhenSequenceTableFull) {
+    this->m_executeWhenSequenceTableFull = executeWhenSequenceTableFull;
+}
+
+void CommandDispatcherImpl::advanceSequenceNumber() {
+    if (this->m_seq == std::numeric_limits<U32>::max()) {
+        this->m_seqWrapped = true;
+    }
+    ++this->m_seq;
+}
+
+U32 CommandDispatcherImpl::allocateSequenceNumber() {
+    // Before the first wrap, m_seq is monotonic and cannot collide with a tracked key
+    if (this->m_seqWrapped) {
+        SequenceTrackerEntry trackedCmd;
+        const FwSizeType numTrackedCommands = this->m_sequenceTracker.getSize();
+
+        // At most numTrackedCommands keys can collide, so the loop is bounded by the table size
+        for (FwSizeType i = 0; i < numTrackedCommands; ++i) {
+            if (this->m_sequenceTracker.find(this->m_seq, trackedCmd) != Fw::Success::SUCCESS) {
+                break;
+            }
+            this->advanceSequenceNumber();
+        }
+    }
+
+    const U32 sequenceNumber = this->m_seq;
+    this->advanceSequenceNumber();
+    return sequenceNumber;
+}
 
 void CommandDispatcherImpl::compCmdReg_handler(FwIndexType portNum, FwOpcodeType opCode) {
     FwIndexType existingPort;
@@ -71,11 +109,12 @@ void CommandDispatcherImpl::compCmdStat_handler(FwIndexType portNum,
 void CommandDispatcherImpl::seqCmdBuff_handler(FwIndexType portNum, Fw::ComBuffer& data, U32 context) {
     Fw::CmdPacket cmdPkt;
     Fw::SerializeStatus stat = cmdPkt.deserializeFrom(data);
+    const bool portIsConnected = this->isConnected_seqCmdStatus_OutputPort(portNum);
 
     if (stat != Fw::FW_SERIALIZE_OK) {
         Fw::DeserialStatus serErr(static_cast<Fw::DeserialStatus::t>(stat));
         this->log_WARNING_HI_MalformedCommand(serErr);
-        if (this->isConnected_seqCmdStatus_OutputPort(portNum)) {
+        if (portIsConnected) {
             this->seqCmdStatus_out(portNum, cmdPkt.getOpCode(), context, Fw::CmdResponse::VALIDATION_ERROR);
         }
         return;
@@ -85,46 +124,52 @@ void CommandDispatcherImpl::seqCmdBuff_handler(FwIndexType portNum, Fw::ComBuffe
     FwIndexType entryPort;
     Fw::Success findStatus = this->m_entryTable.find(cmdPkt.getOpCode(), entryPort);
     if (findStatus == Fw::Success::SUCCESS and this->isConnected_compCmdSend_OutputPort(entryPort)) {
+        Fw::Success pendingInsertStatus = Fw::Success::SUCCESS;
+        const U32 sequenceNumber = this->allocateSequenceNumber();
+
         // register command in command tracker only if response port is connect
-        if (this->isConnected_seqCmdStatus_OutputPort(portNum)) {
+        if (portIsConnected) {
             SequenceTrackerEntry pendingCmd;
             pendingCmd.opCode = cmdPkt.getOpCode();
             pendingCmd.context = context;
             pendingCmd.callerPort = portNum;
 
-            const Fw::Success pendingInsertStatus = this->m_sequenceTracker.insert(this->m_seq, pendingCmd);
+            pendingInsertStatus = this->m_sequenceTracker.insert(sequenceNumber, pendingCmd);
 
-            // if we couldn't find a slot to track the command, quit
-            if (pendingInsertStatus != Fw::Success::SUCCESS) {
+            // if sequence table is full, reject here unless configured to dispatch untracked
+            if (not this->m_executeWhenSequenceTableFull and pendingInsertStatus != Fw::Success::SUCCESS) {
                 this->log_WARNING_HI_TooManyCommands(CmdDispatcherCfg::getEventOpcode(cmdPkt.getOpCode()));
-                if (this->isConnected_seqCmdStatus_OutputPort(portNum)) {
-                    this->seqCmdStatus_out(portNum, cmdPkt.getOpCode(), context, Fw::CmdResponse::EXECUTION_ERROR);
-                }
+                this->seqCmdStatus_out(portNum, cmdPkt.getOpCode(), context, Fw::CmdResponse::EXECUTION_ERROR);
                 return;
             }
         }  // end if status port connected
         // pass arguments to argument buffer
-        this->compCmdSend_out(entryPort, cmdPkt.getOpCode(), this->m_seq, cmdPkt.getArgBuffer());
+        this->compCmdSend_out(entryPort, cmdPkt.getOpCode(), sequenceNumber, cmdPkt.getArgBuffer());
         // log dispatched command
         this->log_COMMAND_OpCodeDispatched(CmdDispatcherCfg::getEventOpcode(cmdPkt.getOpCode()), entryPort);
 
         // increment command count
         this->m_numCmdsDispatched++;
+
+        // pendingInsertStatus is only non-SUCCESS for a connected caller whose insert failed (see check above)
+        if (this->m_executeWhenSequenceTableFull and pendingInsertStatus != Fw::Success::SUCCESS) {
+            this->log_WARNING_HI_TooManyCommands(CmdDispatcherCfg::getEventOpcode(cmdPkt.getOpCode()));
+            this->seqCmdStatus_out(portNum, cmdPkt.getOpCode(), context, Fw::CmdResponse::DISPATCHED_UNTRACKED);
+        }
     } else {
         this->log_WARNING_HI_InvalidCommand(CmdDispatcherCfg::getEventOpcode(cmdPkt.getOpCode()));
         this->m_numCmdErrors++;
         // Fail command back to port, if connected
-        if (this->isConnected_seqCmdStatus_OutputPort(portNum)) {
+        if (portIsConnected) {
             this->seqCmdStatus_out(portNum, cmdPkt.getOpCode(), context, Fw::CmdResponse::INVALID_OPCODE);
         }
+        // Preserve the existing behavior of consuming a sequence number for an invalid opcode.
+        this->advanceSequenceNumber();
     }
-
-    // increment sequence number
-    this->m_seq++;
 }
 
 void CommandDispatcherImpl ::run_handler(FwIndexType portNum, U32 context) {
-    this->tlmWrite_CommandsDropped(this->m_numCmdsDropped);
+    this->tlmWrite_CommandsDropped(this->m_numCmdsDropped.load(std::memory_order_relaxed));
     this->tlmWrite_CommandErrors(this->m_numCmdErrors);
     this->tlmWrite_CommandsDispatched(this->m_numCmdsDispatched);
 }
@@ -149,8 +194,28 @@ void CommandDispatcherImpl::CMD_TEST_CMD_1_cmdHandler(FwOpcodeType opCode, U32 c
 }
 
 void CommandDispatcherImpl::CMD_CLEAR_TRACKING_cmdHandler(FwOpcodeType opCode, U32 cmdSeq) {
-    // clear tracking table
+    // Preserve this command's own entry so its OK status still reaches the caller
+    SequenceTrackerEntry selfEntry = {};
+    const bool selfTracked = (this->m_sequenceTracker.find(cmdSeq, selfEntry) == Fw::Success::SUCCESS);
+
+    // Notify every other caller that its pending status will never arrive
+    for (const auto& entry : this->m_sequenceTracker) {
+        if (entry.getKey() == cmdSeq) {
+            continue;
+        }
+        const SequenceTrackerEntry& trackedCmd = entry.getValue();
+        FW_ASSERT(trackedCmd.callerPort < this->getNum_seqCmdStatus_OutputPorts());
+        if (this->isConnected_seqCmdStatus_OutputPort(trackedCmd.callerPort)) {
+            this->seqCmdStatus_out(trackedCmd.callerPort, trackedCmd.opCode, trackedCmd.context,
+                                   Fw::CmdResponse::CLEARED);
+        }
+    }
+
     this->m_sequenceTracker.clear();
+    if (selfTracked) {
+        const Fw::Success status = this->m_sequenceTracker.insert(cmdSeq, selfEntry);
+        FW_ASSERT(status == Fw::Success::SUCCESS);
+    }
     this->cmdResponse_out(opCode, cmdSeq, Fw::CmdResponse::OK);
 }
 
@@ -170,8 +235,8 @@ void CommandDispatcherImpl::seqCmdBuff_overflowHook(FwIndexType portNum, Fw::Com
     }
 
     this->log_WARNING_HI_CommandDroppedQueueOverflow(CmdDispatcherCfg::getEventOpcode(opcode), context);
-    // Increment CommandsDroppedBufOverflow counter
-    this->m_numCmdsDropped++;
+    // This hook runs on the caller's thread; the counter is atomic so no lock is needed
+    this->m_numCmdsDropped.fetch_add(1, std::memory_order_relaxed);
 }
 
 }  // namespace Svc

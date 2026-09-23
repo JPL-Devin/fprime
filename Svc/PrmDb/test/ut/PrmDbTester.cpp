@@ -872,7 +872,7 @@ void PrmDbTester::runDbCommitTest() {
 }
 
 void PrmDbTester::runPrmFileLoadNominal() {
-    Fw::String file = "TestFile.prm";
+    Fw::String file = "/prm/TestFile.prm";
     Fw::QueuedComponentBase::MsgDispatchStatus dispatchStatus;
 
     // Store pointers to databases before swap for verification
@@ -1033,7 +1033,7 @@ void PrmDbTester::runPrmFileLoadNominal() {
 }
 
 void PrmDbTester::runPrmFileLoadWithErrors() {
-    Fw::String file = "TestFile.prm";
+    Fw::String file = "/prm/TestFile.prm";
     Fw::QueuedComponentBase::MsgDispatchStatus dispatchStatus;
 
     // Store pointers to databases before swap for verification
@@ -1130,11 +1130,89 @@ void PrmDbTester::runPrmFileLoadWithErrors() {
     EXPECT_EQ(this->m_impl.m_stagingDb->getSize(), 0);
 }
 
+void PrmDbTester::runPrmFileLoadEmptyFileName() {
+    Fw::QueuedComponentBase::MsgDispatchStatus dispatchStatus;
+    Fw::ParamBuffer pBuff;
+    U32 stagedVal = 0x5678;
+    FwPrmIdType stagedId = 0x21;
+
+    // Pre-populate the staging database so we can verify it is left untouched
+    Fw::SerializeStatus stat = pBuff.serializeFrom(stagedVal);
+    EXPECT_EQ(Fw::FW_SERIALIZE_OK, stat);
+    this->m_impl.updateAddPrmImpl(stagedId, pBuff, PrmDbType::DB_STAGING);
+    EXPECT_EQ(this->m_impl.m_stagingDb->getSize(), 1);
+    EXPECT_EQ(this->m_impl.m_state, PrmDbFileLoadState::IDLE);
+
+    const PrmDb_Merge merges[] = {PrmDb_Merge::MERGE, PrmDb_Merge::RESET};
+    for (const PrmDb_Merge& merge : merges) {
+        this->clearEvents();
+        this->clearHistory();
+        this->sendCmd_PRM_LOAD_FILE(0, 10, Fw::String(""), merge);
+        dispatchStatus = this->m_impl.doDispatch();
+        EXPECT_EQ(dispatchStatus, Fw::QueuedComponentBase::MSG_DISPATCH_OK);
+
+        ASSERT_CMD_RESPONSE_SIZE(1);
+        ASSERT_CMD_RESPONSE(0, PrmDbImpl::OPCODE_PRM_LOAD_FILE, 10, Fw::CmdResponse::VALIDATION_ERROR);
+        ASSERT_EVENTS_SIZE(1);
+        ASSERT_EVENTS_PrmDbFileLoadFailed_SIZE(1);
+        ASSERT_EVENTS_PrmFileReadError_SIZE(0);
+
+        // Component stays idle and the staging database is untouched
+        EXPECT_EQ(this->m_impl.m_state, PrmDbFileLoadState::IDLE);
+        EXPECT_EQ(this->m_impl.m_stagingDb->getSize(), 1);
+    }
+
+    // A subsequent load with a valid path is still accepted (reaches file I/O)
+    this->clearEvents();
+    this->clearHistory();
+    Os::Stub::File::Test::StaticData::setNextStatus(Os::File::DOESNT_EXIST);
+    this->sendCmd_PRM_LOAD_FILE(0, 11, Fw::String("/prm/good.prm"), PrmDb_Merge::RESET);
+    dispatchStatus = this->m_impl.doDispatch();
+    EXPECT_EQ(dispatchStatus, Fw::QueuedComponentBase::MSG_DISPATCH_OK);
+
+    ASSERT_CMD_RESPONSE_SIZE(1);
+    ASSERT_CMD_RESPONSE(0, PrmDbImpl::OPCODE_PRM_LOAD_FILE, 11, Fw::CmdResponse::EXECUTION_ERROR);
+    ASSERT_EVENTS_PrmFileReadError_SIZE(1);
+    ASSERT_EVENTS_PrmFileReadError(0, PrmDb_PrmReadError::OPEN, 0, Os::File::DOESNT_EXIST);
+    EXPECT_EQ(this->m_impl.m_state, PrmDbFileLoadState::IDLE);
+    Os::Stub::File::Test::StaticData::setNextStatus(Os::File::OP_OK);
+}
+
 void PrmDbTester::runPrmFileLoadSandboxViolation() {
     Fw::QueuedComponentBase::MsgDispatchStatus dispatchStatus;
 
-    // Restrict commanded loads to /prm
-    this->m_impl.configureLoadSandbox("/prm");
+    // 0. With no sandbox configured, every file access is rejected (fail-closed)
+    this->clearEvents();
+    this->clearHistory();
+    this->m_impl.readParamFile();
+    ASSERT_EVENTS_PrmFileReadError_SIZE(1);
+    ASSERT_EVENTS_PrmFileReadError(0, PrmDb_PrmReadError::OPEN, 0, Os::File::OUTSIDE_SANDBOX);
+
+    this->clearEvents();
+    this->clearHistory();
+    this->sendCmd_PRM_SAVE_FILE(0, 8);
+    dispatchStatus = this->m_impl.doDispatch();
+    EXPECT_EQ(dispatchStatus, Fw::QueuedComponentBase::MSG_DISPATCH_OK);
+
+    ASSERT_CMD_RESPONSE_SIZE(1);
+    ASSERT_CMD_RESPONSE(0, PrmDbImpl::OPCODE_PRM_SAVE_FILE, 8, Fw::CmdResponse::EXECUTION_ERROR);
+    ASSERT_EVENTS_PrmFileWriteError_SIZE(1);
+    ASSERT_EVENTS_PrmFileWriteError(0, PrmWriteError::OPEN, 0, Os::File::OUTSIDE_SANDBOX);
+
+    this->clearEvents();
+    this->clearHistory();
+    this->sendCmd_PRM_LOAD_FILE(0, 9, Fw::String("/prm/good.prm"), PrmDb_Merge::RESET);
+    dispatchStatus = this->m_impl.doDispatch();
+    EXPECT_EQ(dispatchStatus, Fw::QueuedComponentBase::MSG_DISPATCH_OK);
+
+    ASSERT_CMD_RESPONSE_SIZE(1);
+    ASSERT_CMD_RESPONSE(0, PrmDbImpl::OPCODE_PRM_LOAD_FILE, 9, Fw::CmdResponse::EXECUTION_ERROR);
+    ASSERT_EVENTS_PrmFileReadError_SIZE(1);
+    ASSERT_EVENTS_PrmFileReadError(0, PrmDb_PrmReadError::OPEN, 0, Os::File::OUTSIDE_SANDBOX);
+    ASSERT_EVENTS_PrmDbFileLoadFailed_SIZE(1);
+
+    // Restrict all file access to /prm
+    this->m_impl.configureSandbox("/prm");
 
     // 1. A path escaping the sandbox must be rejected before any file I/O
     this->clearEvents();

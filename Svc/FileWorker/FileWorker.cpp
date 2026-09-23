@@ -40,6 +40,13 @@ void FileWorker ::readIn_handler(FwIndexType portNum, const Fw::StringBase& path
         this->readDoneOut_out(0, FW_STATUS_INVALID_INPUT, 0);
         return;
     }
+    // The path must leave room for the hash-file extension appended by the CRC helpers; a port
+    // argument can legally be up to FileNameStringSize characters, which is too long.
+    if (!FileWorker::pathFitsWithHashExtension(path)) {
+        this->log_WARNING_HI_InvalidInput(Fw::LogStringArg("readIn"), Fw::LogStringArg("path too long"));
+        this->readDoneOut_out(0, FW_STATUS_INVALID_INPUT, 0);
+        return;
+    }
     if (!buffer.isValid()) {
         this->log_WARNING_HI_InvalidInput(Fw::LogStringArg("readIn"), Fw::LogStringArg("invalid buffer"));
         this->readDoneOut_out(0, FW_STATUS_INVALID_INPUT, 0);
@@ -96,6 +103,13 @@ void FileWorker ::verifyIn_handler(FwIndexType portNum, const Fw::StringBase& pa
         this->verifyDoneOut_out(0, FW_STATUS_INVALID_INPUT, 0);
         return;
     }
+    // The path must leave room for the hash-file extension appended by the CRC helpers; a port
+    // argument can legally be up to FileNameStringSize characters, which is too long.
+    if (!FileWorker::pathFitsWithHashExtension(path)) {
+        this->log_WARNING_HI_InvalidInput(Fw::LogStringArg("verifyIn"), Fw::LogStringArg("path too long"));
+        this->verifyDoneOut_out(0, FW_STATUS_INVALID_INPUT, 0);
+        return;
+    }
 
     const char* const fileName = path.toChar();
     FwSizeType fileSize = 0;
@@ -133,6 +147,13 @@ void FileWorker ::writeIn_handler(FwIndexType portNum,
     // Validate inputs before processing file
     if (path.length() == 0) {
         this->log_WARNING_HI_InvalidInput(Fw::LogStringArg("writeIn"), Fw::LogStringArg("empty path"));
+        this->writeDoneOut_out(0, FW_STATUS_INVALID_INPUT, 0);
+        return;
+    }
+    // The path must leave room for the hash-file extension appended by the CRC helpers; a port
+    // argument can legally be up to FileNameStringSize characters, which is too long.
+    if (!FileWorker::pathFitsWithHashExtension(path)) {
+        this->log_WARNING_HI_InvalidInput(Fw::LogStringArg("writeIn"), Fw::LogStringArg("path too long"));
         this->writeDoneOut_out(0, FW_STATUS_INVALID_INPUT, 0);
         return;
     }
@@ -198,6 +219,11 @@ void FileWorker ::writeIn_handler(FwIndexType portNum,
 // ----------------------------------------------------------------------
 // Helper functions
 // ----------------------------------------------------------------------
+
+bool FileWorker ::pathFitsWithHashExtension(const Fw::StringBase& path) {
+    // Fw::FileNameString holds FileNameStringSize characters plus the terminator
+    return (path.length() + Utils::Hash::getFileExtensionLength()) <= FileNameStringSize;
+}
 
 Svc ::FileWorkerStatus FileWorker ::readBufferFromFile(Fw::Buffer& buffer, const char* const fileName) {
     FW_ASSERT(buffer.getData() != nullptr);
@@ -400,12 +426,8 @@ bool FileWorker ::writeBufferToFile(Fw::Buffer& buffer, const char* fileName, Fw
     FW_ASSERT(offset <= size);
     size -= offset;
 
-    // A zero-length write (offset == buffer size, a valid "nothing left to write" boundary
-    // permitted by writeIn_handler's offset check) is a successful no-op. Return before
-    // opening the file: this avoids reaching FW_ASSERT(size > 0) in writeToFile(), and avoids
-    // creating an empty file for a request that writes nothing, since both OPEN_WRITE and
-    // OPEN_APPEND pass O_CREAT. An existing file's contents are not at risk either way here:
-    // OPEN_WRITE overwrites in place and does not truncate; only OPEN_CREATE sets O_TRUNC.
+    // A zero-length write is a successful no-op. Return before opening so no empty file is
+    // created and an existing file is not truncated for a no-op write.
     if (size == 0) {
         this->log_ACTIVITY_LO_WriteCompleted(size, logStringArg);
         return true;
@@ -419,7 +441,7 @@ bool FileWorker ::writeBufferToFile(Fw::Buffer& buffer, const char* fileName, Fw
 
     // Open file
     if (!append) {
-        stat = file.open(fileName, Os::File::Mode::OPEN_WRITE);
+        stat = file.open(fileName, Os::File::Mode::OPEN_CREATE, Os::File::OverwriteType::OVERWRITE);
     } else {
         stat = file.open(fileName, Os::File::Mode::OPEN_APPEND);
     }
@@ -449,9 +471,15 @@ void FileWorker ::writeBufferHashToFile(Fw::Buffer& buffer, const char* fileName
     // Construct hash file name
     const char* ext = Utils::Hash::getFileExtensionString();
     FW_ASSERT(ext != nullptr);
-    char hashFileName[FileNameStringSize];
-    Fw::FormatStatus status = Fw::stringFormat(hashFileName, sizeof(hashFileName), "%s%s", fileName, ext);
-    FW_ASSERT(status == Fw::FormatStatus::SUCCESS);
+    // Same capacity as the CRC helpers so read, verify, and write agree on the longest legal path
+    Fw::FileNameString hashFileNameString;
+    Fw::FormatStatus status = hashFileNameString.format("%s%s", fileName, ext);
+    if (status != Fw::FormatStatus::SUCCESS) {
+        // writeIn_handler rejects such paths up front; report rather than assert if one gets here
+        this->log_WARNING_HI_InvalidInput(Fw::LogStringArg("writeIn"), Fw::LogStringArg("path too long"));
+        return;
+    }
+    const char* const hashFileName = hashFileNameString.toChar();
 
     // Compute hash
     Utils::HashBuffer hashBuffer;
