@@ -106,7 +106,6 @@ void ComQueue::configure(const QueueConfigurationTable& queueConfig,
                               totalAllocation);
                     totalAllocation += entry.depth * entry.msgSize;
                 }
->>>>>>> 02ae4b898d2db5d66977158750ba768a3ed9e55c
                 currentPriorityIndex++;
             }
         }
