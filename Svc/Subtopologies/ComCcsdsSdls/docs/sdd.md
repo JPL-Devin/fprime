@@ -23,6 +23,7 @@ Both variants are **composed from the `ComCcsds` layer topologies**: the `ComCcs
 | SVC-COMCCSDSSDLS-005 | The default SA map shall route SA 1 to the `PLAINTEXT` port (the default decryptor/encryptor); SA 0, reserved by CCSDS 355.0-B-2 for Extended Procedures, shall route to a port left unconnected. Any SA mapped to a `ClearText*` component is an unauthenticated path; deployments requiring security shall replace the default component (see 2.4). | Inspection |
 | SVC-COMCCSDSSDLS-006 | The module shall provide a `FramingSubtopology` (external `Svc.ComInterface`) and a `Subtopology` (supplies `Svc::ComStub`) variant, mirroring ComCcsds. | Inspection |
 | SVC-COMCCSDSSDLS-007 | The SDLS instance properties (base ID, decryptor and encryptor selection) shall be configurable via a `ComCcsdsSdlsConfig` module; the reused packet and frame layer instances remain configurable via `ComCcsdsConfig`. | Inspection |
+| SVC-COMCCSDSSDLS-008 | The module shall provide segmented variants (`FramingSubtopologySegmented`, `SegmentedSubtopology`) in which the TC Segment Header is processed and Space Packets are reassembled by `ComCcsds.TcMapExtraction` **downstream of** the `SdlsDecryption` SUCCESS gate, so that no unauthenticated frame can allocate, append to, complete or abandon reassembly state. | Inspection, Segmented SDLS build |
 
 ---
 
@@ -55,6 +56,9 @@ The layers are wired together exclusively through their **topology ports** (e.g.
 > **Two variants:**
 > **A. "With ComStub" (`Subtopology`):** includes `Svc::ComStub` and exposes **ByteStream** ports to your driver.
 > **B. "With External ComInterface" (`FramingSubtopology`):** you **provide** an `Svc.ComInterface` implementation in the deployment.
+>
+> Each variant also exists in a **segmented** form (`SegmentedSubtopology`, `FramingSubtopologySegmented`) that
+> composes `ComCcsds.TmTcFramingSegmented` and `ComCcsds.TcMapExtraction` instead of `ComCcsds.TmTcFraming` — see 2.2.1.
 
 ### 2.2 Data Flow - Uplink
 
@@ -100,6 +104,59 @@ flowchart LR
     spacePacketDeframer -->|F´ packet| fprimeRouter
     fprimeRouter -->|commands / files| fsw
 ```
+
+#### 2.2.1 Segmented uplink (`SegmentedSubtopology` / `FramingSubtopologySegmented`)
+
+The segmented variants follow the receiving-end processing order of CCSDS 232.0-B-4 6.5.2.1
+(frame checks, then SDLS ProcessSecurity, then MAP packet extraction):
+
+```
+frameAccumulator -> tcDeframerSeg -> sdlsDeframer -> decryptionSaRouter -> decryptor
+                                        |  (SdlsStatus::SUCCESS only)
+                                        v
+                     tcMapReassembler (ComCcsds.TcMapExtraction) -> spacePacketDeframer -> fprimeRouter
+```
+
+* `ComCcsds.tcDeframerSeg` (TC deframer in Segment Header mode) strips the 1-octet Segment Header that
+  follows the primary header into `FrameContext` (`tcSegmentHeaderPresent`, `tcSegmentHeader`) and drops
+  Type-BC frames; the SDLS Security Header therefore starts at offset 0 of the buffer handed to
+  `sdlsDeframer` (frame octet 6), exactly as in the non-segmented stack.
+* The decryptor authenticates the **received** Segment Header octet: the TC authentication mask keeps the
+  Segment Header in the AAD when `tcSegmentHeaderPresent` is set (20-octet AAD instead of 19, see the
+  [AesGcmDecryptor SDD](../../../Ccsds/AesGcmDecryptor/docs/sdd.md)). A forged or modified Segment Header
+  fails the MAC.
+* **SUCCESS gate.** `sdlsDeframer` forwards a frame on `dataOut` only when the selected decryptor returned
+  `SdlsStatus::SUCCESS`; every other frame is returned upstream. Because `ComCcsds.TcMapExtraction.dataIn`
+  is connected to `SdlsDecryption.dataOut`, `tcMapReassembler` never sees an unauthenticated Frame Data
+  Unit: no unauthenticated byte can allocate, append to, complete or abandon MAP reassembly state. A MAC
+  failure on a middle segment leaves the partial packet in progress holding its pool buffer (there is no
+  timeout); it is released by the next authenticated FIRST/UNSEGMENTED on that MAP, a LAST whose length
+  does not match, or an accumulated overflow — see "SDLS Ordering and Held Buffers" in the
+  [TcMapReassembler SDD](../../../Ccsds/TcMapReassembler/docs/sdd.md).
+
+> [!IMPORTANT]
+> **The authentication property requires `Svc.Ccsds.AesGcmDecryptor`** (or another MAC-verifying
+> `Svc.Ccsds.Decryptor` implementation) as `decryptor`. `SUCCESS` means only "the selected decryptor returned
+> `SdlsStatus::SUCCESS`": the default `Svc.Ccsds.ClearTextDecryptor` returns `SUCCESS` for **every** frame
+> without any MAC check, so with the default configuration module the segmented SDLS variant authenticates
+> **nothing** and every Segment Header reaching `tcMapReassembler` is attacker-controllable. Select the
+> decryptor through the configuration override described in 2.4; the misconfiguration signature is the event
+> `decryptor.NullCipherInUse` (WARNING_HI, throttled at 5) on the uplink. In a dictionary generated with
+> `AesGcmDecryptor` selected, the event definition `ComCcsdsSdls.decryptor.NullCipherInUse` is **absent**
+> (`AesGcmDecryptor` defines no events, channels or commands) and the key manager's
+> `<deployment>.sdlsKeyManager.KeyReadFailed` is present — that pair is the implementable check that the
+> secured decryptor is in the build.
+
+**Uplink overhead.** With a 1024-octet TC frame, the User Data portion carried per frame is at most
+`1024 - 5 (primary header) - 1 (Segment Header) - 2 (FECF) = 1016` octets without SDLS and
+`1016 - 2 (SPI) - 12 (IV) - 16 (MAC) = 986` octets with the AES-256-GCM decryptor. Ground framers must
+segment packets accordingly (one Space Packet per Frame Data Unit sequence, no blocking).
+
+**Using the AES-GCM decryptor.** A deployment selects it through its `ComCcsdsSdlsConfig.fpp` override
+(`decryptor: Svc.Ccsds.AesGcmDecryptor`), instantiates a key manager (e.g. `Svc.Ccsds.SdlsFileKeyManager`,
+`configure(path, 32)`) and connects `ComCcsdsSdls.decryptor.keyGet -> <keyManager>.keyGet`. Without
+OpenSSL >= 3.5 `Svc_Ccsds_AesGcmDecryptor` is not registered and the build fails at CMake configure or at
+`fpp-check` (`symbol AesGcmDecryptor is not defined`) — it does not silently fall back to clear text.
 
 ### 2.3 Data Flow - Downlink
 
@@ -167,7 +224,7 @@ Uplink and downlink are separate simplex security associations (CCSDS 355.0-B-2 
 
 ### 2.6 Required Inputs for Operation
 
-* **Rate Groups:** Connect a rate group to the **`comQueueRun`** (telemetry send rate) and **`aggregatorTimeout`** topology ports.
+* **Rate Groups:** Connect a rate group to the **`comQueueRun`** (telemetry send rate) and **`aggregatorTimeout`** topology ports. The segmented variants additionally expose **`tcPacketBufferManagerSchedIn`** (`SegmentedSubtopology`) / `ComCcsds.TcMapExtraction.poolSchedIn` for the dedicated reassembly pool.
 * **Transport Endpoint:** wire the ComStub ByteStream ports (variant A) or an external `Svc.ComInterface` (variant B) as documented in the usage note in `ComCcsdsSdls.fpp`.
 
 In the default clear-text configuration no SDLS instance requires a `configure()` call: both SA routers build their tables from the shared `SdlsCfg.SaMap` default. A deployment that selects a real crypto implementation (see 2.4) should give each router its own table via `SdlsSaRouter::configure()` (see the `SdlsSaRouterCfg.fpp` annotation), and adopts whatever setup that component requires — for the AES-GCM pair, a key source: `Svc.Ccsds.SdlsFileKeyManager` needs `configure(path, keySize)` before the first frame, and is not instantiated by this subtopology.
@@ -186,3 +243,5 @@ In the default clear-text configuration no SDLS instance requires a `configure()
 - [`Svc::Ccsds::SdlsSaRouter`](../../../Ccsds/SdlsSaRouter/docs/sdd.md)
 - [`Svc::Ccsds::ClearTextDecryptor`](../../../Ccsds/ClearTextDecryptor/docs/sdd.md)
 - [`Svc::Ccsds::ClearTextEncryptor`](../../../Ccsds/ClearTextEncryptor/docs/sdd.md)
+- [`Svc::Ccsds::AesGcmDecryptor`](../../../Ccsds/AesGcmDecryptor/docs/sdd.md)
+- [`Svc::Ccsds::TcMapReassembler`](../../../Ccsds/TcMapReassembler/docs/sdd.md)

@@ -16,6 +16,14 @@ register_fprime_library(
   HEADERS
     "${CMAKE_CURRENT_LIST_DIR}/CRC16.hpp"
     "${CMAKE_CURRENT_LIST_DIR}/IdlePacket.hpp"
+    "${CMAKE_CURRENT_LIST_DIR}/TcSegmentHeader.hpp"
   DEPENDS
     Svc_Ccsds_Types
+)
+
+register_fprime_ut(
+  SOURCES
+    "${CMAKE_CURRENT_LIST_DIR}/test/ut/TcSegmentHeaderTest.cpp"
+  DEPENDS
+    Svc_Ccsds_Utils
 )

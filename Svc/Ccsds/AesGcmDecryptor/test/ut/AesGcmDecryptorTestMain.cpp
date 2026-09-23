@@ -121,6 +121,92 @@ TEST(Nominal, BufferReturn) {
     tester.testBufferReturn();
 }
 
+TEST(Nominal, AuthMaskNoSh) {
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-002");
+    COMMENT("Without a Segment Header both constructors build the same 19-byte AAD");
+    Svc::Ccsds::AesGcmDecryptorTester tester;
+    tester.testAuthMaskNoSh();
+}
+
+TEST(Nominal, AuthMaskSh) {
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-008");
+    COMMENT("With a Segment Header the AAD is 20 bytes with the received octet before the SPI");
+    Svc::Ccsds::AesGcmDecryptorTester tester;
+    tester.testAuthMaskSh();
+}
+
+TEST(Nominal, DecryptVectorFirst) {
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-008");
+    COMMENT("The FIRST Segment Header known-answer frame decrypts");
+    Svc::Ccsds::AesGcmDecryptorTester tester;
+    tester.testDecryptVectorFirst();
+}
+
+TEST(Nominal, DecryptVectorUnsegmented) {
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-008");
+    COMMENT("The UNSEGMENTED Segment Header known-answer frame decrypts");
+    Svc::Ccsds::AesGcmDecryptorTester tester;
+    tester.testDecryptVectorUnsegmented();
+}
+
+TEST(Nominal, DecryptVectorContinuingLast) {
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-008");
+    COMMENT("The CONTINUING and LAST Segment Header known-answer frames decrypt");
+    Svc::Ccsds::AesGcmDecryptorTester tester;
+    tester.testDecryptVectorContinuingLast();
+}
+
+TEST(OffNominal, ShNotInAadFails) {
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-008");
+    COMMENT("A frame is rejected when the context disagrees on whether a Segment Header was present");
+    Svc::Ccsds::AesGcmDecryptorTester tester;
+    tester.testShNotInAadFails();
+}
+
+TEST(OffNominal, ShTamperFails) {
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-008");
+    COMMENT("A frame whose Segment Header differs from the authenticated one is rejected");
+    Svc::Ccsds::AesGcmDecryptorTester tester;
+    tester.testShTamperFails();
+}
+
+TEST(Nominal, AadLengthPassed) {
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-008");
+    COMMENT("One instance decrypts a 19-byte-AAD frame and then a 20-byte-AAD frame");
+    Svc::Ccsds::AesGcmDecryptorTester tester;
+    tester.testAadLengthPassed();
+}
+
+TEST(Nominal, DecryptFrameVc0) {
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-002");
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-008");
+    COMMENT("An end-to-end SDLS frame on VC 0 with a Segment Header decrypts");
+    Svc::Ccsds::AesGcmDecryptorTester tester;
+    tester.testDecryptFrameVc0();
+}
+
+TEST(Nominal, DecryptFrameVc1) {
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-002");
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-008");
+    COMMENT("End-to-end SDLS frames on VC 1 decrypt and fail under a VC 0 context");
+    Svc::Ccsds::AesGcmDecryptorTester tester;
+    tester.testDecryptFrameVc1();
+}
+
+TEST(OffNominal, TamperedMacVector) {
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-003");
+    COMMENT("An end-to-end frame with a flipped MAC octet and a valid FECF fails the MAC check");
+    Svc::Ccsds::AesGcmDecryptorTester tester;
+    tester.testTamperedMacVector();
+}
+
+TEST(Nominal, PerFrameAad) {
+    REQUIREMENT("SVC-CCSDS-AES-DECRYPTOR-008");
+    COMMENT("Frames with and without a Segment Header alternate through one instance and each authenticates");
+    Svc::Ccsds::AesGcmDecryptorTester tester;
+    tester.testPerFrameAad();
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     STest::Random::seed();
