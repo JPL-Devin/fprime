@@ -11,7 +11,6 @@
 // ======================================================================
 
 #include "Svc/ActivePhaser/ActivePhaser.hpp"
-#include <cstring>
 
 namespace Svc {
 
@@ -26,9 +25,7 @@ ActivePhaser ::ActivePhaser(const char* const compName)
       m_ticks_rollover(1),  // Start at 1. Will be multiplied by each context to find some common multiple.
       m_last_start_ticks(0),
       m_last_cycle_ticks(0),
-      m_cycle_count(0) {
-    (void)::memset(&m_state, 0, sizeof(m_state));  // Zero-out the whole configuration table
-}
+      m_cycle_count(0) {}
 
 void ActivePhaser ::init(const FwSizeType queueDepth, const FwIndexType instance) {
     FW_ASSERT(queueDepth == 1, static_cast<FwAssertArgType>(
