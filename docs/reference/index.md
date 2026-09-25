@@ -15,6 +15,8 @@ Reference documentation for F Prime APIs and components.
 
 - [**Communication Adapter Interface**](communication-adapter-interface.md)
 
+- [**Continuous Integration**](continuous-integration.md)
+
 - [**FPP JSON Dictionary Specification**](fpp-json-dict.md)
 
 - [**F Prime Translation Guide**](fprime-translations.md)

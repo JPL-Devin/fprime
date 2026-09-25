@@ -132,7 +132,7 @@ Because of this pattern, users who submit a pull request which introduces breaki
 
 The checks are configured to run on the `devel` branch of each external repository, but will prioritize the branch `pr-<PR_NUMBER>` if it exists, with `PR_NUMBER` being the number of the pull request that has been opened in nasa/fprime.
 
-Maintainers will gladly help you in this process.
+Maintainers will gladly help you in this process. The full list of checks, the external repository setup, and the `pr-<PR_NUMBER>` process are described in [Continuous Integration](docs/reference/continuous-integration.md).
 
 ### Final Approval and Submission
 
