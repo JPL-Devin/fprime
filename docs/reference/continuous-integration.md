@@ -30,14 +30,16 @@ Unless noted otherwise in the sections below, every workflow follows the same co
 
 Because `devel` is only updated by merging pull requests that already passed CI, most workflows do not re-run on
 `push` to `devel`; the nightly `schedule` run acts as the run-of-record on `devel`. Workflows that publish data
-(coverage, component checks, CodeQL findings) run on `push` to `release/**`, on tags, and on the nightly schedule.
+(coverage, component checks, CodeQL findings) run on `push` to `release/**` (some also on tags) and on the nightly
+schedule.
 
 **Path filters.** Source-oriented workflows use `paths-ignore` so that pull requests touching only documentation
 (`docs/**`, `**.md`, issue templates, agent instructions, spelling action) do not trigger builds.
 
-**Concurrency.** Workflows use the concurrency group `<workflow>-<PR number | ref>` and cancel superseded runs on
+**Concurrency.** Check workflows use the concurrency group `<workflow>-<PR number | ref>` and cancel superseded runs on
 pull requests only (`cancel-in-progress` is disabled for `devel` and `release/**`), so pushing a new commit to a PR
-cancels the still-running checks of the previous commit.
+cancels the still-running checks of the previous commit. Publishing workflows (coverage and component-check updates,
+site regeneration) instead cancel any superseded run of the same ref, so that only the newest result is published.
 
 **Permissions.** Workflows request the minimum permissions they need, typically `contents: read`. Workflows that need
 write access (posting a comment, pushing to a baseline branch) are structured so that no pull request code runs with
@@ -125,7 +127,7 @@ with `uses: ./.github/workflows/<file>`.
 
 | File | Purpose |
 | --- | --- |
-| `reusable-get-pr-branch.yml` | Resolves which branch of an external repository to test against (see [The `pr-xxxx` process](#the-pr-xxxx-process)). Thin wrapper around `nasa/fprime-actions/get-pr-branch`. |
+| `reusable-get-pr-branch.yml` | Resolves which branch of an external repository to test against (see [The `pr-xxxx` process](#the-pr-xxxx-process)). |
 | `reusable-project-builder.yml` | Checks out an external project, overlays the current F´ revision, builds it, optionally builds and runs its unit tests, and uploads build artifacts and test logs. |
 | `reusable-project-ci.yml` | Same setup, but drives the build and integration stages through a project-provided `fprime-ci` configuration file. |
 
@@ -177,8 +179,9 @@ flowchart TB
 4. **Set up the tools** from the overlaid F´'s `requirements.txt` (plus the project's own `requirements.txt` and
    `overrides.txt` if present), run `fprime-util version-check`, and enable `ccache`.
 5. **Build**, and upload the build artifacts.
-6. **Test**: run the project's unit tests and/or download the artifacts and run the project's GDS integration tests. On
-   pull requests, the test job first upgrades `fprime-gds` to a matching `pr-xxxx` branch if one exists.
+6. **Test**: run the project's unit tests and/or download the artifacts and run the project's GDS integration tests.
+   Most workflows that run GDS integration tests first upgrade `fprime-gds` to a matching `pr-xxxx` branch on pull
+   requests, if one exists (see [The `pr-xxxx` process](#the-pr-xxxx-process)); this step is workflow-specific.
 
 Steps 2 to 4 are packaged as `nasa/fprime-actions/external-repository-setup`, which is used both directly in workflows
 and inside `reusable-project-ci.yml`. `reusable-project-builder.yml` performs the equivalent steps with
@@ -228,6 +231,7 @@ jobs:
     uses: ./.github/workflows/reusable-project-builder.yml
     with:
       target_repository: fprime-community/fprime-workshop-led-blinker
+      build_location: LedBlinker/LedBlinkerDeployment
       fprime_location: lib/fprime
       target_ref: ${{ needs.get-branch.outputs.target-branch }}
       run_unit_tests: true
@@ -260,7 +264,7 @@ sequenceDiagram
     participant GB as get-branch
     participant U as ubuntu runner (build)
     participant S as self-hosted runner (hardware)
-    GH->>GB: pull_request #1234
+    GH->>GB: pull_request (PR 1234)
     GB->>GB: pr-1234 on external repo?
     GB-->>U: target-branch
     U->>U: checkout external repo @ target-branch
@@ -316,8 +320,8 @@ flowchart TD
     BB -- no --> D
 ```
 
-The resolution is implemented once in `nasa/fprime-actions/get-pr-branch` (wrapped by `reusable-get-pr-branch.yml`)
-and queries the GitHub API for the branch:
+The resolution is implemented in `reusable-get-pr-branch.yml` (an equivalent action, `nasa/fprime-actions/get-pr-branch`,
+exists for projects that cannot call the reusable workflow) and queries the GitHub API for the branch:
 
 1. On `pull_request` events, use `pr-<N>` if it exists on the target repository.
 2. Otherwise, if the target repository has a branch with the same name as the current ref (for example a
