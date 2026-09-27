@@ -99,11 +99,13 @@ event CS_CommandError(
   id 10 \
   format "Sequence file {}: Command {} (opcode {}) completed with error {}"
 
-@ The Command Sequencer received a command that was invalid for its current mode.
-event CS_InvalidMode \
+@ The Command Sequencer received a request that was invalid for its current mode.
+event CS_InvalidMode(
+                      cause: InvalidModeCause @< The condition that rejected the request
+                    ) \
   severity warning high \
   id 11 \
-  format "Invalid mode"
+  format "Invalid mode: {}"
 
 @ Number of records in header doesn't match number in file
 event CS_RecordMismatch(
@@ -221,3 +223,34 @@ event CS_NoRecords(
   severity warning low \
   id 25 \
   format "Sequence file {} has no records. Ignoring."
+
+@ A JCF or JCS directive jumped to a label. Distinct from CS_SequenceCanceled: the
+@ sequence continues running at the jump target.
+event CS_DirectiveJump(
+                        fileName: string size 60 @< The name of the sequence file
+                        directive: DirectiveId @< The directive that took the jump
+                        label: string size 20 @< The target label
+                      ) \
+  severity activity high \
+  id 26 \
+  format "Sequence file {}: {} jumped to label {}"
+
+@ A sequence directive could not be executed.
+event CS_DirectiveError(
+                         fileName: string size 60 @< The name of the sequence file
+                         recordNumber: U32 @< The record number
+                         status: DirectiveStatus @< The failure reason
+                       ) \
+  severity warning high \
+  id 27 \
+  format "Sequence file {}: directive at record {} failed: {}"
+
+@ A LABEL record encountered while searching for a jump target could not be parsed.
+event CS_LabelRecordInvalid(
+                             fileName: string size 60 @< The name of the sequence file
+                             recordNumber: U32 @< The record number within the sequence
+                             error: I32 @< The error code
+                           ) \
+  severity warning high \
+  id 28 \
+  format "Sequence file {}: label record {} invalid. Err: {}"

@@ -3,25 +3,133 @@
 Reviews of the sequence-directive feature (`executeDirective`, `jumpToLabel`,
 `performCmd_Step`, `cmdResponseIn_handler`, and the new member variables).
 
-| Review | Source | Findings |
-| --- | --- | --- |
-| Part A — C/C++ design | `.github/skills/fprime-cpp-design/SKILL.md` (CPP-1 … CPP-37) | 3 must-fix, 2 could-fix, 3 suggestions |
-| Part B — Correctness | `.github/agents/correctness-review.agent.md` | 5 must-fix, 2 could-fix |
-| Part C — Security | `.github/agents/security-review.agent.md` | 1 must-fix, 3 suggestions, 1 future work |
+| Review | Source | Findings | Status |
+| --- | --- | --- | --- |
+| Part A — C/C++ design | `.github/skills/fprime-cpp-design/SKILL.md` (CPP-1 … CPP-37) | 3 must-fix, 2 could-fix, 3 suggestions | fixed |
+| Part B — Correctness | `.github/agents/correctness-review.agent.md` | 5 must-fix, 2 could-fix | fixed |
+| Part C — Security | `.github/agents/security-review.agent.md` | 1 must-fix, 3 suggestions, 1 future work | fixed (C3 not taken, by decision) |
+| Part D — Found while implementing A–C | — | 1 must-fix | fixed |
+| Part E — Second round, on the A–D fixes | C/C++ design + test quality | 3 must-fix, 7 should-fix, 5 nit | **open — none implemented** |
 
-**CI safety: Go** — no outstanding category-8 `**must fix**`.
+All 31 Parts A–D findings are implemented, documented in `docs/sdd.md`, and
+covered by a new 30-test directive suite; all 109 unit tests pass. Part E is
+recorded only.
 
-## Recommended order
+**CI safety: No-Go. Merge readiness: No-Go.** Part E's second review round is
+incomplete — the correctness and security reviewers did not run, and security
+is a CI-safety contributor. Part E also has 3 outstanding must-fix findings.
+See the gap notice in Part E.
 
-**Do B1 first** — it is also C1, the one security must-fix, and the single
-edit (making the directive continuation a loop instead of a self-call) closes
-an uplink-reachable FSW crash. Then the rest of Part B: two more defects
-poison or misreport sequence state. Part A is conformance work that does not
-change behavior; Part C's remaining items are observability and CI hygiene.
+---
 
-Within Part A, do action A1 first: findings CPP-19, CPP-24, CPP-30, and part
-of CPP-10 all live inside the block it extracts, so four of the eight
-collapse into that one edit.
+## Picking this up later
+
+### State of the work
+
+Nothing is committed. All of Parts A–D plus the new test suite live in the
+**uncommitted working tree** on branch `seq-directives`:
+
+- Modified: `CmdSequencer.fpp`, `Events.fppi`, `CmdSequencerImpl.{hpp,cpp}`,
+  `CMakeLists.txt`, `docs/sdd.md`, `actions.md`,
+  `test/int/test_cmd_sequencer.py`, `test/ut/CmdSequencerMain.cpp`,
+  `test/ut/SequenceFiles/File.cpp`,
+  `test/ut/SequenceFiles/AMPCS/CRCs.cpp`,
+  `test/ut/SequenceFiles/FPrime/Records.{hpp,cpp}`
+- New (untracked): `test/ut/Directives.{hpp,cpp}`,
+  `test/ut/SequenceFiles/DirectiveFile.{hpp,cpp}`
+
+`git diff` and `git status` in `Svc/CmdSequencer` are the authoritative view.
+Nothing outside `Svc/CmdSequencer` was touched.
+
+### Build and test
+
+```sh
+cd <repo root> && source fprime-venv/bin/activate
+cd Svc/CmdSequencer
+fprime-util build --ut -j$(nproc)     # NOT `generate --ut` — see below
+fprime-util check -j$(nproc)          # NO positional argument — see below
+```
+
+Two traps that cost time before:
+
+- **`fprime-util generate --ut` fails** with `InvalidBuildCacheException` once
+  the cache exists. Use `build --ut`, which regenerates as needed.
+- **`fprime-util check -j$(nproc) Svc/CmdSequencer` from the repo root
+  fails** — the positional argument is parsed as a build-cache suffix. You
+  must `cd` into the module directory and pass no positional argument.
+
+Expect `[ PASSED ] 109 tests` (79 pre-existing + 30 new `Directives.*`). The
+UT target re-adds `-Wno-conversion` (`CMakeLists.txt:74`) but keeps
+`-Werror -Wshadow -Wold-style-cast`, and runs under ASAN/UBSAN/LSAN.
+
+### Constraints the test suite depends on
+
+- **Sequence file base names must be ≤ 23 characters.**
+  `Fw::CmdStringArg` is capped at `FW_CMD_STRING_MAX_SIZE` = 40
+  (`default/config/FpConstants.fpp:29`), and `File::setName` builds
+  `bin/f_prime_<base>.bin`. A longer name is silently truncated by the
+  `CS_RUN` argument, and the component then reports `CS_FileNotFound` — which
+  looks like a missing-file bug, not a too-long-name bug. Four tests hit this.
+  `DirectiveFile`'s constructor now guards it with an explicit `EXPECT_LT`, so
+  the failure names itself. Keep the guard.
+- **Every directive test depends on zero time.**
+  `prepare()` sets the test time to `Fw::Time(TB_WORKSTATION_TIME, 0, 0)` and
+  `DirectiveFile::command()` writes relative offset 0, which together make
+  command records fire immediately so no test has to drive `schedIn`. Break
+  either side and most of the 30 tests fail on
+  `ASSERT_from_comCmdOut_SIZE` with no hint of the shared cause. This is E-T8.
+- **`runSequence()` asserts `ASSERT_EVENTS_SIZE(1)`,** so it cannot be used by
+  a test whose first step logs more than the load event. Those tests use the
+  local `sendRun()` helper instead. This is why both exist.
+- **`DirectiveFile` sequence shapes are load-bearing.** The assertions were
+  derived by tracing the implementation's exact event ordering; changing a
+  shape breaks assertions in non-obvious ways. `DirectiveCycleDetected` is the
+  most delicate — reaching `ERROR_DIRECTIVE_CYCLE` requires a jump target at
+  least two records *before* the jump, so the step reads more records than the
+  sequence holds. It pins its own record count with
+  `ASSERT_EQ(4U, file.getNumRecords())`.
+- **Never hand-edit `*Ac.hpp/cpp`.** Change the `.fpp` / `.fppi` model and
+  rebuild. Several Part E fixes (E-D1, E-D2) require model changes, so they
+  will regenerate autocode and shift generated assertion signatures.
+
+### What to do next, in order
+
+1. **Re-run the correctness and security reviewers** — they did not run in the
+   Part E round and their gap is the reason both verdicts are No-Go. Do this
+   *before* implementing Part E, so their findings merge into one fix pass
+   rather than forcing a third round. Scope: the working-tree changes to
+   `Svc/CmdSequencer` plus the four new test files. See the Part E preamble
+   for how they were invoked without a PR.
+2. **Fix Part E's 3 must-fix items** (E-D1, E-D2, E-T1) plus whatever the two
+   missing reviewers surface. E-D1 and E-D2 both change the FPP model, so do
+   them together and rebuild once. E-D2 also changes the expected value at
+   `test/ut/Directives.cpp:389` and in E-T5's suggested test.
+3. **Then the should-fix items.** E-D7 and E-T4 are one defect — fix once.
+   E-D3 and E-D4 interact: the `StepResult` enum from E-D4 makes E-D3's
+   correct behavior explicit rather than inferred, so E-D4 first is cheaper.
+4. **Mirror every implementation change in `docs/sdd.md`** and extend the unit
+   tests, as with Parts A–D. `sdd.md`'s change log has a 9/26/2026 row for the
+   Parts A–D work; add a row rather than editing that one.
+5. **Resolve E-T2's open question** — it needs a maintainer decision, not just
+   an edit. See the finding for the three options.
+
+### Decisions already made — do not relitigate
+
+- **JCF strict adjacency is intended.** A JCF must be the record *immediately*
+  after the failed command; an intervening `LABEL` or `ERROR_MODE` kills the
+  sequence under error mode ON. This was raised as a design question, decided
+  in favor of keeping the behavior, and `docs/sdd.md` was corrected to match
+  (it had read as though intervening directives were tolerated). See
+  "Routed elsewhere" at the end of this file for the original framing.
+- **A5 was not implemented as written, deliberately.**
+  `Fw::StringBase::deserializeFrom` reads an `FwSizeStoreType`
+  length prefix, but directive labels are a bare `U8` length plus raw chars.
+  Using it would silently change the wire format. The rationale is recorded as
+  a comment in `deserializeLabel` and in `sdd.md`.
+- **C3 is dispositioned "not taken"** with a rationale in the finding itself.
+  The security reviewer should confirm or overturn that call when it re-runs.
+- **The dead `m_jcfActive` / `m_jcfTarget` / `m_jcsActive` / `m_jcsTarget`
+  state was deleted**, not kept for compatibility.
 
 ---
 
@@ -31,8 +139,8 @@ collapse into that one edit.
 
 ### A1. Extract the duplicated label-parse block
 
-- [ ] Add a private helper `deserializeLabel(Fw::ExternalSerializeBuffer&, Fw::String&)`
-- [ ] Replace the three inlined copies with calls to it
+- [x] Add a private helper `deserializeLabel(Fw::ExternalSerializeBuffer&, Fw::String&)`
+- [x] Replace the three inlined copies with calls to it
 
 **Rule:** CPP-33 `cpp-inlined-utility` — **could fix**
 
@@ -46,9 +154,9 @@ no component state and operates on general types.
 
 ### A2. Justify or remove the casts
 
-- [ ] `const_cast<U8*>(...getBuffAddr())` at `CmdSequencerImpl.cpp:621`
-- [ ] `const_cast<U8*>(...getBuffAddr())` at `CmdSequencerImpl.cpp:836`
-- [ ] `reinterpret_cast<U8*>(labelBuf)` at `:684`, `:765`, `:856` — these disappear if A5 is done
+- [x] `const_cast<U8*>(...getBuffAddr())` at `CmdSequencerImpl.cpp:621`
+- [x] `const_cast<U8*>(...getBuffAddr())` at `CmdSequencerImpl.cpp:836`
+- [x] `reinterpret_cast<U8*>(labelBuf)` at `:684`, `:765`, `:856` — these disappear if A5 is done
 
 **Rule:** CPP-10 `cpp-reinterpret-or-const-cast-unjustified` — **must fix**
 
@@ -64,9 +172,9 @@ and why the API forces non-const.
 
 ### A3. Make the new event emissions traceable
 
-- [ ] Add a distinct event for directive jumps, carrying the target label
-- [ ] Stop emitting `CS_SequenceCanceled` at `:699` and `:779`
-- [ ] Give `CS_InvalidMode` an FPP enum argument identifying the call site
+- [x] Add a distinct event for directive jumps, carrying the target label
+- [x] Stop emitting `CS_SequenceCanceled` at `:699` and `:779`
+- [x] Give `CS_InvalidMode` an FPP enum argument identifying the call site
 
 **Rule:** CPP-36 `cpp-event-not-uniquely-traceable` — **must fix**
 
@@ -88,11 +196,11 @@ emissions are in scope.
 
 ### A4. Initialize the new locals
 
-- [ ] `directiveId` at `:625` and `:840`
-- [ ] `labelLen` at `:667`, `:748`, `:848`
-- [ ] `labelBuf` at `:676`, `:757`, `:854`
-- [ ] `exitStatus` at `:717`
-- [ ] `mode` at `:797`
+- [x] `directiveId` at `:625` and `:840`
+- [x] `labelLen` at `:667`, `:748`, `:848`
+- [x] `labelBuf` at `:676`, `:757`, `:854`
+- [x] `exitStatus` at `:717`
+- [x] `mode` at `:797`
 
 **Rule:** CPP-19 `cpp-uninitialized-variable` — **must fix**
 
@@ -110,7 +218,7 @@ Most of these vanish with A1.
 
 ### A5. Use `Fw::String` for the label buffer
 
-- [ ] Replace `char labelBuf[21]` at `:676`, `:757`, `:854`
+- [x] Replace `char labelBuf[21]` at `:676`, `:757`, `:854`
 
 **Rule:** CPP-24 `cpp-char-pointer-where-fw-string-fits` — **suggestion**
 
@@ -123,8 +231,8 @@ the three `reinterpret_cast` sites in A2.
 
 ### A6. Name the label-size constants
 
-- [ ] Add constants to the `Record::Constants` enum
-- [ ] Replace literals at `:676-678`, `:757-759`, `:850-854`
+- [x] Add constants to the `Record::Constants` enum
+- [x] Replace literals at `:676-678`, `:757-759`, `:850-854`
 
 **Rule:** CPP-30 `cpp-magic-number-replacing-constant` — **could fix**
 
@@ -140,7 +248,7 @@ enum Constants { MAX_LABEL_SIZE = 20, LABEL_BUFFER_SIZE = MAX_LABEL_SIZE + 1 };
 
 ### A7. Return a status enum from `executeDirective`
 
-- [ ] Replace the `bool` return at `CmdSequencerImpl.hpp:671`
+- [x] Replace the `bool` return at `CmdSequencerImpl.hpp:671`
 
 **Rule:** CPP-35 `cpp-bool-status-where-enum-fits` — **suggestion**
 
@@ -156,7 +264,7 @@ before returning.
 
 ### A8. Bound the label search loop
 
-- [ ] Convert the `while` at `CmdSequencerImpl.cpp:830` to a bounded `for`
+- [x] Convert the `while` at `CmdSequencerImpl.cpp:830` to a bounded `for`
 
 **Rule:** CPP-34 `cpp-while-loop-for-counted-iteration` — **suggestion**
 
@@ -184,8 +292,8 @@ them as one change.
 
 ### B1. Directive jump loop recurses without bound
 
-- [ ] Clear `m_lastCmdExecuted` / `m_lastCmdStatus` after a JCF or JCS jump
-- [ ] Convert the directive continuation at `CmdSequencerImpl.cpp:535` from recursion to iteration
+- [x] Clear `m_lastCmdExecuted` / `m_lastCmdStatus` after a JCF or JCS jump
+- [x] Convert the directive continuation at `CmdSequencerImpl.cpp:535` from recursion to iteration
 
 **Class:** `correctness-nontermination` — **must fix**
 
@@ -222,7 +330,7 @@ loop over records rather than a self-call.
 
 ### B2. `m_errorPendingAbort` survives into the next sequence
 
-- [ ] Add `this->m_errorPendingAbort = false;` to `sequenceComplete` (`CmdSequencerImpl.cpp:551-579`)
+- [x] Add `this->m_errorPendingAbort = false;` to `sequenceComplete` (`CmdSequencerImpl.cpp:551-579`)
 
 **Class:** `correctness-state-machine` — **must fix**
 
@@ -255,7 +363,7 @@ this->m_errorPendingAbort = false;
 
 ### B3. A failed final command reports sequence success
 
-- [ ] In `cmdResponseIn_handler`, take the error exit when a failure leaves no more records
+- [x] In `cmdResponseIn_handler`, take the error exit when a failure leaves no more records
 
 **Class:** `correctness-state-machine` — **must fix** (regression)
 
@@ -286,7 +394,7 @@ if (not this->m_sequence->hasMoreRecords()) {
 
 ### B4. Non-JCF directive after a failed command cancels twice
 
-- [ ] Make the guard at `CmdSequencerImpl.cpp:643-649` signal the caller instead of canceling itself
+- [x] Make the guard at `CmdSequencerImpl.cpp:643-649` signal the caller instead of canceling itself
 
 **Class:** `correctness-state-machine` — **must fix**
 
@@ -315,7 +423,7 @@ cancel — or, with A7, return a dedicated status the caller dispatches on.
 
 ### B5. JCF/JCS reached by a jump tests a stale command status
 
-- [ ] Clear `m_lastCmdExecuted` / `m_lastCmdStatus` once a JCF/JCS jump is taken
+- [x] Clear `m_lastCmdExecuted` / `m_lastCmdStatus` once a JCF/JCS jump is taken
 
 **Class:** `correctness-state-machine` — **must fix**
 
@@ -348,7 +456,7 @@ evaluation, to preserve the documented behavior.
 
 ### B6. `m_executedCount` freezes on a failed command
 
-- [ ] Advance `m_executedCount` on the failure path in `cmdResponseIn_handler:345`
+- [x] Advance `m_executedCount` on the failure path in `cmdResponseIn_handler:345`
 
 **Class:** `correctness-other` — **could fix**
 
@@ -372,7 +480,7 @@ one.
 
 ### B7. `CS_STEP` reports OK after aborting the sequence
 
-- [ ] Check `m_runMode` before the response at `CmdSequencerImpl.cpp:454`
+- [x] Check `m_runMode` before the response at `CmdSequencerImpl.cpp:454`
 
 **Class:** `correctness-other` — **could fix**
 
@@ -419,7 +527,7 @@ The one memory-write on a ground-controlled index, `labelBuf[readSize] =
 
 ### C1. Ground-controlled recursion depth — uplink-triggerable stack exhaustion
 
-- [ ] Convert the directive continuation at `CmdSequencerImpl.cpp:535` to iteration
+- [x] Convert the directive continuation at `CmdSequencerImpl.cpp:535` to iteration
 
 **Class:** `general-vulnerability/unbounded-recursion` — **must fix**
 
@@ -465,7 +573,7 @@ Converting `:535` to a loop fixes all three, and is the same edit B1 needs.
 
 ### C2. `jumpToLabel` discards malformed uplinked directives silently
 
-- [ ] Emit `CS_RecordInvalid` at the three `continue` sites (`:843`, `:851`, `:859`)
+- [x] Emit `CS_RecordInvalid` at the three `continue` sites (`:843`, `:851`, `:859`)
 
 **Class:** `ground-validation-gap` — **suggestion**
 
@@ -496,7 +604,7 @@ if (status != Fw::FW_SERIALIZE_OK || labelLen > 20) {
 
 ### C3. Label search rescans from record 0 on every jump
 
-- [ ] Build a label index at load, or search forward from the current position
+- [x] Disposition: **not taken.** Rationale below.
 
 **Class:** `general-vulnerability/unbounded-loop` — **suggestion**
 
@@ -513,11 +621,29 @@ own, which is why this is a suggestion and not a must-fix. It is listed
 because it is a ground-scaled cost on a blocking path: `CS_RUN` in `BLOCK`
 mode holds the caller's command response for the duration.
 
+**Disposition — not taken.** A label index is not free: it needs a fixed-size
+table sized at configuration time (no dynamic allocation is permitted), which
+adds a new configuration constant, a new overflow failure mode when a sequence
+declares more labels than the table holds, and a second place where the label
+set can disagree with the file. That is a worse trade than milliseconds of
+scan. Two changes made for A8 and B1 bound the cost instead:
+
+- `jumpToLabel` is now a counted `for` over `getHeader().m_numRecords`
+  (A8), so a single search is bounded by the validated record count rather
+  than by `hasMoreRecords()`.
+- `performCmd_Step` bounds the number of records a single step may read to
+  `m_numRecords` and reports `ERROR_DIRECTIVE_CYCLE` past that (B1/C1), so
+  the number of jumps per step is bounded too. The O(records²) figure is
+  therefore a per-step ceiling, not an unbounded accumulation.
+
+Revisit only if a project runs sequences large enough for the scan to matter
+against its `CS_RUN` response deadline.
+
 ---
 
 ### C4. Integration test uplinks to a fixed path outside the working tree
 
-- [ ] Replace `/tmp/ref_test_seq*.bin` with a unique per-run destination
+- [x] Replace `/tmp/ref_test_seq*.bin` with a unique per-run destination
       (`Svc/CmdSequencer/test/int/test_cmd_sequencer.py:169-172` and its 7 reuses)
 
 **Class:** `ci-test-runtime-policy-violation` — **suggestion**
@@ -539,7 +665,7 @@ a **list** argument and no `shell=True`. That is the correct form; keep it.
 
 ### C5. Shell-interpreted `system()` in the unit-test path
 
-- [ ] Replace with `Os::FileSystem::removeFile` in
+- [x] Replace with `Os::FileSystem::removeFile` in
       `test/ut/SequenceFiles/File.cpp:95` and
       `test/ut/SequenceFiles/AMPCS/CRCs.cpp`
 
@@ -553,6 +679,624 @@ these lines (`git diff` shows the `system()` call present on both sides), so
 the behavior is neither introduced nor widened, and the concatenated path is a
 compile-time constant, so no untrusted value reaches the shell. Replacing it
 removes the shell from the test path entirely.
+
+---
+
+## Part D — Found while implementing Parts A–C
+
+These were not in the original three reviews. They were found by reading the
+code closely enough to change it, and are fixed in the same pass.
+
+### D1. `CS_RUN` in `BLOCK` mode sends two command responses when the sequence
+ends inside the first step
+
+- [x] Capture the requested block state before stepping
+      (`CmdSequencerImpl.cpp`, `CS_RUN_cmdHandler`)
+
+**Class:** `correctness/double-response` — **must fix**
+
+`CS_RUN_cmdHandler` decided whether it owed a command response by re-reading
+`this->m_blockState` *after* calling `performCmd_Step`. But a sequence can end
+inside that step — an `EXIT` directive as the first record, an immediately
+empty record list, or an abort — and `sequenceComplete`/`performCmd_Cancel`
+both send the owed response and then clear `m_blockState` to `NO_BLOCK`. The
+handler then saw `NO_BLOCK`, concluded it owed a response, and sent a **second**
+one for the same opcode/`cmdSeq`.
+
+A duplicate response to `Svc::CommandDispatcher` for an opcode it is no longer
+tracking is a dispatcher-level error, not a sequencer one, so the symptom
+surfaces far from the cause.
+
+Fixed by reading the block state the command actually asked for, once, before
+any stepping:
+
+```cpp
+const Svc::BlockState::t requestedBlock = block.e;
+...
+if (Svc::BlockState::NO_BLOCK == requestedBlock) {
+    this->cmdResponse_out(opCode, cmdSeq, ...);
+}
+```
+
+This defect predates the directive work for the empty-sequence case, but the
+`EXIT` directive is what makes it reachable with a non-trivial sequence, so it
+belongs to this change.
+
+---
+
+## Part E — Second review round, on the Parts A–D fixes
+
+A second review pass was run over the Parts A–D implementation, the new
+directive unit-test suite, and the `sdd.md` updates. Reviewers: the three that
+produced Parts A–C (`fprime-code-review`, `correctness-review`,
+`security-review`) plus `test-quality-review`.
+
+Scope reviewed: the working-tree changes to `Svc/CmdSequencer` plus the four
+new files (`test/ut/Directives.{hpp,cpp}`,
+`test/ut/SequenceFiles/DirectiveFile.{hpp,cpp}`). The
+`review-orchestrator.agent.md` flow could not be used as written — it requires
+a GitHub PR and the `gh` CLI, and neither exists for the `seq-directives`
+branch — so each reviewer was invoked directly with its own agent file, the
+review contract, and `actions.md`/`docs/sdd.md` as the baseline, reporting
+findings as text instead of posting inline comments.
+
+Nothing in this section is implemented. It is the next round of work.
+
+| Reviewer | Findings |
+| --- | --- |
+| C/C++ design (CPP-1 … CPP-37) | 2 must-fix, 3 should-fix, 2 nit |
+| Test quality | 1 must-fix, 4 should-fix, 3 nit |
+| Correctness | **did not complete — see gap below** |
+| Security | **did not complete — see gap below** |
+
+Both reviewers that completed re-verified the Parts A–D fixes against the
+current source and the "Ruled out" list below; neither re-reported anything
+already recorded as fixed, and the ruled-out items remain correctly ruled out.
+
+> **Coverage gap — this round is incomplete.** The correctness and security
+> reviewers were started with the same scope and baseline as the two above, but
+> were stopped before finishing, so **they produced no findings and none of
+> their scope was covered.** Per the review contract's verdict rules, a
+> reviewer that did not run forces `Merge readiness: No-Go`, and security is a
+> CI-safety contributor, so `CI safety: No-Go` as well. Parts B and C of this
+> file are therefore the newest correctness and security assessments available,
+> and they predate every Parts A–D fix — **no reviewer has yet checked the
+> correctness or security of the fixes themselves.** Re-run both before this
+> change is considered reviewed. Their scope is the same as Part E's: the
+> working-tree changes to `Svc/CmdSequencer` plus the four new test files.
+>
+> Two findings from the completed reviewers land in the missing reviewers'
+> territory and should be treated as leads, not as coverage: E-D2 concerns the
+> only trace of malformed uplinked content (C2's requirement), and E-T2
+> questions whether B2's fix guards anything reachable.
+
+**Cross-reference:** E-D7 and E-T4 are the same `DirectiveFile` bound-check
+defect seen from two rule sets (CPP-31 silent truncation vs. harness-safety).
+Fix once.
+
+At the time of writing all 109 unit tests pass (79 pre-existing + 30 new
+directive tests), building clean under `-Werror -Wshadow -Wold-style-cast`
+with ASAN/UBSAN/LSAN.
+
+---
+
+### Part E — C/C++ design (CPP rules)
+
+#### E-D1. `CS_DirectiveError` cannot be traced to one of its seven emission sites
+
+- [ ] Add the directive identity to the event, or split the `DirectiveStatus`
+      enumerators per field (`Events.fppi`, `CmdSequencerImpl.cpp:730`)
+
+**Class:** `cpp-event-not-uniquely-traceable` (CPP-36) — **must fix**
+
+`directiveError()` is the sole emitter of
+`CS_DirectiveError(fileName, recordNumber, status)`, but seven call sites reach
+it with only two distinct status values. `ERROR_MALFORMED_RECORD` comes from
+four sites — :747 (the directive ID itself is unreadable), :778 (the JCF/JCS
+label is unreadable), :811 (the EXIT status byte is missing), :828 (the
+ERROR_MODE byte is missing). `ERROR_INVALID_ARGUMENT` comes from three — :750
+(directive ID outside the enum), :814 (exit status > 1), :831 (mode > 1). All
+seven emit the same `fileName` and the same `recordNumber` for a given record,
+so the argument sets are indistinguishable.
+
+An operator holding `"Sequence file X: directive at record 1 failed:
+ERROR_MALFORMED_RECORD"` cannot tell which field was unreadable, and so cannot
+tell a truncated jump directive from a truncated EXIT — the two need different
+fixes to the uplinked sequence.
+
+The ambiguity compounds a second problem: `recordNumber` here is
+`m_executedCount`, which counts *commands*, not records. In
+`DirectiveCycleDetected` the failing JCS is record index 3 but the event
+reports 1 — whereas the neighbouring `CS_LabelRecordInvalid` reports a true
+record index. The operator has neither the cause nor a usable location.
+
+Either add the directive to the event:
+
+```
+event CS_DirectiveError(
+                         fileName: string size 60
+                         recordNumber: U32
+                         directive: DirectiveId   @< The directive that failed
+                         status: DirectiveStatus
+                       ) \
+  severity warning high \
+  id 27 \
+  format "Sequence file {}: {} directive at record {} failed: {}"
+```
+
+…or split the enumerators per field (`ERROR_MALFORMED_LABEL`,
+`ERROR_MALFORMED_EXIT_STATUS`, `ERROR_MALFORMED_ERROR_MODE`,
+`ERROR_INVALID_EXIT_STATUS`, `ERROR_INVALID_ERROR_MODE`), which needs no
+signature change.
+
+**Consider also fixing `recordNumber` to report a true record index** while in
+this code — it is arguably the more useful half of the finding.
+
+#### E-D2. `CS_LabelRecordInvalid`'s `error` argument carries two different value domains
+
+- [ ] Separate the serialize-status domain from the site identity
+      (`CmdSequencerImpl.cpp:873, 878, 893`; `Events.fppi:252`)
+
+**Class:** `cpp-event-not-uniquely-traceable` (CPP-36) — **must fix**
+
+The new event is emitted from three sites in `jumpToLabel`. :873 and :893 pass
+`static_cast<I32>(status)` — a `Fw::SerializeStatus` — while :878 passes
+`static_cast<I32>(directiveId)`, a raw wire byte.
+
+`DirectiveId::isValid` rejects only 0…4, so :878 always reports a value ≥ 5 —
+and `Fw::FW_DESERIALIZE_SIZE_MISMATCH` is 5
+(`Fw/Types/Serializable.hpp:20`). A record whose payload is the single byte
+`0x05` emits `CS_LabelRecordInvalid(file, N, 5)` from :878; a LABEL record
+with a bad label length emits *exactly* `CS_LabelRecordInvalid(file, N, 5)`
+from :893. Sites :873 and :893 also collide on `FW_DESERIALIZE_BUFFER_EMPTY`
+(3). The unit test at `test/ut/Directives.cpp:389` asserts the overloading
+directly, with `unknownId = 99`.
+
+`CS_LabelRecordInvalid` is the only trace of malformed uplinked content
+skipped during a label search (C2's requirement). With the field overloaded,
+the ground cannot distinguish "record 2 declares an unknown directive 5" from
+"record 2 is a LABEL whose length field is bad" — the first means the sequence
+compiler emitted a bad opcode, the second means the label text was truncated.
+The event's own comment documents only the status domain, so the :878 value is
+undocumented as well as ambiguous.
+
+```
+enum LabelSearchError : U8 {
+  DIRECTIVE_ID_UNREADABLE = 0
+  DIRECTIVE_ID_UNKNOWN = 1
+  LABEL_UNREADABLE = 2
+}
+```
+
+Pass `DIRECTIVE_ID_UNKNOWN` with `error = 0` at :878, and the respective cause
+plus the real `status` at :873 and :893. Note this changes the assertion in
+E-T5's suggested test and at `Directives.cpp:389`.
+
+#### E-D3. `doSequenceRun` discards the new `performCmd_Step` status
+
+- [ ] Consume the status before logging `CS_PortSequenceStarted`
+      (`CmdSequencerImpl.cpp:208`)
+
+**Class:** `cpp-ignored-return-value` (CPP-32) — **should fix**
+
+This change makes `performCmd_Step` return `bool` (`CmdSequencerImpl.hpp:641`,
+documented "\return false if the step terminated the sequence with an error").
+Of the five call sites, :134 (`CS_RUN`), :447 (`CS_START`) and :475
+(`CS_STEP`) consume it; :379 and :402 discard it with an explicit `(void)`.
+:208 in `doSequenceRun` is the only site that neither consumes it nor casts it
+away, and `log_ACTIVITY_HI_CS_PortSequenceStarted` on the next line runs
+unconditionally.
+
+A port-driven run (`seqRunIn` / `seqDispatchIn`) whose first step aborts — a
+malformed first directive, an EXIT, an immediate end of sequence — has already
+emitted `seqDone_out(EXECUTION_ERROR)` from `performCmd_Cancel` by the time
+line 211 logs "Local request for sequence X started." at ACTIVITY_HI. The
+log's last word on a sequence that never ran is that it started, and the port
+caller gets no second signal. Every other caller was updated for the new
+status; this one was missed while the same function was being edited for
+`InvalidModeCause`.
+
+```cpp
+const bool stepStatus = this->performCmd_Step();
+if (not stepStatus) {
+    // The step already reported the failure and answered seqDone; do not claim a start
+    return;
+}
+...
+this->log_ACTIVITY_HI_CS_PortSequenceStarted(this->m_sequence->getLogFileName());
+```
+
+#### E-D4. `performCmd_Step` returns `bool` for a four-way outcome
+
+- [ ] Return a status enum and drop the `m_runMode` re-check
+      (`CmdSequencerImpl.hpp:641`, `CmdSequencerImpl.cpp:477`)
+
+**Class:** `cpp-bool-status-where-enum-fits` (CPP-35) — **should fix**
+
+The new `bool` collapses four outcomes the callers actually distinguish: a
+command was issued (:565, :568), the sequence ended in an orderly way (:562,
+:608), the step stopped after a directive because the mode is MANUAL (:603),
+and the step terminated the sequence with an error (:586, :590, :617).
+`CS_STEP_cmdHandler` recovers the missing information by re-reading component
+state at :477 (`if (this->m_runMode != STOPPED)`), with the comment at
+:472-474 conceding that "`m_runMode` alone cannot tell the two apart."
+
+The caller reconstructs a three-valued result from a `bool` plus a member
+variable, so any future path that stops the sequencer without going through
+`performCmd_Step` silently changes what `CS_CmdStepped` means. CPP-35 asks for
+the outcome itself rather than an outcome-plus-state inference.
+
+```cpp
+//! What one step of the sequence did
+enum class StepResult { COMMAND_ISSUED, SEQUENCE_ENDED, PAUSED_FOR_STEP, TERMINATED_WITH_ERROR };
+StepResult performCmd_Step();
+```
+
+`CS_STEP` then logs `CS_CmdStepped` on `COMMAND_ISSUED` / `PAUSED_FOR_STEP`
+and maps `TERMINATED_WITH_ERROR` to `EXECUTION_ERROR`. Note this interacts
+with E-D3: the enum makes `doSequenceRun`'s correct behavior explicit rather
+than inferred.
+
+#### E-D5. New `payload` arrays declared without initializers
+
+- [ ] `U8 payload[MAX_PAYLOAD_SIZE] = {};` at
+      `test/ut/SequenceFiles/DirectiveFile.cpp:105` and `:151`
+
+**Class:** `cpp-uninitialized-variable` (CPP-19) — **should fix**
+
+Only `nameLength + JUMP_PREFIX_SIZE` bytes are written and only that many are
+passed to `rawDirective`, so no uninitialized byte is read today — but CPP-19
+is unconditional, and this is the same shape A4 fixed in the component. The
+record the builder produces would otherwise depend on stack residue if a
+future builder method wrote a size larger than the bytes it filled — exactly
+the failure mode these malformed-record builders exist to exercise, which
+would make a test non-deterministic rather than failing.
+
+#### E-D6. `(void)` casts on `performCmd_Step` carry no rationale comment
+
+- [ ] Add the rationale comment at `CmdSequencerImpl.cpp:379` and `:402`
+
+**Class:** `cpp-ignored-return-value` (CPP-32) — **nit**
+
+CPP-32 accepts a discarded status only when it is "explicitly cast to `(void)`
+with an inline comment explaining why the result is intentionally discarded."
+Both casts are explicit; neither is commented. The reason is real but not
+obvious — `cmdResponseIn_handler` is a port handler with no caller to answer,
+so the failure has already been reported by the step itself. Without that
+sentence a later reader cannot tell a deliberate discard from the omission at
+:208 (E-D3).
+
+```cpp
+// No caller to answer from a port handler; performCmd_Step has already reported and
+// aborted on failure
+(void)this->performCmd_Step();
+```
+
+#### E-D7. Non-fatal length check guards a fixed-size `memcpy`
+
+- [ ] Same fix as E-T4 — one change closes both
+      (`test/ut/SequenceFiles/DirectiveFile.cpp:109-112`, `:150-154`)
+
+**Class:** `cpp-silent-truncation` (CPP-31) — **nit**
+
+`EXPECT_LE` is a non-fatal gtest expectation, so a failure records the error
+and falls through into the `memcpy`, overrunning the 38-byte stack array.
+CPP-31 acceptable handling (b) requires the pre-copy validation to actually
+reject the oversized input. No current caller can trigger it — the longest
+string passed is the 21-character `OVERLONG_LABEL` — hence nit. `ASSERT_LE` is
+unavailable because the function returns `DirectiveFile&`.
+
+This is the buffer sized for the malformed-record builders specifically, so it
+is the one a future test is most likely to outgrow; the failure would be a
+stack overrun during test collection rather than a readable assertion.
+
+**See E-T4** for the equivalent finding and the `ADD_FAILURE()` variant of the
+fix. Fix once.
+
+#### C/C++ design — checked and found clean
+
+Recorded so a later round does not re-derive them: no CPP-1 dynamic memory; no
+reachable CPP-4 assert introduced (:723, :595 and :841 are each guarded by a
+preceding range check, as this file already records); the `reinterpret_cast` at
+:717 now carries the justification A2 required; every new local in the
+component has an initializer; all `Fw::SerializeStatus` returns in
+`deserializeLabel` / `executeDirective` / `jumpToLabel` are checked; the
+label-search loop is counted and bounded; no CPP-25 banned feature — the two
+`system()` shell-outs in `File.cpp` and `AMPCS/CRCs.cpp` were replaced with
+`Os::FileSystem::removeFile` and their status checked; every new or changed
+`*_cmdHandler` emits an action event (CPP-37 satisfied).
+
+---
+
+### Part E — Test quality
+
+#### E-T1. `InvalidModeCause` payload is asserted for only 2 of its 10 enumerants
+
+- [ ] Extend `InvalidModeNamesItsCause` to cover the remaining eight causes
+      (`test/ut/Directives.cpp:650`)
+- [ ] Upgrade the seven pre-existing count-only assertions to payload
+      assertions (`test/ut/CmdSequencerTester.cpp:524,533,544`;
+      `test/ut/ImmediateBase.cpp:133,143,153,219`)
+
+**Class:** `test-coverage-stale-on-modified-fpp` (with
+`test-count-only-without-payload` at the stale sites) — **must fix**
+
+`CS_InvalidMode` gained a `cause: InvalidModeCause` argument in this change
+(A3), and all ten emission sites in `CmdSequencerImpl.cpp` are reachable:
+`RUN_NOT_STOPPED` (:82), `RUN_BLOCK_IN_MANUAL` (:93),
+`VALIDATE_NOT_STOPPED` (:147), `PORT_RUN_IN_MANUAL` (:170),
+`PORT_RUN_NOT_STOPPED` (:174), `START_NOT_STOPPED` (:438),
+`STEP_NOT_RUNNING` (:458), `STEP_NOT_MANUAL` (:461),
+`AUTO_NOT_STOPPED` (:487), `MANUAL_NOT_STOPPED` (:497).
+
+Only two values are ever asserted as a payload — `RUN_BLOCK_IN_MANUAL` and
+`STEP_NOT_MANUAL`, both in `InvalidModeNamesItsCause`. Seven of the remaining
+eight are exercised only by pre-existing `ASSERT_EVENTS_CS_InvalidMode_SIZE(1)`
+calls that were left count-only when the argument was added.
+`PORT_RUN_IN_MANUAL` (`CmdSequencerImpl.cpp:170`) has **no test at all**, in
+any form.
+
+The whole point of the A3 edit was to make the event say *which* rejection
+happened. A hand-written 10-way enum threaded through ten separate call sites
+is exactly the shape where a copy-paste of the wrong enumerant ships silently:
+every existing test asserts only that *an* `CS_InvalidMode` fired, so swapping
+`AUTO_NOT_STOPPED` for `MANUAL_NOT_STOPPED`, or `PORT_RUN_NOT_STOPPED` for
+`RUN_NOT_STOPPED`, passes the entire 109-test suite. Ground operators would
+then debug a mode rejection against a cause naming the wrong command.
+
+`InvalidModeNamesItsCause` already has the mode plumbing, so each addition is
+a few lines:
+
+```cpp
+// STEP_NOT_RUNNING: manual mode, no active sequence
+this->goToManualMode(20);
+this->sendCmd_CS_STEP(0, 21);
+this->clearAndDispatch();
+ASSERT_EVENTS_SIZE(1);
+ASSERT_EVENTS_CS_InvalidMode(0, InvalidModeCause::STEP_NOT_RUNNING);
+
+// PORT_RUN_IN_MANUAL: currently untested in any form
+Fw::String fArg(fileName);
+Svc::SeqArgs emptyArgs{0, 0};
+this->invoke_to_seqRunIn(0, fArg, emptyArgs);
+this->clearAndDispatch();
+ASSERT_EVENTS_SIZE(1);
+ASSERT_EVENTS_CS_InvalidMode(0, InvalidModeCause::PORT_RUN_IN_MANUAL);
+ASSERT_from_seqDone(0, 0U, 0U, Fw::CmdResponse(Fw::CmdResponse::EXECUTION_ERROR));
+```
+
+Upgrading the seven count-only sites asserts the count implicitly and kills
+the stale-coverage class at its source.
+
+#### E-T2. `PendingAbortDoesNotLeakToNextSequence` does not fail if the B2 fix is reverted
+
+- [ ] Decide between (a), (b1), or (b2) below, then retitle or retarget the
+      assertion (`test/ut/Directives.cpp:274`)
+
+**Class:** `test-tautological-assertion` — **should fix**
+
+B2 is satisfied by `this->m_errorPendingAbort = false;` at
+`CmdSequencerImpl.cpp:642`, inside `sequenceComplete`. This test's
+`ASSERT_FALSE(this->component.m_errorPendingAbort)` is reached via the *abort*
+path, not that one: the failing last command goes `cmdResponseIn_handler` →
+`abortOnCommandError()` (:332 clears the flag) → `performCmd_Cancel()` (:313
+clears it again). The clean second sequence then starts with the flag already
+false.
+
+The reviewer traced every route that sets the flag (only
+`cmdResponseIn_handler:360-363`, and only with `m_errorMode` true) and could
+not construct one reaching `sequenceComplete` with it still set: the failure
+path branches on `if (m_errorPendingAbort) abortOnCommandError() else
+sequenceComplete()`; `performCmd_Step`'s non-directive guard (:553-556) aborts
+before `END_OF_SEQUENCE` can call `sequenceComplete`; `executeDirective`
+returns `ABORT_PENDING_ERROR` before reaching the `EXIT` case (:757-759); and
+a JCF that jumps clears the flag at :803. So :642 is unreachable defensive
+code and no test distinguishes its presence from its absence.
+
+This matches what was already concluded while writing the suite — the test was
+written to assert the observable property instead. The finding is that the
+test's *name and comment* still claim B2.
+
+Options, a maintainer call:
+- (a) If a path to `sequenceComplete` with the flag set exists that the
+  reviewer did not find, add a test that takes it and assert the flag there.
+- (b1) Drop the :642 line and rely on
+  `performCmd_Cancel`/`abortOnCommandError`.
+- (b2) Keep :642 as deliberate defense-in-depth and retitle the assertion so
+  it claims what it actually guards — that `abortOnCommandError` clears the
+  flag — rather than B2.
+
+Either way, annotate B2 in this file so the checklist stays honest. The
+unreachability was established by reading all five assignment sites and all
+`sequenceComplete` callers, not by mutating the implementation — verify before
+acting on (b1).
+
+#### E-T3. Four malformed-directive tests would not detect a second `CS_RUN` response
+
+- [ ] Add `ASSERT_CMD_RESPONSE_SIZE(1);` before each
+      `ASSERT_CMD_RESPONSE(0, ...)` at `test/ut/Directives.cpp:418, 430, 442,
+      454`, and at `:502` (`JumpWithNoPriorCommand`)
+
+**Class:** `test-fail-path-missing` — **should fix**
+
+`UnknownDirectiveId`, `ExitWithNoArgument`, `ExitWithInvalidStatus`, and
+`ErrorModeWithInvalidArgument` assert
+`ASSERT_CMD_RESPONSE(0, OPCODE_CS_RUN, 0, EXECUTION_ERROR)` with no preceding
+`ASSERT_CMD_RESPONSE_SIZE(1)`. Their sibling `EmptyDirectiveRecord` (:405)
+*does* have it, so the omission is inconsistent rather than deliberate. These
+four also do not bound total events —
+`ASSERT_EVENTS_CS_DirectiveError_SIZE(1)` bounds only that one event type.
+
+D1 in this very change was a double `cmdResponse_out` on the `CS_RUN` path,
+found only during implementation. All four tests drive `CS_RUN` into a first
+step that terminates the sequence — the same shape as D1 — and would pass if
+the handler answered twice.
+`BlockingRunAnsweredOnceWhenSequenceEndsInFirstStep` guards the `BLOCK`
+variant only.
+
+#### E-T4. Non-fatal `EXPECT_LE` immediately precedes an unconditional `memcpy` into a fixed buffer
+
+- [ ] Make the bound check stop the write in `jumpWithLabelLength` and
+      `labelDirective` (`test/ut/SequenceFiles/DirectiveFile.cpp:109, 150`)
+
+**Class:** builder correctness — **should fix**
+
+Both methods bound-check into a `MAX_PAYLOAD_SIZE` (38-byte) stack array with
+`EXPECT_LE`, which records a GTest failure and *continues*:
+
+```cpp
+EXPECT_LE(charCount + JUMP_PREFIX_SIZE, sizeof(payload));
+payload[0] = static_cast<U8>(directive);
+payload[1] = declaredLength;
+(void)memcpy(&payload[JUMP_PREFIX_SIZE], chars, charCount);
+```
+
+No current caller violates the bound (the longest is `OVERLONG_LABEL` at 21
+chars), so this is latent. But the first test author who passes a longer
+literal gets a stack buffer overflow inside the harness instead of a clean
+assertion failure: under ASAN a confusing crash inside the builder, without
+ASAN silent corruption of the calling frame whose garbage sequence file makes
+an unrelated test fail somewhere far from `DirectiveFile`.
+
+`ASSERT_*` cannot be used in a function returning `DirectiveFile&`, so either
+early-return or make it fatal:
+
+```cpp
+if (charCount + JUMP_PREFIX_SIZE > sizeof(payload)) {
+    ADD_FAILURE() << "label of " << charCount << " chars exceeds MAX_PAYLOAD_SIZE";
+    return *this;
+}
+```
+
+Also note the `EXPECT_LE` at :150 names the wrong limit — it checks against
+`Record::MAX_LABEL_SIZE` (20) while the write is bounded by `sizeof(payload)`.
+
+#### E-T5. `CS_LabelRecordInvalid` has three emission sites and two are tested
+
+- [ ] Add a test covering the directive-ID deserialize failure during label
+      search (`CmdSequencerImpl.cpp:871-875`)
+
+**Class:** `test-fail-path-missing` — **should fix**
+
+During the label search, `jumpToLabel` emits `CS_LabelRecordInvalid` on three
+distinct failures: directive-ID deserialize failure (:871-875), `isValid`
+rejection (:877-880), and label deserialize failure (:892-895).
+`UnknownDirectiveSkippedDuringSearch` covers the second and
+`MalformedLabelSkippedDuringSearch` the third; the first has no test. It is
+reachable and buildable today — `DirectiveFile::emptyDirective()` produces a
+zero-length directive record, which yields an empty-buffer deserialize failure
+when the search reads it.
+
+C2's stated requirement is that malformed uplinked content is never discarded
+without a trace. A future edit turning that `continue` into a silent skip — or
+reporting the wrong `error` value — would go undetected. This is also the one
+of the three paths where the reported `I32` is a `Fw::SerializeStatus` rather
+than the raw directive byte, so a sign/cast regression there is unguarded too.
+
+```cpp
+SequenceFiles::DirectiveFile file("empty_directive_search");
+file.command(0, 1).jcs("GOOD").emptyDirective().label("GOOD").command(1, 2).endOfSequence();
+const char* const fileName = this->prepare(file);
+this->runSequence(0, fileName);
+this->assertCommandOut(0, 1);
+this->respond(0, Fw::CmdResponse::OK);
+ASSERT_EVENTS_SIZE(3);
+ASSERT_EVENTS_CS_CommandComplete(0, fileName, 0, 0);
+ASSERT_EVENTS_CS_LabelRecordInvalid(0, fileName, 2, static_cast<I32>(Fw::FW_DESERIALIZE_BUFFER_EMPTY));
+ASSERT_EVENTS_CS_DirectiveJump(0, fileName, DirectiveId::JCS, "GOOD");
+this->assertCommandOut(1, 2);
+```
+
+Confirm the expected status enumerant before applying — whether the
+empty-buffer path returns `FW_DESERIALIZE_BUFFER_EMPTY` or
+`FW_DESERIALIZE_SIZE_MISMATCH` in this `LinearBufferBase` configuration. Note
+the file name must stay within 23 characters (see E-T8).
+
+#### E-T6. `LabelIsSkipped` doc comment claims `CS_STEP` behavior the test never exercises
+
+- [ ] Reword the comment (`test/ut/Directives.hpp:42`)
+
+**Class:** maintainability (doc/assertion mismatch) — **nit**
+
+The comment reads "A LABEL record is stepped over and does not consume a
+CS_STEP in auto mode", but the test body runs entirely in auto mode and never
+sends `CS_STEP`. The CS_STEP-consumption property is covered by
+`ManualStepConsumesOneDirective`. A reader auditing coverage of the "one step
+consumes one directive" rule will credit this test for a property it does not
+check. Reword to "A LABEL record is stepped over within the step that issues
+the following command" and leave the CS_STEP claim to
+`ManualStepConsumesOneDirective`.
+
+#### E-T7. Five malformed-directive tests share one copy-pasted body
+
+- [ ] Optional: factor the shared body, keeping the expected
+      `DirectiveStatus` an explicit parameter
+      (`test/ut/Directives.cpp:398-459`)
+
+**Class:** `test-copy-paste-structure` — **nit**
+
+`EmptyDirectiveRecord`, `UnknownDirectiveId`, `ExitWithNoArgument`,
+`ExitWithInvalidStatus`, and `ErrorModeWithInvalidArgument` are the same seven
+lines, varying only in the builder call and the expected `DirectiveStatus`.
+Divergence has already crept in — that is E-T3.
+
+The reviewer graded this a nit deliberately: each body is short, the varying
+part is the assertion payload, and an `assertMalformedDirective(file,
+DirectiveStatus)` helper would move the expectation out of the test body and
+hide what each case checks. **E-T3 is the higher-value half of this.**
+
+#### E-T8. The zero-time assumption is duplicated and load-bearing
+
+- [ ] Cross-reference `prepare()` from the builder
+      (`test/ut/SequenceFiles/DirectiveFile.cpp:45`)
+
+**Class:** maintainability (undocumented load-bearing shape) — **nit**
+
+Every test in the new suite depends on `Fw::Time(TB_WORKSTATION_TIME, 0, 0)`
+making relative command records fire immediately, so no test has to drive
+`schedIn`. That assumption is set in `prepare()` (`Directives.cpp:679`) and
+mirrored by the record times `command()` writes, in two files, with the
+rationale stated in only one. A change to either side would leave commands
+sitting in the timer and turn most of the 30 tests into
+`ASSERT_from_comCmdOut_SIZE` failures with no hint as to the shared cause.
+
+#### Test quality — checked and explicitly not reported
+
+Recorded so a later round does not re-derive them:
+
+- **`DirectiveId` coverage is complete for reachable values.**
+  `CS_DirectiveJump` can only carry `JCF` or `JCS`
+  (`CmdSequencerImpl.cpp:786-805`); both are asserted with payload. `LABEL`,
+  `EXIT`, and `ERROR_MODE` are unreachable in that event. All five enumerants
+  are exercised as record content by the builder.
+- **`DirectiveStatus` coverage is complete for reachable values.** All five
+  `ERROR_*` values appear in `ASSERT_EVENTS_CS_DirectiveError` payload
+  assertions. `CONTINUE`, `JUMPED`, `SEQUENCE_ENDED`, and
+  `ABORT_PENDING_ERROR` are internal `executeDirective` return values never
+  emitted in an event.
+- **The builder's header record count cannot diverge from the records
+  written.** Every entry point routes through `command()`, `endOfSequence()`,
+  or `rawDirective()`, each incrementing `m_numRecords` exactly once, and
+  `serializeFPrime` derives `dataSize` from `m_records.getSize()`.
+  `DirectiveCycleDetected` additionally pins the count with
+  `ASSERT_EQ(4U, file.getNumRecords())`.
+- **No test weakening.** No `DISABLED_`, no `GTEST_SKIP()`, no removed or
+  relaxed assertions. The one widened check — `File.cpp` / `AMPCS/CRCs.cpp`
+  accepting `OP_OK || DOESNT_EXIST` instead of `ASSERT_EQ(0, status)` — is
+  required by the C5 switch from `system("rm -f")` to
+  `Os::FileSystem::removeFile`, since `rm -f` succeeds on a missing file.
+- **No missing `doDispatch` on async ports.** Every command send and port
+  invoke in the new suite is followed by `clearAndDispatch()`.
+- **`CS_NoRecords` is pre-existing, not new**, and is already asserted with
+  payload in `test/ut/NoRecords.cpp`.
+- **`assertAborted()` is not a hidden-assertion finding.** It wraps three
+  assertions but its name matches what it checks, and the
+  `ASSERT_from_seqDone_SIZE(1)` inside it is what guards B4's double-cancel.
+- **Regression guards for B1/C1, B3, B4, B5, B6, B7, and D1 all genuinely
+  fail on revert**, spot-traced individually. B5's fails distinctively:
+  reverting yields `ERROR_DIRECTIVE_CYCLE` where the test asserts
+  `ERROR_NO_PRIOR_COMMAND`. B6's catches both the index freeze and a miscount.
+  B2 is the sole exception — see E-T2.
 
 ---
 

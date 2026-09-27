@@ -2,7 +2,7 @@
 
 ## 1 Introduction
 
-The command sequencer is a component that iterates through a set of commands contained in binary form in a file located in a file system available to the sequencer. A command to the sequencer specifies the file to execute. The file can contain commands that execute immediately, after a delay, or at an absolute time. The sequence will abort if any given command in the sequence returns a failed status.
+The command sequencer is a component that iterates through a set of commands contained in binary form in a file located in a file system available to the sequencer. A command to the sequencer specifies the file to execute. The file can contain commands that execute immediately, after a delay, or at an absolute time. By default the sequence will abort if any given command in the sequence returns a failed status; a sequence may override this per command or for a span of commands using [sequence directives](#F_Prime_Sequence_Format).
 
 ## 2 Requirements
 
@@ -13,9 +13,12 @@ Requirement | Description | Verification Method | Rationale
 ISF-CMDS-001 | The `Svc::CmdSequencer` component shall read sequence files. | Unit Test | CmdSequencer gets commands from the sequence file.
 ISF-CMDS-002 | The `Svc::CmdSequencer` component shall validate the sequence files with a CRC. | Unit Test | CmdSequencer need to know it has a valid file.
 ISF-CMDS-003 | The `Svc::CmdSequencer` component shall provide a command to validate the sequence file. | Unit Test | Waiting to validate the file only when running it can cause operational issues
-ISF-CMDS-004 | The `Svc::CmdSequencer` component shall cancel the sequence upon receiving a failed command status. | Unit Test | A sequence should not continue if a command fails since subsequent commands may depend on the outcome
+ISF-CMDS-004 | The `Svc::CmdSequencer` component shall cancel the sequence upon receiving a failed command status, unless the sequence has overridden that behavior with a `JCF` or `ERROR_MODE` directive. | Unit Test | A sequence should not continue if a command fails since subsequent commands may depend on the outcome, but a sequence should be able to declare its own recovery path
 ISF-CMDS-005 | The `Svc::CmdSequencer` component shall provide a command to cancel the existing sequence | Unit Test | Operator should be able to cancel the sequence if it is hung or needs to be stopped.
 ISF-CMDS-006 | The `Svc::CmdSequencer` component shall provide a per-command timeout that restarts for each dispatched command. | Unit Test | Sequencer should quit if a component fails to send a command response
+ISF-CMDS-007 | The `Svc::CmdSequencer` component shall execute sequence directive records that alter control flow within the sequence: `LABEL`, `JCF`, `JCS`, `EXIT`, and `ERROR_MODE`. | Unit Test | A sequence needs to express recovery and conditional paths without a round trip to the ground
+ISF-CMDS-008 | The `Svc::CmdSequencer` component shall reject a malformed or unrecognized sequence directive by reporting the failure and canceling the sequence. | Unit Test | Sequence files arrive by uplink; a damaged directive must not be executed as if it were valid
+ISF-CMDS-009 | The `Svc::CmdSequencer` component shall bound the number of records read while servicing a single step, and report a cyclic directive sequence rather than looping. | Unit Test | A sequence file is ground-supplied and could otherwise direct the sequencer into an unbounded loop on its own thread
 
 ## 3 Design
 
@@ -54,15 +57,30 @@ seqDone|Fw::CmdResponse|output|outputs status of sequence run; meant to be used 
 ##### 3.2.2.1 CS_Validate
 The `CS_Validate` command will validate that the format and checksum of a sequence file are correct without executing any commands in the file. This allows operators to validate a file prior to executing it.
 ##### 3.2.2.2 CS_Run
-The `CS_Run` command will execute a sequence. If a prior sequence is still running, the command is rejected with an execution error; the running sequence must complete or be canceled first. If a command returns a failed status, the sequence will be aborted.
+The `CS_Run` command will execute a sequence. If a prior sequence is still running, the command is rejected with an execution error; the running sequence must complete or be canceled first. If a command returns a failed status, the sequence will be aborted, unless a `JCF` directive immediately follows the failed command or `ERROR_MODE` is OFF (see [**Sequence Directives**](#F_Prime_Sequence_Format)).
+
+Which response the caller receives, and when, is decided by the `block`
+argument the command carried, not by the sequencer's block state at the time the
+response is sent. A sequence can end inside the very first step — an `EXIT`
+directive as the first record, an empty record list, or an abort — and that
+completion path sends the `BLOCK` response itself. Reading the block state
+afterward would report `NO_BLOCK` and send a second response for the same
+command.
 ##### 3.2.2.3 CS_Cancel
 The `CS_Cancel` command will cancel an existing sequence. If there is no sequence currently executing, the command will emit a warning event but not fail.
 ##### 3.2.2.4 CS_Manual
 The `CS_Manual` command will put the sequencer in a manual stepping mode, where the commands will be advanced by the `CS_Step` command. After entering this mode, the operator should issue a `CS_Run` command to load the sequence. In this mode, the sequence will be validated and loaded, but will not execute any commands until receiving the `CS_Start` command
 ##### 3.2.2.5 CS_Start
-The `CS_Start` command will execute the first command in the sequence in manual mode.
+The `CS_Start` command will execute the first command in the sequence in manual mode, consuming any sequence directives that precede it. Like `CS_Step`, it returns `EXECUTION_ERROR` if that first step terminated the sequence with an error — for example a malformed leading directive — and `OK` otherwise.
 ##### 3.2.2.6 CS_Step
-The `CS_Step` command will execute subsequent commands after receiving the `CS_Start` command.
+The `CS_Step` command will execute subsequent commands after receiving the `CS_Start` command. One `CS_Step` consumes one command record, together with any sequence directives that precede it: directives are not separately steppable.
+
+`CS_Step` returns `OK` when the step ran, including when it reached the end of
+the sequence, which stops the sequencer and is a successful outcome. It returns
+`EXECUTION_ERROR` only when the step terminated the sequence with an error — an
+abort on command failure, or a failed directive. The sequencer's run mode alone
+cannot distinguish these two, since both leave it stopped; the step reports its
+own outcome.
 ##### 3.2.2.7 CS_Auto
 The `CS_Auto` command will change the sequencing mode from manual to automatic, which means that the sequencer will automatically execute commands upon loading. This command can only be run when there are no currently executing sequences. If a sequence is executing, a `CS_Cancel` followed by a `CS_Auto` will get the sequencer back to executing sequences automatically.
 ##### 3.2.2.8 CS_JOIN_WAIT
@@ -77,6 +95,21 @@ The `schedIn` port checks to see if there is a timed command pending. If the tim
 ##### 3.2.3.2 cmdResponseIn
 
 The `cmdResponseIn` port is called when a command in a sequence is completed. If the command status is successful, the next command in the sequence is executed.
+
+A failed command is recorded, and the record index advances: a failure consumed
+a record, so every later event names the record it actually refers to. Only the
+`CS_CommandsExecuted` telemetry channel is reserved for commands that succeeded.
+
+If `ERROR_MODE` is ON, the failure is marked pending rather than aborting
+immediately, so that a `JCF` directive in the next record can handle it. The
+abort happens when the next record read is not a sequence directive, or when
+there are no records left. The final-command case must be decided here: a
+sequence may legally end on a command record, and with `ERROR_MODE` ON no
+directive can follow to handle the failure, so ending on a failed command
+aborts rather than completing successfully.
+
+The pending-abort mark is cleared when the sequence ends by any route, so it
+cannot carry into the next sequence loaded.
 
 <a name="seqRunIn"></a>
 ##### 3.2.3.3 seqRunIn
@@ -166,6 +199,31 @@ in the serial buffer.
 
     * `clear`: Reset *B* for serialization.
 
+The `CmdSequencer` FPP model additionally defines the following enumerations,
+which appear in event arguments and in the component's internal interfaces:
+
+* <a name="DirectiveId">`CmdSequencer.DirectiveId`</a> (`U8`):
+Identifies a sequence directive: `LABEL` (0), `JCF` (1), `EXIT` (2),
+`JCS` (3), `ERROR_MODE` (4). These are the values written in the Directive ID
+field of a directive record. The generated `isValid` is what the implementation
+uses to reject an unknown directive ID, so adding a directive to the model is
+sufficient to make the decoder accept it.
+
+* <a name="InvalidModeCause">`CmdSequencer.InvalidModeCause`</a> (`U8`):
+Identifies which mode check rejected a request. It is the argument of the
+`CS_InvalidMode` event, which is emitted from ten distinct places; without the
+cause, the event alone does not say which. Values:
+`RUN_NOT_STOPPED`, `RUN_BLOCK_IN_MANUAL`, `VALIDATE_NOT_STOPPED`,
+`PORT_RUN_NOT_STOPPED`, `PORT_RUN_IN_MANUAL`, `START_NOT_STOPPED`,
+`STEP_NOT_RUNNING`, `STEP_NOT_MANUAL`, `AUTO_NOT_STOPPED`,
+`MANUAL_NOT_STOPPED`.
+
+* <a name="DirectiveStatus">`CmdSequencer.DirectiveStatus`</a> (`U8`):
+The outcome of executing one directive, and the argument of
+`CS_DirectiveError`. The values and their meanings are tabulated under
+**Directive Failure Handling** in
+[**F Prime Sequence Format**](#F_Prime_Sequence_Format).
+
 #### 3.3.2 Configuration
 
 ##### 3.3.2.1 setTimeout (Optional)
@@ -240,8 +298,18 @@ When the descriptor field is 3 (sequence directive), the command buffer contains
 
 Directive Field | Size (bytes) | Description
 --------------- | ------------ | -----------
-Directive ID | 1 | Identifies the directive type. 0 = LABEL, 1 = JCF (Jump Command Failure), 2 = EXIT, 3 = JCS (Jump Command Success), 4 = ERROR_MODE
+Directive ID | 1 | Identifies the directive type. 0 = LABEL, 1 = JCF (Jump Command Failure), 2 = EXIT, 3 = JCS (Jump Command Success), 4 = ERROR_MODE. Must be a defined value of `CmdSequencer.DirectiveId`; any other value is rejected with `ERROR_MALFORMED_RECORD`
 Arguments | Variable | Directive-specific arguments
+
+Note that, unlike a command record, a directive record's buffer carries **no**
+`FwPacketDescriptorType` prefix: the directive ID is the first byte of the
+buffer.
+
+A label argument (used by LABEL, JCF, and JCS) is written as a single `U8`
+length followed by exactly that many raw characters, with no terminator. The
+length must not exceed 20; a longer length is rejected with
+`ERROR_MALFORMED_RECORD`. This is deliberately not the `Fw::StringBase`
+serialization format, which prefixes an `FwSizeStoreType` rather than a `U8`.
 
 **Directive Types:**
 
@@ -254,10 +322,10 @@ Arguments | Variable | Directive-specific arguments
    - Arguments: Text string (target label name, max 20 characters)
    - Placement: Must appear AFTER the command whose status it checks
    - Behavior: When executed, the JCF directive checks the status of the previously executed command. If that command returned a failed status, the sequencer jumps to the specified LABEL instead of aborting the sequence. If the command succeeded, execution continues normally.
-   - Scope: Checks the immediately preceding command
+   - Scope: Checks the immediately preceding command. **Adjacency is strict when ERROR_MODE is ON:** to handle a command failure, the JCF must be the immediately next record after the failing command. A record that is not a sequence directive, appearing between the failed command and the JCF, aborts the sequence before the JCF is ever read. (Consecutive directives are still permitted — see **Directive State Management** below.)
    - Error Conditions:
-     - If JCF is encountered before any command has executed, the sequence aborts with an error event
-     - If the target LABEL is not found at runtime, the sequence aborts with an error event
+     - If JCF is encountered before any command has executed, the directive fails with `CS_DirectiveError` carrying `ERROR_NO_PRIOR_COMMAND` and the sequence is canceled
+     - If the target LABEL is not found at runtime, the directive fails with `CS_DirectiveError` carrying `ERROR_LABEL_NOT_FOUND` and the sequence is canceled
      - The sequence file generator tool validates that all referenced labels exist in the sequence
 
 3. **EXIT** (Directive ID = 2): Terminates the sequence with a specified completion status.
@@ -271,17 +339,17 @@ Arguments | Variable | Directive-specific arguments
 4. **JCS (Jump Command Success)** (Directive ID = 3): Specifies a LABEL to jump to if the previous command succeeded.
    - Arguments: Text string (target label name, max 20 characters)
    - Placement: Must appear AFTER the command whose status it checks
-   - Behavior: When executed, the JCS directive checks the status of the previously executed command. If that command returned a successful status (OK), the sequencer jumps to the specified LABEL. If the command failed, the sequence aborts as normal (unless a JCF is also present and processes first).
+   - Behavior: When executed, the JCS directive checks the status of the previously executed command. If that command returned a successful status (OK), the sequencer jumps to the specified LABEL. If the command failed, the JCS does not jump and execution continues to the next record.
    - Scope: Checks the immediately preceding command
    - Use Cases:
      - Conditional execution paths based on command success
      - Skipping error handling code when operations succeed
      - Implementing try-success-else patterns in sequences
    - Error Conditions:
-     - If JCS is encountered before any command has executed, the sequence aborts with an error event
-     - If the target LABEL is not found at runtime, the sequence aborts with an error event
+     - If JCS is encountered before any command has executed, the directive fails with `CS_DirectiveError` carrying `ERROR_NO_PRIOR_COMMAND` and the sequence is canceled
+     - If the target LABEL is not found at runtime, the directive fails with `CS_DirectiveError` carrying `ERROR_LABEL_NOT_FOUND` and the sequence is canceled
      - The sequence file generator tool validates that all referenced labels exist in the sequence
-   - Note: JCS and JCF can both appear after the same command. If both are present, only one will execute depending on the command result (JCF on failure, JCS on success)
+   - Note: JCS and JCF may both appear after the same command, in either order. Both see that command's status, so at most one of them jumps: JCF on failure, JCS on success. Whichever jumps first consumes the status (see **Directive State Management**), so the other is not reached.
 
 5. **ERROR_MODE** (Directive ID = 4): Controls whether the sequence aborts on command failure.
    - Arguments: U8 mode (0 = OFF/continue on error, 1 = ON/abort on error)
@@ -293,7 +361,7 @@ Arguments | Variable | Directive-specific arguments
      - Implementing graceful degradation patterns
      - Running diagnostic or telemetry collection sequences that should complete even if individual commands fail
    - Interaction with JCF/JCS:
-     - JCF directives take precedence: if ERROR_MODE is OFF and a JCF is active, the JCF will still jump on failure
+     - JCF directives take precedence: if ERROR_MODE is OFF and a JCF follows the failed command, the JCF will still jump on failure
      - JCS directives are unaffected by ERROR_MODE setting
    - State Reset: ERROR_MODE is reset to ON (default) when:
      - A sequence completes (successfully or with error)
@@ -302,13 +370,41 @@ Arguments | Variable | Directive-specific arguments
 
 **Directive State Management:**
 - Command status is stored after each command execution
-- When a JCF directive is executed, it checks the stored status of the previous command
-- If the previous command failed, the sequencer searches for the matching LABEL and jumps to the record immediately following it
-- When a JCS directive is executed, it checks the stored status of the previous command
-- If the previous command succeeded, the sequencer searches for the matching LABEL and jumps to the record immediately following it
-- Multiple consecutive JCF or JCS directives after the same command will all check that command's status - the first matching directive will jump
+- When a JCF directive is executed, it checks the stored status of the previous command. If that command failed, the sequencer searches for the matching LABEL and jumps to the record immediately following it
+- When a JCS directive is executed, it checks the stored status of the previous command. If that command succeeded, the sequencer searches for the matching LABEL and jumps to the record immediately following it
+- Several JCF and/or JCS directives may follow the same command. All of them see that command's status until one of them jumps
+- **A taken jump consumes the command status.** When a JCF or JCS jumps, the stored status is cleared. A JCF or JCS reached at or after the jump target therefore does not re-test the command that selected the jump; it reports `ERROR_NO_PRIOR_COMMAND` unless a further command has executed in the meantime. This is what makes a retry loop (`LABEL "R"` … command … `JCF "R"`) terminate rather than jump forever
 - Jump direction is unrestricted (forward or backward jumps are allowed)
-- No loop prevention mechanism is provided; sequence writers must avoid infinite loops
+- A jump emits the `CS_DirectiveJump` event naming the directive and the target label
+- **Directive-cycle detection.** A single step reads at most as many records as the sequence header declares. Reading more than that within one step proves a record was read twice with no command in between, i.e. a cycle of directives. The sequencer then emits `CS_DirectiveError` with `ERROR_DIRECTIVE_CYCLE` and cancels the sequence. This bounds the work of one step; it does not prevent a loop that executes a command each time around, which is a legitimate retry construct. Sequence writers remain responsible for making such loops terminate
+
+**Directive Failure Handling:**
+
+Every directive returns a status of type `CmdSequencer.DirectiveStatus` (see
+[**Types**](#3.3.1-Types)). `CONTINUE` and `JUMPED` keep the current step going;
+`SEQUENCE_ENDED` ends it; `ABORT_PENDING_ERROR` aborts on a deferred command
+failure; every remaining value is a failure. On a failure the sequencer emits
+`CS_DirectiveError` with the sequence file name, the record number, and the
+status, counts a sequencer error, and cancels the sequence. The statuses are:
+
+| Status | Meaning |
+| ------ | ------- |
+| `CONTINUE` | Directive completed; read the next record in this step |
+| `JUMPED` | A jump was taken; read the next record in this step from the new position |
+| `SEQUENCE_ENDED` | `EXIT` ran, or the record list ended; the step is over |
+| `ABORT_PENDING_ERROR` | A command failed with ERROR_MODE ON and no JCF handled it |
+| `ERROR_MALFORMED_RECORD` | The directive payload could not be deserialized, or the directive ID is not a valid `DirectiveId` |
+| `ERROR_INVALID_ARGUMENT` | The payload deserialized but an argument is out of range (for example an `EXIT` status or `ERROR_MODE` mode that is not a defined value) |
+| `ERROR_NO_PRIOR_COMMAND` | A JCF or JCS ran with no command status available to test |
+| `ERROR_LABEL_NOT_FOUND` | The target label of a JCF or JCS is not present in the sequence |
+| `ERROR_DIRECTIVE_CYCLE` | One step read more records than the sequence contains |
+
+A `LABEL` record that cannot be deserialized while `jumpToLabel` is scanning for
+a target is skipped rather than aborting the search, but the skip is reported:
+`CS_LabelRecordInvalid` carries the file name, the record number, and the
+deserialization error. A sequence whose labels are damaged therefore produces a
+diagnostic per damaged label and then `ERROR_LABEL_NOT_FOUND` if the target was
+among them, instead of failing silently.
 
 **CRC value:**
 The last 4 bytes of the file is a CRC of the entire file as computed by Utils/Hash.hpp
@@ -400,11 +496,14 @@ Marks a position in the sequence that can be jumped to. The label name is a stri
 
 `JCF "label_name"`
 
-Jump to the specified LABEL if the previous command failed. Must appear AFTER the command whose status it checks.
+Jump to the specified LABEL if the previous command failed. Must appear AFTER the
+command whose status it checks, and — when `ERROR_MODE` is ON — must be the
+immediately next record after it, with no intervening command. A command placed
+between the two aborts the sequence before the `JCF` is read.
 
 `JCS "label_name"`
 
-Jump to the specified LABEL if the previous command succeeded. Must appear AFTER the command whose status it checks.
+Jump to the specified LABEL if the previous command succeeded. Must appear AFTER the command whose status it checks, with no intervening command.
 
 `EXIT status_code`
 
@@ -520,6 +619,18 @@ An example can be seen in the F´ GDS repository under `examples/`: https://gith
 
 The `CmdSequencer` does not have any significant state machines.
 
+The state that sequence directives read and write is:
+
+| State | Set by | Cleared by |
+| ----- | ------ | ---------- |
+| Last command executed / last command status | Completion of a sequence command | A taken JCF or JCS jump; loading a sequence |
+| Error mode (ON/OFF) | The `ERROR_MODE` directive | End of sequence, cancel, or sequence load — all reset it to ON |
+| Pending abort | A command failure while error mode is ON | A taken JCF or JCS jump; the abort itself; end of sequence, cancel, or sequence load |
+
+No per-directive state is retained between records: a JCF or JCS is evaluated
+and resolved where it is read, rather than arming a condition for a later
+record to test.
+
 ### 3.5 Component Dictionary
 
 TBD
@@ -546,3 +657,4 @@ Date | Change Description
 2/26/2017|Version for Design/Code Review
 4/6/2017|Version for Unit test
 10/30/2017|Revise design to make sequence format configurable
+9/26/2026|Document sequence directive behavior as implemented: strict JCF adjacency under ERROR_MODE ON, jump-consumes-command-status, directive-cycle detection, the `DirectiveId`/`InvalidModeCause`/`DirectiveStatus` enumerations and the `CS_DirectiveJump`/`CS_DirectiveError`/`CS_LabelRecordInvalid` events, and the `CS_RUN`/`CS_STEP` command-response rules

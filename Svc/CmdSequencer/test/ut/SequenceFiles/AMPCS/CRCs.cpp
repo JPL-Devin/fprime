@@ -68,11 +68,12 @@ void computeCRC(Fw::LinearBufferBase& buffer, CRC& crc) {
 }
 
 void removeFile(const char* const fileName) {
-    Fw::String s("rm -f ");
-    s += fileName;
+    Fw::String s(fileName);
     s += ".CRC32";
-    int status = system(s.toChar());
-    ASSERT_EQ(0, status);
+    // Remove through the OSAL rather than a shell. A test that has not written the CRC file
+    // has nothing to remove, so a missing file is not a failure.
+    const Os::FileSystem::Status status = Os::FileSystem::removeFile(s.toChar());
+    ASSERT_TRUE((status == Os::FileSystem::OP_OK) || (status == Os::FileSystem::DOESNT_EXIST)) << status;
 }
 
 void writeCRC(const U32 crc, const char* const fileName) {

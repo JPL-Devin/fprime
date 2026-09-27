@@ -56,6 +56,21 @@ void serialize(Descriptor desc, const Fw::Time& time, Fw::SerialBufferBase& dest
     Records::serialize(desc, time, opcodeAndArgument, destBuffer);
 }
 
+void serializeDirective(const U8* const payload, const U32 payloadSize, Fw::SerialBufferBase& destBuffer) {
+    const U8 descU8 = CmdSequencerComponentImpl::Sequence::Record::SEQUENCE_DIRECTIVE;
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK, destBuffer.serializeFrom(descU8));
+    // A directive ignores its time tag, but the field is still present in the record format
+    const U32 seconds = 0;
+    const U32 uSeconds = 0;
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK, destBuffer.serializeFrom(seconds));
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK, destBuffer.serializeFrom(uSeconds));
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK, destBuffer.serializeFrom(payloadSize));
+    if (payloadSize > 0) {
+        ASSERT_EQ(Fw::FW_SERIALIZE_OK,
+                  destBuffer.serializeFrom(payload, payloadSize, Fw::Serialization::OMIT_LENGTH));
+    }
+}
+
 }  // namespace Records
 
 }  // namespace FPrime

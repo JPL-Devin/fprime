@@ -43,6 +43,9 @@ class CmdSequencerTester;
 namespace JoinWait {
 class CmdSequencerTester;
 }
+namespace Directives {
+class CmdSequencerTester;
+}
 
 class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
     friend class CmdSequencerTester;
@@ -53,6 +56,7 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
     friend class Svc::MixedRelativeBase::CmdSequencerTester;
     friend class Svc::Relative::CmdSequencerTester;
     friend class Svc::JoinWait::CmdSequencerTester;
+    friend class Svc::Directives::CmdSequencerTester;
 
   private:
     // ----------------------------------------------------------------------
@@ -186,12 +190,15 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
                 SEQUENCE_DIRECTIVE   //!< sequence directive
             };
 
-            enum DirectiveId {
-                LABEL = 0,      //!< Label directive - marks a jump target
-                JCF = 1,        //!< Jump Command Failure - jump to label on command failure
-                EXIT = 2,       //!< Exit sequence with specified status
-                JCS = 3,        //!< Jump Command Success - jump to label on command success
-                ERROR_MODE = 4  //!< Error mode - control whether sequence aborts on command failure
+            //! The directive identifier. Defined by the FPP model so that it reaches the
+            //! ground dictionary through CS_DirectiveJump.
+            using DirectiveId = CmdSequencer_DirectiveId;
+
+            enum Constants {
+                //! The maximum number of characters in a directive label
+                MAX_LABEL_SIZE = 20,
+                //! The size of a buffer holding a label and its null terminator
+                LABEL_BUFFER_SIZE = MAX_LABEL_SIZE + 1
             };
 
           public:
@@ -431,6 +438,7 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
         friend class Svc::MixedRelativeBase::CmdSequencerTester;
         friend class Svc::Relative::CmdSequencerTester;
         friend class Svc::JoinWait::CmdSequencerTester;
+        friend class Svc::Directives::CmdSequencerTester;
 
       private:
         //! The timer state
@@ -623,8 +631,14 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
     //! Perform a Cancel command
     void performCmd_Cancel();
 
-    //! Perform a Step command
-    void performCmd_Step();
+    //! Abort the sequence because a command failed while error mode was ON and no JCF
+    //! directive immediately after it handled the failure
+    void abortOnCommandError();
+
+    //! Perform a Step command. Processes one command record, consuming any sequence
+    //! directives that precede it.
+    //! \return false if the step terminated the sequence with an error
+    bool performCmd_Step();
 
     //! Perform a Step command with a relative time
     void performCmd_Step_RELATIVE(Fw::Time& currentTime  //!< The time
@@ -656,7 +670,8 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
 
     //! Require a run mode
     //! \return Whether we are in the correct mode
-    bool requireRunMode(RunMode mode  //!< The required mode
+    bool requireRunMode(RunMode mode,                                 //!< The required mode
+                        CmdSequencer_InvalidModeCause::T cause        //!< Reported if the mode is wrong
     );
 
     //! Set command timeout timer
@@ -666,14 +681,30 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
     //! Sequence run helper
     void doSequenceRun(const Fw::StringBase& fileName);
 
-    //! Execute a sequence directive
-    //! \return true if sequence should continue, false if error
-    bool executeDirective(const Sequence::Record& record  //!< The directive record
+    //! Execute a sequence directive. Reports any failure before returning it.
+    //! \return What the caller should do next
+    //! The record is taken by non-const reference because the directive payload is read
+    //! in place through the record's own buffer, which advances that buffer's
+    //! deserialization pointer.
+    CmdSequencer_DirectiveStatus::T executeDirective(Sequence::Record& record  //!< The directive record
     );
 
-    //! Search for a label in the sequence and jump to it
-    //! \return true if label found and jumped, false otherwise
-    bool jumpToLabel(const Fw::StringBase& labelName  //!< The label to find
+    //! Search for a label in the sequence and position the deserializer just past it
+    //! \return true if the label was found, false otherwise
+    bool jumpToLabel(const Fw::ConstStringBase& labelName  //!< The label to find
+    );
+
+    //! Deserialize a directive label: a U8 length followed by that many characters
+    //! \return Serialize status. FW_DESERIALIZE_SIZE_MISMATCH if the length exceeds
+    //!         Sequence::Record::MAX_LABEL_SIZE
+    static Fw::SerializeStatus deserializeLabel(Fw::LinearBufferBase& buffer,  //!< The directive payload
+                                                Fw::StringBase& label         //!< The deserialized label
+    );
+
+    //! Report a directive failure and count it as an error
+    //! \return The status that was passed in, so that callers can report and return in
+    //!         one statement
+    CmdSequencer_DirectiveStatus::T directiveError(CmdSequencer_DirectiveStatus::T status  //!< The failure reason
     );
 
   private:
@@ -732,14 +763,6 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
     //! Last command status (for JCF/JCS directives that come after the command)
     bool m_lastCmdExecuted;          //!< Whether a command has been executed (for detecting JCF/JCS before any command)
     Fw::CmdResponse m_lastCmdStatus; //!< Status of the last executed command
-
-    //! Jump Command Failure (JCF) state - NO LONGER USED (kept for compatibility)
-    bool m_jcfActive;                //!< Whether a JCF is currently set
-    Fw::String m_jcfTarget;          //!< Target label for JCF
-
-    //! Jump Command Success (JCS) state - NO LONGER USED (kept for compatibility)
-    bool m_jcsActive;                //!< Whether a JCS is currently set
-    Fw::String m_jcsTarget;          //!< Target label for JCS
 
     //! Error mode state
     bool m_errorMode;                //!< Whether sequence aborts on command error (true = abort, false = continue)

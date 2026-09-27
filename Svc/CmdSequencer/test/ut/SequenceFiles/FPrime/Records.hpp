@@ -42,6 +42,19 @@ enum Constants {
     EOS_SIZE = RECORD_DESCRIPTOR_SIZE
 };
 
+//! Serialize a sequence directive record
+//!
+//! A directive record carries its payload where a command record carries a command, but
+//! with no FwPacketDescriptorType prefix: the directive ID is the first byte of the record
+//! buffer. The payload is written verbatim so that a test can construct a malformed
+//! directive as easily as a well-formed one.
+//!
+//! The record is a descriptor byte, a time tag, a size field, and then the payload.
+void serializeDirective(const U8* const payload,          //!< The directive payload
+                        const U32 payloadSize,            //!< The payload size in bytes
+                        Fw::SerialBufferBase& destBuffer  //!< Destination buffer
+);
+
 //! Serialize a record with pre-serialized opcode and argument
 void serialize(Records::Descriptor desc,                //!< Descriptor
                const Fw::Time& time,                    //!< Time

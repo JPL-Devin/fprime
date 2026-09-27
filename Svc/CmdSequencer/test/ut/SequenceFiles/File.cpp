@@ -11,6 +11,7 @@
 
 #include "Svc/CmdSequencer/test/ut/SequenceFiles/File.hpp"
 #include "Fw/Types/String.hpp"
+#include "Os/FileSystem.hpp"
 #include "Svc/CmdSequencer/test/ut/SequenceFiles/AMPCS/AMPCS.hpp"
 #include "Svc/CmdSequencer/test/ut/SequenceFiles/Buffers.hpp"
 #include "gtest/gtest.h"
@@ -90,10 +91,10 @@ void File ::write() {
 }
 
 void File ::remove() {
-    Fw::String s("rm -f ");
-    s += this->getName();
-    int status = system(s.toChar());
-    ASSERT_EQ(0, status);
+    // Remove through the OSAL rather than a shell. Some tests never write their file, so a
+    // missing file is not a failure.
+    const Os::FileSystem::Status status = Os::FileSystem::removeFile(this->getName().toChar());
+    ASSERT_TRUE((status == Os::FileSystem::OP_OK) || (status == Os::FileSystem::DOESNT_EXIST)) << status;
 }
 
 void File ::serializeFPrime(Fw::LinearBufferBase& buffer) {

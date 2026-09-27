@@ -9,6 +9,7 @@
 
 #include <Fw/Com/ComPacket.hpp>
 #include <Fw/Types/Assert.hpp>
+#include <Fw/Types/ExternalString.hpp>
 #include <Fw/Types/SerialBuffer.hpp>
 #include <Fw/Types/Serializable.hpp>
 #include <Svc/CmdSequencer/CmdSequencerImpl.hpp>
@@ -40,11 +41,7 @@ CmdSequencerComponentImpl::CmdSequencerComponentImpl(const char* name)
       m_join_waiting(false),
       m_lastCmdExecuted(false),
       m_lastCmdStatus(Fw::CmdResponse::OK),
-      m_jcfActive(false),
-      m_jcfTarget(""),
-      m_jcsActive(false),
-      m_jcsTarget(""),
-      m_errorMode(true),           // Default: error mode ON (abort on error)
+      m_errorMode(true),             // Default: error mode ON (abort on error)
       m_errorPendingAbort(false) {}  // No pending abort initially
 
 void CmdSequencerComponentImpl::setTimeout(const U32 timeout) {
@@ -82,7 +79,7 @@ void CmdSequencerComponentImpl::CS_RUN_cmdHandler(FwOpcodeType opCode,
                                                   U32 cmdSeq,
                                                   const Fw::CmdStringArg& fileName,
                                                   const Svc::BlockState& block) {
-    if (not this->requireRunMode(STOPPED)) {
+    if (not this->requireRunMode(STOPPED, CmdSequencer_InvalidModeCause::RUN_NOT_STOPPED)) {
         if (m_join_waiting) {
             // Inform user previous seq file is not complete
             this->log_WARNING_HI_CS_JoinWaitingNotComplete();
@@ -93,7 +90,7 @@ void CmdSequencerComponentImpl::CS_RUN_cmdHandler(FwOpcodeType opCode,
 
     if ((Svc::BlockState::BLOCK == block.e) && (MANUAL == this->m_stepMode)) {
         // In MANUAL mode nothing executes until CS_STEP, so a BLOCK response could never be sent
-        this->log_WARNING_HI_CS_InvalidMode();
+        this->log_WARNING_HI_CS_InvalidMode(CmdSequencer_InvalidModeCause::RUN_BLOCK_IN_MANUAL);
         this->cmdResponse_out(opCode, cmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
         return;
     }
@@ -115,6 +112,15 @@ void CmdSequencerComponentImpl::CS_RUN_cmdHandler(FwOpcodeType opCode,
 
     this->m_executedCount = 0;
 
+    // The response owed to this command is decided by the block state the command asked
+    // for, not by m_blockState after stepping: a sequence that ends inside
+    // performCmd_Step (an EXIT directive, an immediate end of sequence, or an abort)
+    // clears m_blockState on its way out, and answering on the cleared value would send a
+    // second response to a caller that sequenceComplete or performCmd_Cancel already
+    // answered.
+    const Svc::BlockState::t requestedBlock = block.e;
+    bool stepStatus = true;
+
     // Check the step mode. If it is auto, start the sequence
     if (AUTO == this->m_stepMode) {
         this->m_runMode = RUNNING;
@@ -125,11 +131,12 @@ void CmdSequencerComponentImpl::CS_RUN_cmdHandler(FwOpcodeType opCode,
             Svc::SeqArgs emptyArgs{0, 0};
             this->seqStartOut_out(0, this->m_sequence->getStringFileName(), emptyArgs);
         }
-        this->performCmd_Step();
+        stepStatus = this->performCmd_Step();
     }
 
-    if (Svc::BlockState::NO_BLOCK == this->m_blockState) {
-        this->cmdResponse_out(opCode, cmdSeq, Fw::CmdResponse::OK);
+    if (Svc::BlockState::NO_BLOCK == requestedBlock) {
+        this->cmdResponse_out(opCode, cmdSeq,
+                              stepStatus ? Fw::CmdResponse::OK : Fw::CmdResponse::EXECUTION_ERROR);
     }
 }
 
@@ -137,7 +144,7 @@ void CmdSequencerComponentImpl::CS_VALIDATE_cmdHandler(FwOpcodeType opCode,
                                                        U32 cmdSeq,
                                                        const Fw::CmdStringArg& fileName) {
     FW_ASSERT(this->m_sequence != nullptr);
-    if (!this->requireRunMode(STOPPED)) {
+    if (!this->requireRunMode(STOPPED, CmdSequencer_InvalidModeCause::VALIDATE_NOT_STOPPED)) {
         this->cmdResponse_out(opCode, cmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
         return;
     }
@@ -160,11 +167,11 @@ void CmdSequencerComponentImpl::CS_VALIDATE_cmdHandler(FwOpcodeType opCode,
 void CmdSequencerComponentImpl::doSequenceRun(const Fw::StringBase& filename) {
     if (MANUAL == this->m_stepMode) {
         // In MANUAL mode nothing executes until CS_STEP, so a port-driven run would wedge
-        this->log_WARNING_HI_CS_InvalidMode();
+        this->log_WARNING_HI_CS_InvalidMode(CmdSequencer_InvalidModeCause::PORT_RUN_IN_MANUAL);
         this->seqDone_out(0, 0, 0, Fw::CmdResponse::EXECUTION_ERROR);
         return;
     }
-    if (!this->requireRunMode(STOPPED)) {
+    if (!this->requireRunMode(STOPPED, CmdSequencer_InvalidModeCause::PORT_RUN_NOT_STOPPED)) {
         this->seqDone_out(0, 0, 0, Fw::CmdResponse::EXECUTION_ERROR);
         return;
     }
@@ -301,12 +308,6 @@ void CmdSequencerComponentImpl::performCmd_Cancel() {
     this->m_lastCmdExecuted = false;
     this->m_lastCmdStatus = Fw::CmdResponse::OK;
 
-    // Clear JCF and JCS state (kept for compatibility, no longer used)
-    this->m_jcfActive = false;
-    this->m_jcfTarget = "";
-    this->m_jcsActive = false;
-    this->m_jcsTarget = "";
-
     // Reset error mode to default (ON)
     this->m_errorMode = true;
     this->m_errorPendingAbort = false;  // Clear pending abort flag
@@ -323,6 +324,13 @@ void CmdSequencerComponentImpl::performCmd_Cancel() {
     }
 
     this->m_blockState = Svc::BlockState::NO_BLOCK;
+}
+
+void CmdSequencerComponentImpl::abortOnCommandError() {
+    // Clear the flag before canceling so that the cancel path cannot be re-entered by it,
+    // and so that a subsequent sequence does not inherit a pending abort
+    this->m_errorPendingAbort = false;
+    this->performCmd_Cancel();
 }
 
 void CmdSequencerComponentImpl ::cmdResponseIn_handler(FwIndexType portNum,
@@ -344,6 +352,11 @@ void CmdSequencerComponentImpl ::cmdResponseIn_handler(FwIndexType portNum,
             // Command failed - log error and continue execution to give JCF a chance to handle
             this->commandError(this->m_executedCount, opcode, response.e);
 
+            // A failed command still consumed a record. Advance the record index so that
+            // every later event reports the record it actually refers to; only the
+            // CS_CommandsExecuted count is reserved for commands that succeeded.
+            ++this->m_executedCount;
+
             if (this->m_errorMode) {
                 // Error mode is ON - mark that we need to abort unless JCF handles it
                 this->m_errorPendingAbort = true;
@@ -353,17 +366,27 @@ void CmdSequencerComponentImpl ::cmdResponseIn_handler(FwIndexType portNum,
             if (this->m_runMode == RUNNING && this->m_stepMode == AUTO) {
                 // Auto mode - continue to next record
                 if (not this->m_sequence->hasMoreRecords()) {
-                    // No data left
+                    // No data left. A sequence may legally end on a command record, so the
+                    // failure has to be reported here: with error mode ON no directive can
+                    // follow to handle it.
                     this->m_runMode = STOPPED;
-                    this->sequenceComplete();
+                    if (this->m_errorPendingAbort) {
+                        this->abortOnCommandError();
+                    } else {
+                        this->sequenceComplete();
+                    }
                 } else {
-                    this->performCmd_Step();
+                    (void)this->performCmd_Step();
                 }
             } else {
                 // Manual step mode - wait for next step command
                 if (not this->m_sequence->hasMoreRecords()) {
                     this->m_runMode = STOPPED;
-                    this->sequenceComplete();
+                    if (this->m_errorPendingAbort) {
+                        this->abortOnCommandError();
+                    } else {
+                        this->sequenceComplete();
+                    }
                 }
             }
         } else {
@@ -376,7 +399,7 @@ void CmdSequencerComponentImpl ::cmdResponseIn_handler(FwIndexType portNum,
                     this->m_runMode = STOPPED;
                     this->sequenceComplete();
                 } else {
-                    this->performCmd_Step();
+                    (void)this->performCmd_Step();
                 }
             } else {
                 // Manual step mode
@@ -412,7 +435,7 @@ void CmdSequencerComponentImpl ::CS_START_cmdHandler(FwOpcodeType opcode, U32 cm
         this->cmdResponse_out(opcode, cmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
         return;
     }
-    if (!this->requireRunMode(STOPPED)) {
+    if (!this->requireRunMode(STOPPED, CmdSequencer_InvalidModeCause::START_NOT_STOPPED)) {
         this->cmdResponse_out(opcode, cmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
         return;
     }
@@ -421,21 +444,21 @@ void CmdSequencerComponentImpl ::CS_START_cmdHandler(FwOpcodeType opcode, U32 cm
     this->m_runMode = RUNNING;
     this->tlmWrite_CS_CurrentSequence(this->m_sequence->getStringFileName());
     this->log_ACTIVITY_HI_CS_CmdStarted(this->m_sequence->getLogFileName());
-    this->performCmd_Step();
+    const bool stepStatus = this->performCmd_Step();
     if (this->isConnected_seqStartOut_OutputPort(0)) {
         // Create empty SeqArgs as placeholder
         Svc::SeqArgs emptyArgs{0, 0};
         this->seqStartOut_out(0, this->m_sequence->getStringFileName(), emptyArgs);
     }
-    this->cmdResponse_out(opcode, cmdSeq, Fw::CmdResponse::OK);
+    this->cmdResponse_out(opcode, cmdSeq, stepStatus ? Fw::CmdResponse::OK : Fw::CmdResponse::EXECUTION_ERROR);
 }
 
 void CmdSequencerComponentImpl ::CS_STEP_cmdHandler(FwOpcodeType opcode, U32 cmdSeq) {
     FW_ASSERT(this->m_sequence != nullptr);
-    if (this->requireRunMode(RUNNING)) {
+    if (this->requireRunMode(RUNNING, CmdSequencer_InvalidModeCause::STEP_NOT_RUNNING)) {
         if (MANUAL != this->m_stepMode) {
             // CS_STEP is valid only in MANUAL step mode
-            this->log_WARNING_HI_CS_InvalidMode();
+            this->log_WARNING_HI_CS_InvalidMode(CmdSequencer_InvalidModeCause::STEP_NOT_MANUAL);
             this->cmdResponse_out(opcode, cmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
             return;
         }
@@ -446,19 +469,22 @@ void CmdSequencerComponentImpl ::CS_STEP_cmdHandler(FwOpcodeType opcode, U32 cmd
             this->cmdResponse_out(opcode, cmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
             return;
         }
-        this->performCmd_Step();
+        // The step status distinguishes an orderly end of sequence, which stops the
+        // sequencer and is a successful step, from an abort, which must not be
+        // acknowledged as OK. m_runMode alone cannot tell the two apart.
+        const bool stepStatus = this->performCmd_Step();
         // check for special case where end of sequence entry was encountered
         if (this->m_runMode != STOPPED) {
             this->log_ACTIVITY_HI_CS_CmdStepped(this->m_sequence->getLogFileName(), this->m_executedCount);
         }
-        this->cmdResponse_out(opcode, cmdSeq, Fw::CmdResponse::OK);
+        this->cmdResponse_out(opcode, cmdSeq, stepStatus ? Fw::CmdResponse::OK : Fw::CmdResponse::EXECUTION_ERROR);
     } else {
         this->cmdResponse_out(opcode, cmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
     }
 }
 
 void CmdSequencerComponentImpl ::CS_AUTO_cmdHandler(FwOpcodeType opcode, U32 cmdSeq) {
-    if (this->requireRunMode(STOPPED)) {
+    if (this->requireRunMode(STOPPED, CmdSequencer_InvalidModeCause::AUTO_NOT_STOPPED)) {
         this->m_stepMode = AUTO;
         this->log_ACTIVITY_HI_CS_ModeSwitched(CmdSequencer_SeqMode::AUTO);
         this->cmdResponse_out(opcode, cmdSeq, Fw::CmdResponse::OK);
@@ -468,7 +494,7 @@ void CmdSequencerComponentImpl ::CS_AUTO_cmdHandler(FwOpcodeType opcode, U32 cmd
 }
 
 void CmdSequencerComponentImpl ::CS_MANUAL_cmdHandler(FwOpcodeType opcode, U32 cmdSeq) {
-    if (this->requireRunMode(STOPPED)) {
+    if (this->requireRunMode(STOPPED, CmdSequencer_InvalidModeCause::MANUAL_NOT_STOPPED)) {
         this->m_stepMode = MANUAL;
         this->log_ACTIVITY_HI_CS_ModeSwitched(CmdSequencer_SeqMode::STEP);
         this->cmdResponse_out(opcode, cmdSeq, Fw::CmdResponse::OK);
@@ -481,11 +507,11 @@ void CmdSequencerComponentImpl ::CS_MANUAL_cmdHandler(FwOpcodeType opcode, U32 c
 // Helper methods
 // ----------------------------------------------------------------------
 
-bool CmdSequencerComponentImpl::requireRunMode(RunMode mode) {
+bool CmdSequencerComponentImpl::requireRunMode(RunMode mode, CmdSequencer_InvalidModeCause::T cause) {
     if (this->m_runMode == mode) {
         return true;
     } else {
-        this->log_WARNING_HI_CS_InvalidMode();
+        this->log_WARNING_HI_CS_InvalidMode(cause);
         return false;
     }
 }
@@ -496,52 +522,99 @@ void CmdSequencerComponentImpl ::commandError(const U32 number, const FwOpcodeTy
     this->error();
 }
 
-void CmdSequencerComponentImpl::performCmd_Step() {
-    this->m_sequence->nextRecord(m_record);
-    // set clock time base and context from value set when sequence was loaded
+bool CmdSequencerComponentImpl::performCmd_Step() {
+    FW_ASSERT(this->m_sequence != nullptr);
     const Sequence::Header& header = this->m_sequence->getHeader();
-    this->m_record.m_timeTag.setTimeBase(header.m_timeBase);
-    this->m_record.m_timeTag.setTimeContext(header.m_timeContext);
 
-    // Check if we have a pending abort from ERROR_MODE ON
-    // If the next record is a command (not a directive), abort now
-    if (this->m_errorPendingAbort && this->m_record.m_descriptor != Sequence::Record::SEQUENCE_DIRECTIVE) {
-        // Command failed with ERROR_MODE ON, and next record is not a directive - abort
-        this->m_errorPendingAbort = false;  // Clear flag
-        this->performCmd_Cancel();
-        return;
-    }
+    // Bound on the number of records one step may consume. Directives do not issue
+    // commands, so a step reads records until it reaches a command, the end of the
+    // sequence, or a directive that ends or aborts the sequence.
+    //
+    // The sequence holds m_numRecords records, established and validated at load time.
+    // Reading more than that many records within a single step therefore proves that some
+    // record was read twice, which can only happen if a jump was taken; and a jump with no
+    // command in between is a directive cycle. So the bound is both a termination proof
+    // (CPP-27) and the detection mechanism for a cyclic sequence.
+    //
+    // Both sequence formats populate m_numRecords before any record is read, but the bound
+    // is floored at 1 rather than asserted so that a format which does not cannot wedge
+    // the sequencer.
+    const U32 recordLimit = (header.m_numRecords > 0) ? header.m_numRecords : 1;
 
-    Fw::Time currentTime = this->getTime();
-    switch (this->m_record.m_descriptor) {
-        case Sequence::Record::END_OF_SEQUENCE:
+    for (U32 recordsRead = 0; recordsRead < recordLimit; ++recordsRead) {
+        this->m_sequence->nextRecord(this->m_record);
+        // set clock time base and context from value set when sequence was loaded
+        this->m_record.m_timeTag.setTimeBase(header.m_timeBase);
+        this->m_record.m_timeTag.setTimeContext(header.m_timeContext);
+
+        // A command failed while error mode was ON. Only a JCF directive immediately after
+        // that command can handle the failure, so any other kind of record ends the
+        // sequence here.
+        if (this->m_errorPendingAbort && (this->m_record.m_descriptor != Sequence::Record::SEQUENCE_DIRECTIVE)) {
+            this->abortOnCommandError();
+            return false;
+        }
+
+        Fw::Time currentTime = this->getTime();
+        switch (this->m_record.m_descriptor) {
+            case Sequence::Record::END_OF_SEQUENCE:
+                this->m_runMode = STOPPED;
+                this->sequenceComplete();
+                return true;
+            case Sequence::Record::RELATIVE:
+                this->performCmd_Step_RELATIVE(currentTime);
+                return true;
+            case Sequence::Record::ABSOLUTE:
+                this->performCmd_Step_ABSOLUTE(currentTime);
+                return true;
+            case Sequence::Record::SEQUENCE_DIRECTIVE: {
+                const CmdSequencer_DirectiveStatus::T directiveStatus = this->executeDirective(this->m_record);
+                switch (directiveStatus) {
+                    case CmdSequencer_DirectiveStatus::CONTINUE:
+                    case CmdSequencer_DirectiveStatus::JUMPED:
+                        // Keep reading records in this step until one issues a command or
+                        // ends the sequence
+                        break;
+                    case CmdSequencer_DirectiveStatus::SEQUENCE_ENDED:
+                        // The directive reported completion itself
+                        return true;
+                    case CmdSequencer_DirectiveStatus::ABORT_PENDING_ERROR:
+                        // A command failed with error mode ON and this directive is not the
+                        // JCF that would have handled it. The cancel is issued here, once,
+                        // by the owner of the step.
+                        this->abortOnCommandError();
+                        return false;
+                    default:
+                        // executeDirective has already reported the specific failure
+                        this->performCmd_Cancel();
+                        return false;
+                }
+                break;
+            }
+            default:
+                FW_ASSERT(false, this->m_record.m_descriptor);
+                return false;
+        }
+
+        // Only a directive that wants execution to continue reaches here.
+        if (MANUAL == this->m_stepMode) {
+            // One CS_STEP consumes one record, so stop after the directive rather than
+            // running ahead to the next command
+            return true;
+        }
+        if (not this->m_sequence->hasMoreRecords()) {
+            // A sequence may end without an END_OF_SEQUENCE record
             this->m_runMode = STOPPED;
             this->sequenceComplete();
-            break;
-        case Sequence::Record::RELATIVE:
-            this->performCmd_Step_RELATIVE(currentTime);
-            break;
-        case Sequence::Record::ABSOLUTE:
-            this->performCmd_Step_ABSOLUTE(currentTime);
-            break;
-        case Sequence::Record::SEQUENCE_DIRECTIVE:
-            // Execute the directive
-            if (!this->executeDirective(m_record)) {
-                // Directive execution failed, abort sequence
-                this->performCmd_Cancel();
-            } else if (this->m_runMode == RUNNING && this->m_stepMode == AUTO) {
-                // Directive executed successfully in auto mode, continue to next record
-                if (this->m_sequence->hasMoreRecords()) {
-                    this->performCmd_Step();
-                } else {
-                    this->m_runMode = STOPPED;
-                    this->sequenceComplete();
-                }
-            }
-            break;
-        default:
-            FW_ASSERT(false, m_record.m_descriptor);
+            return true;
+        }
     }
+
+    // Directives redirected execution over more records than the sequence contains without
+    // reaching a command: the sequence contains a cycle of jumps.
+    (void)this->directiveError(CmdSequencer_DirectiveStatus::ERROR_DIRECTIVE_CYCLE);
+    this->performCmd_Cancel();
+    return false;
 }
 
 void CmdSequencerComponentImpl::sequenceComplete() {
@@ -561,8 +634,12 @@ void CmdSequencerComponentImpl::sequenceComplete(const Fw::CmdResponse& status) 
     this->m_lastCmdExecuted = false;
     this->m_lastCmdStatus = Fw::CmdResponse::OK;
 
-    // Reset error mode to default (ON)
+    // Reset error mode to default (ON). m_errorPendingAbort must be cleared here as well
+    // as in performCmd_Cancel: a sequence whose last record is a failing command completes
+    // through this path, and a flag left set would abort the next sequence at its first
+    // non-directive record with no event explaining why.
     this->m_errorMode = true;
+    this->m_errorPendingAbort = false;
 
     // write sequence done port, if connected
     if (this->isConnected_seqDone_OutputPort(0)) {
@@ -616,256 +693,212 @@ void CmdSequencerComponentImpl ::setCmdTimeout(const Fw::Time& currentTime) {
     }
 }
 
-bool CmdSequencerComponentImpl ::executeDirective(const Sequence::Record& record) {
-    // Extract directive ID from command buffer
-    Fw::ExternalSerializeBuffer dirBuf(const_cast<U8*>(record.m_command.getBuffAddr()),
-                                       record.m_command.getSize());
-    dirBuf.setBuffLen(record.m_command.getSize());
-
-    U8 directiveId;
-    Fw::SerializeStatus status = dirBuf.deserializeTo(directiveId);
+Fw::SerializeStatus CmdSequencerComponentImpl ::deserializeLabel(Fw::LinearBufferBase& buffer,
+                                                                Fw::StringBase& label) {
+    U8 labelLength = 0;
+    Fw::SerializeStatus status = buffer.deserializeTo(labelLength);
     if (status != Fw::FW_SERIALIZE_OK) {
-        this->log_WARNING_HI_CS_RecordInvalid(this->m_sequence->getLogFileName(), this->m_executedCount, status);
-        this->error();
-        return false;
+        return status;
+    }
+    if (labelLength > Sequence::Record::MAX_LABEL_SIZE) {
+        return Fw::FW_DESERIALIZE_SIZE_MISMATCH;
     }
 
-    // Validate directive ID
-    if (directiveId > Sequence::Record::ERROR_MODE) {
-        this->log_WARNING_HI_CS_RecordInvalid(this->m_sequence->getLogFileName(), this->m_executedCount, directiveId);
-        this->error();
-        return false;
+    // A directive label is written on the wire as a U8 length followed by that many raw
+    // characters. That is not the Fw::StringBase serialization format, which prefixes an
+    // FwSizeStoreType, so StringBase::deserializeFrom cannot be used here without changing
+    // the sequence file format.
+    char labelBuffer[Sequence::Record::LABEL_BUFFER_SIZE] = {};
+    FwSizeType readSize = labelLength;
+    // reinterpret_cast justification: the raw entry point of deserializeTo takes U8* and
+    // there is no CHAR* overload. The cast target is used only as the destination of a byte
+    // copy into labelBuffer, which is then read as characters; no object is accessed
+    // through an incompatible type, and U8 and char have the same size and alignment.
+    status = buffer.deserializeTo(reinterpret_cast<U8*>(labelBuffer), readSize, Fw::Serialization::OMIT_LENGTH);
+    if (status != Fw::FW_SERIALIZE_OK) {
+        return status;
     }
-
-    Sequence::Record::DirectiveId directive = static_cast<Sequence::Record::DirectiveId>(directiveId);
-
-    // Check if we have a pending abort (from ERROR_MODE ON + command failure)
-    // If the next directive is not JCF, abort the sequence now
-    if (this->m_errorPendingAbort && directive != Sequence::Record::JCF) {
-        // Command failed with ERROR_MODE ON, and no JCF is handling it - abort
-        this->m_errorPendingAbort = false;  // Clear flag
-        this->performCmd_Cancel();
-        return false;
-    }
-
-    switch (directive) {
-        case Sequence::Record::LABEL: {
-            // LABEL is a no-op at execution time
-            // It just marks a position for jumping
-            break;
-        }
-        case Sequence::Record::JCF: {
-            // JCF: Jump Command Failure - checks the PREVIOUS command's status
-            // Check if any command has executed yet
-            if (!this->m_lastCmdExecuted) {
-                this->log_WARNING_HI_CS_InvalidMode();
-                this->error();
-                return false;
-            }
-
-            // Extract the target label name
-            U8 labelLen;
-            status = dirBuf.deserializeTo(labelLen);
-            if (status != Fw::FW_SERIALIZE_OK) {
-                this->log_WARNING_HI_CS_RecordInvalid(this->m_sequence->getLogFileName(), this->m_executedCount, status);
-                this->error();
-                return false;
-            }
-
-            // Read label string
-            char labelBuf[21];  // Max 20 chars + null terminator
-            FwSizeType readSize = labelLen;
-            if (readSize > 20) {
-                this->log_WARNING_HI_CS_RecordInvalid(this->m_sequence->getLogFileName(), this->m_executedCount, static_cast<I32>(readSize));
-                this->error();
-                return false;
-            }
-
-            status = dirBuf.deserializeTo(reinterpret_cast<U8*>(labelBuf), readSize, Fw::Serialization::OMIT_LENGTH);
-            if (status != Fw::FW_SERIALIZE_OK) {
-                this->log_WARNING_HI_CS_RecordInvalid(this->m_sequence->getLogFileName(), this->m_executedCount, status);
-                this->error();
-                return false;
-            }
-            labelBuf[readSize] = '\0';
-
-            // Check if the last command failed
-            if (this->m_lastCmdStatus != Fw::CmdResponse::OK) {
-                // Last command failed - jump to the label
-                Fw::String targetLabel(labelBuf);
-                if (this->jumpToLabel(targetLabel)) {
-                    // Successfully jumped to label - JCF handled the error
-                    this->m_errorPendingAbort = false;  // Clear pending abort - error was handled
-                    this->log_ACTIVITY_HI_CS_SequenceCanceled(this->m_sequence->getLogFileName());
-                    // No need to continue here - jumpToLabel already positions us at the label
-                } else {
-                    // Label not found, abort sequence
-                    this->log_WARNING_HI_CS_CommandError(this->m_sequence->getLogFileName(),
-                                                         this->m_executedCount,
-                                                         0,  // No opcode available here
-                                                         this->m_lastCmdStatus.e);
-                    this->error();
-                    return false;
-                }
-            }
-            // If last command succeeded, JCF is ignored and execution continues normally
-            break;
-        }
-        case Sequence::Record::EXIT: {
-            // EXIT: Terminate sequence with specified status
-            // Extract the status code (0 = OK, 1 = EXECUTION_ERROR)
-            U8 exitStatus;
-            status = dirBuf.deserializeTo(exitStatus);
-            if (status != Fw::FW_SERIALIZE_OK) {
-                this->log_WARNING_HI_CS_RecordInvalid(this->m_sequence->getLogFileName(), this->m_executedCount, status);
-                this->error();
-                return false;
-            }
-
-            // Validate status code
-            if (exitStatus > 1) {
-                this->log_WARNING_HI_CS_RecordInvalid(this->m_sequence->getLogFileName(), this->m_executedCount, exitStatus);
-                this->error();
-                return false;
-            }
-
-            // Stop the sequence and complete with specified status
-            this->m_runMode = STOPPED;
-            Fw::CmdResponse exitResponse = (exitStatus == 0) ? Fw::CmdResponse::OK : Fw::CmdResponse::EXECUTION_ERROR;
-            this->sequenceComplete(exitResponse);
-            break;
-        }
-        case Sequence::Record::JCS: {
-            // JCS: Jump Command Success - checks the PREVIOUS command's status
-            // Check if any command has executed yet
-            if (!this->m_lastCmdExecuted) {
-                this->log_WARNING_HI_CS_InvalidMode();
-                this->error();
-                return false;
-            }
-
-            // Extract the target label name
-            U8 labelLen;
-            status = dirBuf.deserializeTo(labelLen);
-            if (status != Fw::FW_SERIALIZE_OK) {
-                this->log_WARNING_HI_CS_RecordInvalid(this->m_sequence->getLogFileName(), this->m_executedCount, status);
-                this->error();
-                return false;
-            }
-
-            // Read label string
-            char labelBuf[21];  // Max 20 chars + null terminator
-            FwSizeType readSize = labelLen;
-            if (readSize > 20) {
-                this->log_WARNING_HI_CS_RecordInvalid(this->m_sequence->getLogFileName(), this->m_executedCount, static_cast<I32>(readSize));
-                this->error();
-                return false;
-            }
-
-            status = dirBuf.deserializeTo(reinterpret_cast<U8*>(labelBuf), readSize, Fw::Serialization::OMIT_LENGTH);
-            if (status != Fw::FW_SERIALIZE_OK) {
-                this->log_WARNING_HI_CS_RecordInvalid(this->m_sequence->getLogFileName(), this->m_executedCount, status);
-                this->error();
-                return false;
-            }
-            labelBuf[readSize] = '\0';
-
-            // Check if the last command succeeded
-            if (this->m_lastCmdStatus == Fw::CmdResponse::OK) {
-                // Last command succeeded - jump to the label
-                Fw::String targetLabel(labelBuf);
-                if (this->jumpToLabel(targetLabel)) {
-                    // Successfully jumped to label
-                    this->log_ACTIVITY_HI_CS_SequenceCanceled(this->m_sequence->getLogFileName());
-                    // No need to continue here - jumpToLabel already positions us at the label
-                } else {
-                    // Label not found, abort sequence
-                    this->log_WARNING_HI_CS_CommandError(this->m_sequence->getLogFileName(),
-                                                         this->m_executedCount,
-                                                         0,  // No opcode available here
-                                                         this->m_lastCmdStatus.e);
-                    this->error();
-                    return false;
-                }
-            }
-            // If last command failed, JCS is ignored and execution continues normally
-            break;
-        }
-        case Sequence::Record::ERROR_MODE: {
-            // ERROR_MODE: Control whether sequence aborts on command failure
-            // Extract the mode (0 = off/continue, 1 = on/abort)
-            U8 mode;
-            status = dirBuf.deserializeTo(mode);
-            if (status != Fw::FW_SERIALIZE_OK) {
-                this->log_WARNING_HI_CS_RecordInvalid(this->m_sequence->getLogFileName(), this->m_executedCount, status);
-                this->error();
-                return false;
-            }
-
-            // Validate mode
-            if (mode > 1) {
-                this->log_WARNING_HI_CS_RecordInvalid(this->m_sequence->getLogFileName(), this->m_executedCount, mode);
-                this->error();
-                return false;
-            }
-
-            // Set error mode: 1 = ON (abort on error), 0 = OFF (continue on error)
-            this->m_errorMode = (mode == 1);
-            break;
-        }
-        default:
-            FW_ASSERT(false, directive);
-    }
-
-    return true;
+    // deserializeTo only ever lowers readSize, and labelLength was bounded above, so the
+    // terminator is written within labelBuffer
+    FW_ASSERT(readSize <= Sequence::Record::MAX_LABEL_SIZE, static_cast<FwAssertArgType>(readSize));
+    labelBuffer[readSize] = '\0';
+    label = labelBuffer;
+    return Fw::FW_SERIALIZE_OK;
 }
 
-bool CmdSequencerComponentImpl ::jumpToLabel(const Fw::StringBase& labelName) {
+CmdSequencer_DirectiveStatus::T CmdSequencerComponentImpl ::directiveError(CmdSequencer_DirectiveStatus::T status) {
+    this->log_WARNING_HI_CS_DirectiveError(this->m_sequence->getLogFileName(), this->m_executedCount, status);
+    this->error();
+    return status;
+}
+
+CmdSequencer_DirectiveStatus::T CmdSequencerComponentImpl ::executeDirective(Sequence::Record& record) {
     FW_ASSERT(this->m_sequence != nullptr);
 
-    // Reset to beginning of sequence to search for label
+    // The directive payload is read in place from the record's own buffer. Deserializing
+    // through the record rather than through a separate view over its address is what lets
+    // this function avoid casting away the const of a buffer it does not modify.
+    Fw::LinearBufferBase& dirBuf = record.m_command;
+    dirBuf.resetDeser();
+
+    U8 directiveId = 0;
+    Fw::SerializeStatus status = dirBuf.deserializeTo(directiveId);
+    if (status != Fw::FW_SERIALIZE_OK) {
+        return this->directiveError(CmdSequencer_DirectiveStatus::ERROR_MALFORMED_RECORD);
+    }
+    if (not Sequence::Record::DirectiveId::isValid(directiveId)) {
+        return this->directiveError(CmdSequencer_DirectiveStatus::ERROR_INVALID_ARGUMENT);
+    }
+    const Sequence::Record::DirectiveId directive(directiveId);
+
+    // A command failed while error mode was ON. Only a JCF in the record immediately after
+    // that command handles the failure; see "Directive State Management" in docs/sdd.md.
+    // The abort itself belongs to performCmd_Step, which owns the cancel.
+    if (this->m_errorPendingAbort && (directive != Sequence::Record::DirectiveId::JCF)) {
+        return CmdSequencer_DirectiveStatus::ABORT_PENDING_ERROR;
+    }
+
+    switch (directive.e) {
+        case Sequence::Record::DirectiveId::LABEL:
+            // A label marks a jump target. There is nothing to execute.
+            return CmdSequencer_DirectiveStatus::CONTINUE;
+
+        case Sequence::Record::DirectiveId::JCF:
+        case Sequence::Record::DirectiveId::JCS: {
+            // Both directives test the status of the command in the immediately preceding
+            // record; they differ only in which outcome takes the jump.
+            if (not this->m_lastCmdExecuted) {
+                return this->directiveError(CmdSequencer_DirectiveStatus::ERROR_NO_PRIOR_COMMAND);
+            }
+
+            char labelBuffer[Sequence::Record::LABEL_BUFFER_SIZE] = {};
+            Fw::ExternalString label(labelBuffer, sizeof(labelBuffer));
+            status = CmdSequencerComponentImpl::deserializeLabel(dirBuf, label);
+            if (status != Fw::FW_SERIALIZE_OK) {
+                return this->directiveError(CmdSequencer_DirectiveStatus::ERROR_MALFORMED_RECORD);
+            }
+
+            const bool priorCmdSucceeded = (this->m_lastCmdStatus == Fw::CmdResponse::OK);
+            const bool takeJump = (directive == Sequence::Record::DirectiveId::JCS) ? priorCmdSucceeded
+                                                                                   : (not priorCmdSucceeded);
+            if (not takeJump) {
+                // The condition did not hold, so execution falls through to the next record
+                return CmdSequencer_DirectiveStatus::CONTINUE;
+            }
+
+            if (not this->jumpToLabel(label)) {
+                return this->directiveError(CmdSequencer_DirectiveStatus::ERROR_LABEL_NOT_FOUND);
+            }
+
+            this->log_ACTIVITY_HI_CS_DirectiveJump(this->m_sequence->getLogFileName(), directive, label);
+
+            // The jump consumed the command status that selected it. Clearing it here keeps
+            // a JCF or JCS at the jump target from re-testing a command several records
+            // back, and is what makes a retry loop terminate rather than jump forever.
+            // Consecutive JCF/JCS after one command still all see that command, because the
+            // status is cleared only when a jump is actually taken.
+            this->m_lastCmdExecuted = false;
+            this->m_lastCmdStatus = Fw::CmdResponse::OK;
+            // A JCF that jumped has handled the failure
+            this->m_errorPendingAbort = false;
+            return CmdSequencer_DirectiveStatus::JUMPED;
+        }
+
+        case Sequence::Record::DirectiveId::EXIT: {
+            U8 exitStatus = 0;
+            status = dirBuf.deserializeTo(exitStatus);
+            if (status != Fw::FW_SERIALIZE_OK) {
+                return this->directiveError(CmdSequencer_DirectiveStatus::ERROR_MALFORMED_RECORD);
+            }
+            if (exitStatus > 1) {
+                return this->directiveError(CmdSequencer_DirectiveStatus::ERROR_INVALID_ARGUMENT);
+            }
+
+            this->m_runMode = STOPPED;
+            const Fw::CmdResponse exitResponse =
+                (exitStatus == 0) ? Fw::CmdResponse::OK : Fw::CmdResponse::EXECUTION_ERROR;
+            this->sequenceComplete(exitResponse);
+            return CmdSequencer_DirectiveStatus::SEQUENCE_ENDED;
+        }
+
+        case Sequence::Record::DirectiveId::ERROR_MODE: {
+            U8 mode = 0;
+            status = dirBuf.deserializeTo(mode);
+            if (status != Fw::FW_SERIALIZE_OK) {
+                return this->directiveError(CmdSequencer_DirectiveStatus::ERROR_MALFORMED_RECORD);
+            }
+            if (mode > 1) {
+                return this->directiveError(CmdSequencer_DirectiveStatus::ERROR_INVALID_ARGUMENT);
+            }
+
+            // 1 = ON (abort on command error), 0 = OFF (continue on command error)
+            this->m_errorMode = (mode == 1);
+            return CmdSequencer_DirectiveStatus::CONTINUE;
+        }
+
+        default:
+            // Unreachable: DirectiveId::isValid above rejects every value that has no case
+            FW_ASSERT(false, static_cast<FwAssertArgType>(directive.e));
+            return this->directiveError(CmdSequencer_DirectiveStatus::ERROR_INVALID_ARGUMENT);
+    }
+}
+
+bool CmdSequencerComponentImpl ::jumpToLabel(const Fw::ConstStringBase& labelName) {
+    FW_ASSERT(this->m_sequence != nullptr);
+
+    // Search from the start of the sequence so that a label before the current position is
+    // reachable. Jump direction is unrestricted; see docs/sdd.md.
+    const U32 numRecords = this->m_sequence->getHeader().m_numRecords;
     this->m_sequence->reset();
 
-    // Search through all records looking for matching LABEL directive
-    while (this->m_sequence->hasMoreRecords()) {
+    // Counted rather than driven by hasMoreRecords alone: the record count is fixed at load
+    // time, which makes the bound on this search explicit.
+    for (U32 recordNumber = 0; recordNumber < numRecords; ++recordNumber) {
+        if (not this->m_sequence->hasMoreRecords()) {
+            break;
+        }
         Sequence::Record searchRecord;
         this->m_sequence->nextRecord(searchRecord);
+        if (searchRecord.m_descriptor != Sequence::Record::SEQUENCE_DIRECTIVE) {
+            continue;
+        }
 
-        if (searchRecord.m_descriptor == Sequence::Record::SEQUENCE_DIRECTIVE) {
-            // Parse the directive
-            Fw::ExternalSerializeBuffer dirBuf(const_cast<U8*>(searchRecord.m_command.getBuffAddr()),
-                                               searchRecord.m_command.getSize());
-            dirBuf.setBuffLen(searchRecord.m_command.getSize());
+        Fw::LinearBufferBase& dirBuf = searchRecord.m_command;
+        dirBuf.resetDeser();
 
-            U8 directiveId;
-            Fw::SerializeStatus status = dirBuf.deserializeTo(directiveId);
-            if (status != Fw::FW_SERIALIZE_OK) {
-                continue;  // Skip malformed directive
-            }
+        U8 directiveId = 0;
+        Fw::SerializeStatus status = dirBuf.deserializeTo(directiveId);
+        if (status != Fw::FW_SERIALIZE_OK) {
+            // Malformed uplinked content is never discarded without a trace
+            this->log_WARNING_HI_CS_LabelRecordInvalid(this->m_sequence->getLogFileName(), recordNumber,
+                                                       static_cast<I32>(status));
+            continue;
+        }
+        if (not Sequence::Record::DirectiveId::isValid(directiveId)) {
+            this->log_WARNING_HI_CS_LabelRecordInvalid(this->m_sequence->getLogFileName(), recordNumber,
+                                                       static_cast<I32>(directiveId));
+            continue;
+        }
+        const Sequence::Record::DirectiveId directive(directiveId);
+        if (directive != Sequence::Record::DirectiveId::LABEL) {
+            // Only labels can be jump targets. Any other directive is executed when
+            // execution reaches it, not during the search.
+            continue;
+        }
 
-            if (directiveId == Sequence::Record::LABEL) {
-                // Extract label name
-                U8 labelLen;
-                status = dirBuf.deserializeTo(labelLen);
-                if (status != Fw::FW_SERIALIZE_OK || labelLen > 20) {
-                    continue;
-                }
+        char labelBuffer[Sequence::Record::LABEL_BUFFER_SIZE] = {};
+        Fw::ExternalString label(labelBuffer, sizeof(labelBuffer));
+        status = CmdSequencerComponentImpl::deserializeLabel(dirBuf, label);
+        if (status != Fw::FW_SERIALIZE_OK) {
+            this->log_WARNING_HI_CS_LabelRecordInvalid(this->m_sequence->getLogFileName(), recordNumber,
+                                                       static_cast<I32>(status));
+            continue;
+        }
 
-                char labelBuf[21];
-                FwSizeType readSize = labelLen;
-                status = dirBuf.deserializeTo(reinterpret_cast<U8*>(labelBuf), readSize,
-                                              Fw::Serialization::OMIT_LENGTH);
-                if (status != Fw::FW_SERIALIZE_OK) {
-                    continue;
-                }
-                labelBuf[readSize] = '\0';
-
-                // Check if this is the label we're looking for
-                if (labelName == labelBuf) {
-                    // Found it! The next record will be executed
-                    return true;
-                }
-            }
+        if (labelName == label) {
+            // The sequence deserializer is now positioned just past this label record, so
+            // the next record read is the first record after the label
+            return true;
         }
     }
 

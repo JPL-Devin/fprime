@@ -10,6 +10,7 @@
 #include <Os/FileSystem.hpp>
 #include "CmdSequencerTester.hpp"
 #include "Svc/CmdSequencer/test/ut/AMPCS.hpp"
+#include "Svc/CmdSequencer/test/ut/Directives.hpp"
 #include "Svc/CmdSequencer/test/ut/Health.hpp"
 #include "Svc/CmdSequencer/test/ut/Immediate.hpp"
 #include "Svc/CmdSequencer/test/ut/ImmediateEOS.hpp"
@@ -30,6 +31,160 @@ TEST(AMPCS, MissingCRC) {
 TEST(AMPCS, MissingFile) {
     Svc::AMPCS::CmdSequencerTester tester;
     tester.MissingFile();
+}
+
+// ----------------------------------------------------------------------
+// Sequence directives
+// ----------------------------------------------------------------------
+
+TEST(Directives, LabelIsSkipped) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.LabelIsSkipped();
+}
+
+TEST(Directives, ExitOk) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ExitOk();
+}
+
+TEST(Directives, ExitError) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ExitError();
+}
+
+TEST(Directives, JcfJumpsOnFailure) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.JcfJumpsOnFailure();
+}
+
+TEST(Directives, JcfFallsThroughOnSuccess) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.JcfFallsThroughOnSuccess();
+}
+
+TEST(Directives, JcsJumpsOnSuccess) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.JcsJumpsOnSuccess();
+}
+
+TEST(Directives, ErrorModeOffContinues) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ErrorModeOffContinues();
+}
+
+TEST(Directives, ErrorModeOnAbortsAtNonJcfDirective) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ErrorModeOnAbortsAtNonJcfDirective();
+}
+
+TEST(Directives, ErrorModeOnAbortsBeforeLaterJcf) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ErrorModeOnAbortsBeforeLaterJcf();
+}
+
+TEST(Directives, ConsecutiveJumpsSeeSameCommand) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ConsecutiveJumpsSeeSameCommand();
+}
+
+TEST(Directives, PendingAbortDoesNotLeakToNextSequence) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.PendingAbortDoesNotLeakToNextSequence();
+}
+
+TEST(Directives, PendingAbortOnLastRecordManual) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.PendingAbortOnLastRecordManual();
+}
+
+TEST(Directives, JumpConsumesCommandStatus) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.JumpConsumesCommandStatus();
+}
+
+TEST(Directives, DirectiveCycleDetected) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.DirectiveCycleDetected();
+}
+
+TEST(Directives, MalformedLabelSkippedDuringSearch) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.MalformedLabelSkippedDuringSearch();
+}
+
+TEST(Directives, UnknownDirectiveSkippedDuringSearch) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.UnknownDirectiveSkippedDuringSearch();
+}
+
+TEST(Directives, EmptyDirectiveRecord) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.EmptyDirectiveRecord();
+}
+
+TEST(Directives, UnknownDirectiveId) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.UnknownDirectiveId();
+}
+
+TEST(Directives, ExitWithNoArgument) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ExitWithNoArgument();
+}
+
+TEST(Directives, ExitWithInvalidStatus) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ExitWithInvalidStatus();
+}
+
+TEST(Directives, ErrorModeWithInvalidArgument) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ErrorModeWithInvalidArgument();
+}
+
+TEST(Directives, JumpWithOverlongLabel) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.JumpWithOverlongLabel();
+}
+
+TEST(Directives, JumpWithTruncatedLabel) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.JumpWithTruncatedLabel();
+}
+
+TEST(Directives, JumpWithNoPriorCommand) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.JumpWithNoPriorCommand();
+}
+
+TEST(Directives, JumpToMissingLabel) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.JumpToMissingLabel();
+}
+
+TEST(Directives, ManualStepConsumesOneDirective) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ManualStepConsumesOneDirective();
+}
+
+TEST(Directives, ManualStepResponseDistinguishesEndFromAbort) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ManualStepResponseDistinguishesEndFromAbort();
+}
+
+TEST(Directives, FailedCommandAdvancesRecordIndex) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.FailedCommandAdvancesRecordIndex();
+}
+
+TEST(Directives, BlockingRunAnsweredOnceWhenSequenceEndsInFirstStep) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.BlockingRunAnsweredOnceWhenSequenceEndsInFirstStep();
+}
+
+TEST(Directives, InvalidModeNamesItsCause) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.InvalidModeNamesItsCause();
 }
 
 TEST(Health, Ping) {
