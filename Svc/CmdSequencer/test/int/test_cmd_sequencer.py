@@ -15,8 +15,11 @@ from pathlib import Path
 # world-writable directory can be pre-created by another user on a shared runner, and two
 # concurrent runs of this module would otherwise overwrite each other's sequence mid-test.
 # The base directory stays configurable but must already exist, so only the file name varies.
+# It defaults to the deployment's working directory, which is where a deployment that
+# sandboxes file uplink (such as Ref) accepts uploads; set FPRIME_INT_TEST_UPLINK_DIR for a
+# deployment that keeps sequences elsewhere.
 # Computed once at import so that every test in the module agrees on the names.
-_UPLINK_DIR = Path(os.environ.get("FPRIME_INT_TEST_UPLINK_DIR", "/tmp"))
+_UPLINK_DIR = Path(os.environ.get("FPRIME_INT_TEST_UPLINK_DIR", "."))
 _UPLINK_TOKEN = uuid.uuid4().hex[:12]
 SEQ_UPLINK_DEST = str(_UPLINK_DIR / f"ref_test_seq_{_UPLINK_TOKEN}.bin")
 SEQ_WAIT_UPLINK_DEST = str(_UPLINK_DIR / f"ref_test_seq_wait_{_UPLINK_TOKEN}.bin")

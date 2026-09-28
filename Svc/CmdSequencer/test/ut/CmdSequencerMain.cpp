@@ -117,6 +117,11 @@ TEST(Directives, UnknownDirectiveSkippedDuringSearch) {
     tester.UnknownDirectiveSkippedDuringSearch();
 }
 
+TEST(Directives, EmptyDirectiveSkippedDuringSearch) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.EmptyDirectiveSkippedDuringSearch();
+}
+
 TEST(Directives, EmptyDirectiveRecord) {
     Svc::Directives::CmdSequencerTester tester;
     tester.EmptyDirectiveRecord();
@@ -135,6 +140,11 @@ TEST(Directives, ExitWithNoArgument) {
 TEST(Directives, ExitWithInvalidStatus) {
     Svc::Directives::CmdSequencerTester tester;
     tester.ExitWithInvalidStatus();
+}
+
+TEST(Directives, ErrorModeWithNoArgument) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ErrorModeWithNoArgument();
 }
 
 TEST(Directives, ErrorModeWithInvalidArgument) {
@@ -172,6 +182,11 @@ TEST(Directives, ManualStepResponseDistinguishesEndFromAbort) {
     tester.ManualStepResponseDistinguishesEndFromAbort();
 }
 
+TEST(Directives, ManualStepTrailingDirectiveCompletesSequence) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.ManualStepTrailingDirectiveCompletesSequence();
+}
+
 TEST(Directives, FailedCommandAdvancesRecordIndex) {
     Svc::Directives::CmdSequencerTester tester;
     tester.FailedCommandAdvancesRecordIndex();
@@ -180,6 +195,11 @@ TEST(Directives, FailedCommandAdvancesRecordIndex) {
 TEST(Directives, BlockingRunAnsweredOnceWhenSequenceEndsInFirstStep) {
     Svc::Directives::CmdSequencerTester tester;
     tester.BlockingRunAnsweredOnceWhenSequenceEndsInFirstStep();
+}
+
+TEST(Directives, BlockingRunAnsweredOnceWhenFirstStepAborts) {
+    Svc::Directives::CmdSequencerTester tester;
+    tester.BlockingRunAnsweredOnceWhenFirstStepAborts();
 }
 
 TEST(Directives, InvalidModeNamesItsCause) {

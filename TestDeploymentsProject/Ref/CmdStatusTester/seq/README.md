@@ -55,45 +55,51 @@ This directory contains test sequences for validating the sequence directive sys
    - Demonstrates that jumps can target labels in either direction
    - Expected: Jumps forward on failure, demonstrates backward jump capability
 
+### Smoke Sequences
+
+- **test_simple.seq** - a single `TEST_CMD_SUCCESS` command, no directives
+- **test_label.seq** - a single `LABEL` and nothing else; loads and completes without issuing a command
+
 ## Running Test Sequences
 
 ### Prerequisites
 
-1. Build the TestDeploymentsProject:
+1. Build the Ref deployment, which produces the dictionary the sequence compiler needs:
    ```bash
-   cd /home/tcanham/source/fprime/TestDeploymentsProject
+   cd TestDeploymentsProject/Ref
    fprime-util build
    ```
 
-2. Generate binary sequence files:
+2. Generate the binary sequence files. `fprime-seqgen` must come from an `fprime-gds`
+   that understands sequence directives (LABEL, JCF, JCS, EXIT, ERROR_MODE):
    ```bash
-   cd /home/tcanham/source/fprime/TestDeploymentsProject/Ref/CmdStatusTester/seq
-   
-   # Generate all sequences
-   for seq in *.seq; do
-       fprime-seqgen -d ../../../build-fprime-automatic-native/dict/RefTopologyAppDictionary.xml \
-                     "$seq" "${seq%.seq}.bin"
-   done
+   cd TestDeploymentsProject/Ref/CmdStatusTester/seq
+   make            # compiles every .seq to .bin with fprime-seqgen
    ```
+   `make SEQGEN=/path/to/fprime-seqgen` selects a specific compiler; `make help` lists
+   the other targets.
 
 ### Running Sequences
 
-1. Start the Ref deployment:
+1. Start the Ref deployment with the GDS:
    ```bash
-   cd /home/tcanham/source/fprime/TestDeploymentsProject
+   cd TestDeploymentsProject/Ref
    fprime-gds
    ```
 
-2. Load and run a sequence through the GDS:
-   - Navigate to Commanding → Sequences
-   - Upload a binary sequence file
-   - Send the sequence run command
+2. Uplink a binary sequence file from the GDS **Uplink** tab (or with
+   `FileHandling.fileUplink`). The Ref deployment sandboxes file uplink to its
+   working directory, so give a destination relative to it, for example
+   `test_jcf_basic.bin`; an absolute path such as `/tmp/test_jcf_basic.bin` is
+   refused.
 
-3. Or use command line:
-   ```bash
-   # Load sequence
-   cmdStatusTester.CS_Run("/path/to/sequence.bin")
+3. Run it from the GDS **Commanding** tab, with the same relative path:
    ```
+   Ref.cmdSeq.CS_RUN "test_jcf_basic.bin" NO_BLOCK
+   ```
+
+4. Watch the **Events** tab for the `CS_*` sequencer events and the
+   `TEST_CommandSuccess` / `TEST_CommandFailed` events from `Ref.cmdStatusTester`.
 
 ## Expected Behaviors
 

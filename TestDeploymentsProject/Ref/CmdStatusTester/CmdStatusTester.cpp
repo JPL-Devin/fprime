@@ -18,8 +18,7 @@ namespace Ref {
 // Construction, initialization, and destruction
 // ----------------------------------------------------------------------
 
-CmdStatusTester::CmdStatusTester(const char* const compName)
-    : CmdStatusTesterComponentBase(compName) {}
+CmdStatusTester::CmdStatusTester(const char* const compName) : CmdStatusTesterComponentBase(compName) {}
 
 CmdStatusTester::~CmdStatusTester() {}
 
@@ -28,10 +27,10 @@ CmdStatusTester::~CmdStatusTester() {}
 // ----------------------------------------------------------------------
 
 void CmdStatusTester::TEST_CMD_SUCCESS_cmdHandler(const FwOpcodeType opCode,
-                                                   const U32 cmdSeq,
-                                                   U32 arg1,
-                                                   F32 arg2,
-                                                   bool arg3) {
+                                                  const U32 cmdSeq,
+                                                  U32 arg1,
+                                                  F32 arg2,
+                                                  bool arg3) {
     // Log the successful command execution
     this->log_ACTIVITY_HI_TEST_CommandSuccess(arg1, arg2, arg3);
 
@@ -40,10 +39,10 @@ void CmdStatusTester::TEST_CMD_SUCCESS_cmdHandler(const FwOpcodeType opCode,
 }
 
 void CmdStatusTester::TEST_CMD_FAIL_cmdHandler(const FwOpcodeType opCode,
-                                                const U32 cmdSeq,
-                                                U32 arg1,
-                                                I16 arg2,
-                                                const Fw::CmdStringArg& arg3) {
+                                               const U32 cmdSeq,
+                                               U32 arg1,
+                                               I16 arg2,
+                                               const Fw::CmdStringArg& arg3) {
     // Log the failed command execution
     this->log_WARNING_HI_TEST_CommandFailed(arg1, arg2, arg3);
 

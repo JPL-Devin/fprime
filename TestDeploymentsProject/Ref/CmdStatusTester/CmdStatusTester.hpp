@@ -39,22 +39,20 @@ class CmdStatusTester final : public CmdStatusTesterComponentBase {
 
     //! Implementation for TEST_CMD_SUCCESS command handler
     //! Command that always succeeds
-    void TEST_CMD_SUCCESS_cmdHandler(
-        const FwOpcodeType opCode, /*!< The opcode*/
-        const U32 cmdSeq, /*!< The command sequence number*/
-        U32 arg1, /*!< First argument*/
-        F32 arg2, /*!< Second argument*/
-        bool arg3 /*!< Third argument*/
+    void TEST_CMD_SUCCESS_cmdHandler(const FwOpcodeType opCode, /*!< The opcode*/
+                                     const U32 cmdSeq,          /*!< The command sequence number*/
+                                     U32 arg1,                  /*!< First argument*/
+                                     F32 arg2,                  /*!< Second argument*/
+                                     bool arg3                  /*!< Third argument*/
     );
 
     //! Implementation for TEST_CMD_FAIL command handler
     //! Command that always fails
-    void TEST_CMD_FAIL_cmdHandler(
-        const FwOpcodeType opCode, /*!< The opcode*/
-        const U32 cmdSeq, /*!< The command sequence number*/
-        U32 arg1, /*!< First argument*/
-        I16 arg2, /*!< Second argument*/
-        const Fw::CmdStringArg& arg3 /*!< Third argument*/
+    void TEST_CMD_FAIL_cmdHandler(const FwOpcodeType opCode,   /*!< The opcode*/
+                                  const U32 cmdSeq,            /*!< The command sequence number*/
+                                  U32 arg1,                    /*!< First argument*/
+                                  I16 arg2,                    /*!< Second argument*/
+                                  const Fw::CmdStringArg& arg3 /*!< Third argument*/
     );
 };
 

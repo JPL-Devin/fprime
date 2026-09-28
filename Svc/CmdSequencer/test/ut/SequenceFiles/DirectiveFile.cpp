@@ -44,7 +44,9 @@ DirectiveFile ::DirectiveFile(const char* const baseName) : File(Format::F_PRIME
 
 DirectiveFile& DirectiveFile ::command(const FwOpcodeType opcode, const U32 argument) {
     // Zero relative time makes the command immediate, so a test does not have to advance
-    // the clock to get it dispatched
+    // the clock to get it dispatched. This pairs with the zero test time set by
+    // CmdSequencerTester::prepare in Directives.cpp; changing either one alone leaves
+    // every command sitting in the timer.
     const Fw::Time t(TimeBase::TB_WORKSTATION_TIME, 0, 0);
     FPrime::Records::serialize(Record::RELATIVE, t, opcode, argument, this->m_records);
     ++this->m_numRecords;
@@ -102,11 +104,14 @@ DirectiveFile& DirectiveFile ::jumpWithLabelLength(const DirectiveId::T directiv
                                                    const U8 declaredLength,
                                                    const char* const chars) {
     const size_t charCount = strlen(chars);
-    U8 payload[MAX_PAYLOAD_SIZE];
+    U8 payload[MAX_PAYLOAD_SIZE] = {};
     // The payload is the directive ID, the declared length, and the characters. The count
     // written is the real length of chars, which the caller chooses independently of
     // declaredLength; that mismatch is the point of this builder.
-    EXPECT_LE(charCount + JUMP_PREFIX_SIZE, sizeof(payload));
+    if (charCount + JUMP_PREFIX_SIZE > sizeof(payload)) {
+        ADD_FAILURE() << "label of " << charCount << " characters does not fit in a directive payload";
+        return *this;
+    }
     payload[0] = static_cast<U8>(directive);
     payload[1] = declaredLength;
     (void)memcpy(&payload[JUMP_PREFIX_SIZE], chars, charCount);
@@ -133,8 +138,8 @@ void DirectiveFile ::serializeFPrime(Fw::LinearBufferBase& buffer) {
     const U32 timeContext = 0;
     FPrime::Headers::serialize(dataSize, this->m_numRecords, timeBase, timeContext, buffer);
     // Records, already serialized by the builder methods
-    ASSERT_EQ(Fw::FW_SERIALIZE_OK, buffer.serializeFrom(this->m_records.getBuffAddr(), recordDataSize,
-                                                        Fw::Serialization::OMIT_LENGTH));
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK,
+              buffer.serializeFrom(this->m_records.getBuffAddr(), recordDataSize, Fw::Serialization::OMIT_LENGTH));
     // CRC over the header and records
     FPrime::CRCs::serialize(buffer);
 }
@@ -147,8 +152,11 @@ DirectiveFile& DirectiveFile ::labelDirective(const DirectiveId::T directive, co
     const size_t nameLength = strlen(labelName);
     // A label longer than MAX_LABEL_SIZE cannot be expressed by a well-formed record. Use
     // jumpWithLabelLength to build one deliberately.
-    EXPECT_LE(nameLength, static_cast<size_t>(Record::MAX_LABEL_SIZE));
-    U8 payload[MAX_PAYLOAD_SIZE];
+    if (nameLength > static_cast<size_t>(Record::MAX_LABEL_SIZE)) {
+        ADD_FAILURE() << "label \"" << labelName << "\" exceeds MAX_LABEL_SIZE";
+        return *this;
+    }
+    U8 payload[MAX_PAYLOAD_SIZE] = {};
     payload[0] = static_cast<U8>(directive);
     payload[1] = static_cast<U8>(nameLength);
     (void)memcpy(&payload[JUMP_PREFIX_SIZE], labelName, nameLength);

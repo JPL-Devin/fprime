@@ -130,7 +130,7 @@ void CmdSequencerTester ::parameterizedInvalidManualCommands(SequenceFiles::File
     ASSERT_CMD_RESPONSE(0, this->getStartOpcode(), startCmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
     // Assert events
     ASSERT_EVENTS_SIZE(1);
-    ASSERT_EVENTS_CS_InvalidMode_SIZE(1);
+    ASSERT_EVENTS_CS_InvalidMode(0, CmdSequencer_InvalidModeCause::START_NOT_STOPPED);
     // Attempt to go to auto mode - should fail
     const U32 autoCmdSeq = 14;
     this->sendCmd_CS_AUTO(0, autoCmdSeq);
@@ -140,7 +140,7 @@ void CmdSequencerTester ::parameterizedInvalidManualCommands(SequenceFiles::File
     ASSERT_CMD_RESPONSE(0, this->getAutoOpcode(), autoCmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
     // Assert events
     ASSERT_EVENTS_SIZE(1);
-    ASSERT_EVENTS_CS_InvalidMode_SIZE(1);
+    ASSERT_EVENTS_CS_InvalidMode(0, CmdSequencer_InvalidModeCause::AUTO_NOT_STOPPED);
     // Attempt to go to manual mode - should fail
     const U32 manualCmdSeq = 14;
     this->sendCmd_CS_MANUAL(0, manualCmdSeq);
@@ -150,7 +150,7 @@ void CmdSequencerTester ::parameterizedInvalidManualCommands(SequenceFiles::File
     ASSERT_CMD_RESPONSE(0, this->getManualOpcode(), manualCmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
     // Assert events
     ASSERT_EVENTS_SIZE(1);
-    ASSERT_EVENTS_CS_InvalidMode_SIZE(1);
+    ASSERT_EVENTS_CS_InvalidMode(0, CmdSequencer_InvalidModeCause::MANUAL_NOT_STOPPED);
 }
 
 void CmdSequencerTester ::parameterizedLoadRunRun(SequenceFiles::File& file, const U32 numCommands, const U32 bound) {
@@ -216,7 +216,7 @@ void CmdSequencerTester ::parameterizedManual(SequenceFiles::File& file, const U
     ASSERT_CMD_RESPONSE(0, this->getStepOpcode(), stepCmdSeq, Fw::CmdResponse::EXECUTION_ERROR);
     // Assert events
     ASSERT_EVENTS_SIZE(1);
-    ASSERT_EVENTS_CS_InvalidMode_SIZE(1);
+    ASSERT_EVENTS_CS_InvalidMode(0, CmdSequencer_InvalidModeCause::STEP_NOT_RUNNING);
     // Go back to auto mode
     this->goToAutoMode(stepCmdSeq);
 }

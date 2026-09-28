@@ -96,8 +96,9 @@ The `schedIn` port checks to see if there is a timed command pending. If the tim
 
 The `cmdResponseIn` port is called when a command in a sequence is completed. If the command status is successful, the next command in the sequence is executed.
 
-A failed command is recorded, and the record index advances: a failure consumed
-a record, so every later event names the record it actually refers to. Only the
+A failed command is recorded, and the command number advances: a failure still
+occupies a command number, so every later `CS_CommandComplete` and
+`CS_CommandError` event carries the ordinal of the command it refers to. Only the
 `CS_CommandsExecuted` telemetry channel is reserved for commands that succeeded.
 
 If `ERROR_MODE` is ON, the failure is marked pending rather than aborting
@@ -218,9 +219,10 @@ cause, the event alone does not say which. Values:
 `STEP_NOT_RUNNING`, `STEP_NOT_MANUAL`, `AUTO_NOT_STOPPED`,
 `MANUAL_NOT_STOPPED`.
 
-* <a name="DirectiveStatus">`CmdSequencer.DirectiveStatus`</a> (`U8`):
-The outcome of executing one directive, and the argument of
-`CS_DirectiveError`. The values and their meanings are tabulated under
+* <a name="DirectiveError">`CmdSequencer.DirectiveError`</a> (`U8`):
+Why a directive failed, and the argument of `CS_DirectiveError` and
+`CS_LabelRecordInvalid`. Each value names the check that rejected the
+directive. The values and their meanings are tabulated under
 **Directive Failure Handling** in
 [**F Prime Sequence Format**](#F_Prime_Sequence_Format).
 
@@ -298,7 +300,7 @@ When the descriptor field is 3 (sequence directive), the command buffer contains
 
 Directive Field | Size (bytes) | Description
 --------------- | ------------ | -----------
-Directive ID | 1 | Identifies the directive type. 0 = LABEL, 1 = JCF (Jump Command Failure), 2 = EXIT, 3 = JCS (Jump Command Success), 4 = ERROR_MODE. Must be a defined value of `CmdSequencer.DirectiveId`; any other value is rejected with `ERROR_MALFORMED_RECORD`
+Directive ID | 1 | Identifies the directive type. 0 = LABEL, 1 = JCF (Jump Command Failure), 2 = EXIT, 3 = JCS (Jump Command Success), 4 = ERROR_MODE. Must be a defined value of `CmdSequencer.DirectiveId`; any other value is rejected with `UNKNOWN_DIRECTIVE`, and a record too short to hold the ID with `DIRECTIVE_ID_UNREADABLE`
 Arguments | Variable | Directive-specific arguments
 
 Note that, unlike a command record, a directive record's buffer carries **no**
@@ -307,8 +309,9 @@ buffer.
 
 A label argument (used by LABEL, JCF, and JCS) is written as a single `U8`
 length followed by exactly that many raw characters, with no terminator. The
-length must not exceed 20; a longer length is rejected with
-`ERROR_MALFORMED_RECORD`. This is deliberately not the `Fw::StringBase`
+length must not exceed 20; a longer length, a missing length, or fewer
+characters than the length declares is rejected with `LABEL_UNREADABLE`. This is
+deliberately not the `Fw::StringBase`
 serialization format, which prefixes an `FwSizeStoreType` rather than a `U8`.
 
 **Directive Types:**
@@ -322,10 +325,10 @@ serialization format, which prefixes an `FwSizeStoreType` rather than a `U8`.
    - Arguments: Text string (target label name, max 20 characters)
    - Placement: Must appear AFTER the command whose status it checks
    - Behavior: When executed, the JCF directive checks the status of the previously executed command. If that command returned a failed status, the sequencer jumps to the specified LABEL instead of aborting the sequence. If the command succeeded, execution continues normally.
-   - Scope: Checks the immediately preceding command. **Adjacency is strict when ERROR_MODE is ON:** to handle a command failure, the JCF must be the immediately next record after the failing command. A record that is not a sequence directive, appearing between the failed command and the JCF, aborts the sequence before the JCF is ever read. (Consecutive directives are still permitted — see **Directive State Management** below.)
+   - Scope: Checks the immediately preceding command. **Adjacency is strict when ERROR_MODE is ON:** to handle a command failure, the JCF must be the immediately next record after the failing command. Any other record between the failed command and the JCF — a command, or any directive other than JCF, including `LABEL`, `JCS`, and `ERROR_MODE` — aborts the sequence before the JCF is ever read. Consecutive `JCF` directives, and directives after a command that succeeded, remain unrestricted — see **Directive State Management** below.
    - Error Conditions:
-     - If JCF is encountered before any command has executed, the directive fails with `CS_DirectiveError` carrying `ERROR_NO_PRIOR_COMMAND` and the sequence is canceled
-     - If the target LABEL is not found at runtime, the directive fails with `CS_DirectiveError` carrying `ERROR_LABEL_NOT_FOUND` and the sequence is canceled
+     - If JCF is encountered before any command has executed, the directive fails with `CS_DirectiveError` carrying `NO_PRIOR_COMMAND` and the sequence is canceled
+     - If the target LABEL is not found at runtime, the directive fails with `CS_DirectiveError` carrying `LABEL_NOT_FOUND` and the sequence is canceled
      - The sequence file generator tool validates that all referenced labels exist in the sequence
 
 3. **EXIT** (Directive ID = 2): Terminates the sequence with a specified completion status.
@@ -346,10 +349,10 @@ serialization format, which prefixes an `FwSizeStoreType` rather than a `U8`.
      - Skipping error handling code when operations succeed
      - Implementing try-success-else patterns in sequences
    - Error Conditions:
-     - If JCS is encountered before any command has executed, the directive fails with `CS_DirectiveError` carrying `ERROR_NO_PRIOR_COMMAND` and the sequence is canceled
-     - If the target LABEL is not found at runtime, the directive fails with `CS_DirectiveError` carrying `ERROR_LABEL_NOT_FOUND` and the sequence is canceled
+     - If JCS is encountered before any command has executed, the directive fails with `CS_DirectiveError` carrying `NO_PRIOR_COMMAND` and the sequence is canceled
+     - If the target LABEL is not found at runtime, the directive fails with `CS_DirectiveError` carrying `LABEL_NOT_FOUND` and the sequence is canceled
      - The sequence file generator tool validates that all referenced labels exist in the sequence
-   - Note: JCS and JCF may both appear after the same command, in either order. Both see that command's status, so at most one of them jumps: JCF on failure, JCS on success. Whichever jumps first consumes the status (see **Directive State Management**), so the other is not reached.
+   - Note: JCS and JCF may both follow the same command. Both see that command's status, so at most one of them jumps: JCF on failure, JCS on success. Whichever jumps first consumes the status (see **Directive State Management**), so the other is not reached. **When ERROR_MODE is ON the JCF must come first:** a failed command's pending abort is released only by a JCF in the very next record, so `JCS` then `JCF` aborts at the JCS on failure, while `JCF` then `JCS` handles both outcomes. With ERROR_MODE OFF the order does not matter.
 
 5. **ERROR_MODE** (Directive ID = 4): Controls whether the sequence aborts on command failure.
    - Arguments: U8 mode (0 = OFF/continue on error, 1 = ON/abort on error)
@@ -372,39 +375,44 @@ serialization format, which prefixes an `FwSizeStoreType` rather than a `U8`.
 - Command status is stored after each command execution
 - When a JCF directive is executed, it checks the stored status of the previous command. If that command failed, the sequencer searches for the matching LABEL and jumps to the record immediately following it
 - When a JCS directive is executed, it checks the stored status of the previous command. If that command succeeded, the sequencer searches for the matching LABEL and jumps to the record immediately following it
-- Several JCF and/or JCS directives may follow the same command. All of them see that command's status until one of them jumps
-- **A taken jump consumes the command status.** When a JCF or JCS jumps, the stored status is cleared. A JCF or JCS reached at or after the jump target therefore does not re-test the command that selected the jump; it reports `ERROR_NO_PRIOR_COMMAND` unless a further command has executed in the meantime. This is what makes a retry loop (`LABEL "R"` … command … `JCF "R"`) terminate rather than jump forever
+- Several JCF and/or JCS directives may follow the same command. All of them see that command's status until one of them jumps. With `ERROR_MODE` ON, a failed command's pending abort is released only by a `JCF` in the record immediately after it, so any JCS must come after that JCF
+- **A taken jump consumes the command status.** When a JCF or JCS jumps, the stored status is cleared. A JCF or JCS reached at or after the jump target therefore does not re-test the command that selected the jump; it reports `NO_PRIOR_COMMAND` unless a further command has executed in the meantime. This is what makes a retry loop (`LABEL "R"` … command … `JCF "R"`) terminate rather than jump forever
 - Jump direction is unrestricted (forward or backward jumps are allowed)
 - A jump emits the `CS_DirectiveJump` event naming the directive and the target label
-- **Directive-cycle detection.** A single step reads at most as many records as the sequence header declares. Reading more than that within one step proves a record was read twice with no command in between, i.e. a cycle of directives. The sequencer then emits `CS_DirectiveError` with `ERROR_DIRECTIVE_CYCLE` and cancels the sequence. This bounds the work of one step; it does not prevent a loop that executes a command each time around, which is a legitimate retry construct. Sequence writers remain responsible for making such loops terminate
+- **Directive-cycle detection.** A single step reads at most as many records as the sequence header declares. Reading more than that within one step proves a record was read twice with no command in between, i.e. a cycle of directives. The sequencer then emits `CS_DirectiveError` with `DIRECTIVE_CYCLE` and cancels the sequence. This bounds the work of one step; it does not prevent a loop that executes a command each time around, which is a legitimate retry construct. Sequence writers remain responsible for making such loops terminate
 
 **Directive Failure Handling:**
 
-Every directive returns a status of type `CmdSequencer.DirectiveStatus` (see
-[**Types**](#3.3.1-Types)). `CONTINUE` and `JUMPED` keep the current step going;
-`SEQUENCE_ENDED` ends it; `ABORT_PENDING_ERROR` aborts on a deferred command
-failure; every remaining value is a failure. On a failure the sequencer emits
-`CS_DirectiveError` with the sequence file name, the record number, and the
-status, counts a sequencer error, and cancels the sequence. The statuses are:
+Executing a directive yields one of the following outcomes, internal to the
+component: *continue* (read the next record in this step), *jumped* (read the
+next record from the new position), *sequence ended* (`EXIT` ran, or the record
+list ended), *abort pending error* (a command failed with ERROR_MODE ON and no
+JCF handled it), or *failed*. On a failure the sequencer emits
+`CS_DirectiveError` with the sequence file name, the index of the failing record
+within the sequence (the first record is index 0), and a
+`CmdSequencer.DirectiveError` value; counts a sequencer error; and cancels the
+sequence. The error values are:
 
-| Status | Meaning |
-| ------ | ------- |
-| `CONTINUE` | Directive completed; read the next record in this step |
-| `JUMPED` | A jump was taken; read the next record in this step from the new position |
-| `SEQUENCE_ENDED` | `EXIT` ran, or the record list ended; the step is over |
-| `ABORT_PENDING_ERROR` | A command failed with ERROR_MODE ON and no JCF handled it |
-| `ERROR_MALFORMED_RECORD` | The directive payload could not be deserialized, or the directive ID is not a valid `DirectiveId` |
-| `ERROR_INVALID_ARGUMENT` | The payload deserialized but an argument is out of range (for example an `EXIT` status or `ERROR_MODE` mode that is not a defined value) |
-| `ERROR_NO_PRIOR_COMMAND` | A JCF or JCS ran with no command status available to test |
-| `ERROR_LABEL_NOT_FOUND` | The target label of a JCF or JCS is not present in the sequence |
-| `ERROR_DIRECTIVE_CYCLE` | One step read more records than the sequence contains |
+| Error | Meaning |
+| ----- | ------- |
+| `DIRECTIVE_ID_UNREADABLE` | The record payload is too short to hold a directive ID |
+| `UNKNOWN_DIRECTIVE` | The directive ID is not a defined `DirectiveId` |
+| `LABEL_UNREADABLE` | The label of a LABEL, JCF, or JCS is missing, truncated, or longer than 20 characters |
+| `EXIT_STATUS_UNREADABLE` | The status argument of `EXIT` is missing |
+| `EXIT_STATUS_INVALID` | The status argument of `EXIT` is not 0 or 1 |
+| `ERROR_MODE_UNREADABLE` | The mode argument of `ERROR_MODE` is missing |
+| `ERROR_MODE_INVALID` | The mode argument of `ERROR_MODE` is not 0 or 1 |
+| `NO_PRIOR_COMMAND` | A JCF or JCS ran with no command status available to test |
+| `LABEL_NOT_FOUND` | The target label of a JCF or JCS is not present in the sequence |
+| `DIRECTIVE_CYCLE` | One step read more records than the sequence contains |
 
-A `LABEL` record that cannot be deserialized while `jumpToLabel` is scanning for
-a target is skipped rather than aborting the search, but the skip is reported:
-`CS_LabelRecordInvalid` carries the file name, the record number, and the
-deserialization error. A sequence whose labels are damaged therefore produces a
-diagnostic per damaged label and then `ERROR_LABEL_NOT_FOUND` if the target was
-among them, instead of failing silently.
+A directive record that cannot be read while `jumpToLabel` is scanning for a
+target is skipped rather than aborting the search, but the skip is reported:
+`CS_LabelRecordInvalid` carries the file name, the record index, and the
+`DirectiveError` that describes the damage (`DIRECTIVE_ID_UNREADABLE`,
+`UNKNOWN_DIRECTIVE`, or `LABEL_UNREADABLE`). A sequence whose labels are damaged
+therefore produces a diagnostic per damaged record and then `LABEL_NOT_FOUND` if
+the target was among them, instead of failing silently.
 
 **CRC value:**
 The last 4 bytes of the file is a CRC of the entire file as computed by Utils/Hash.hpp
@@ -657,4 +665,6 @@ Date | Change Description
 2/26/2017|Version for Design/Code Review
 4/6/2017|Version for Unit test
 10/30/2017|Revise design to make sequence format configurable
-9/26/2026|Document sequence directive behavior as implemented: strict JCF adjacency under ERROR_MODE ON, jump-consumes-command-status, directive-cycle detection, the `DirectiveId`/`InvalidModeCause`/`DirectiveStatus` enumerations and the `CS_DirectiveJump`/`CS_DirectiveError`/`CS_LabelRecordInvalid` events, and the `CS_RUN`/`CS_STEP` command-response rules
+9/26/2026|Document sequence directive behavior as implemented: strict JCF adjacency under ERROR_MODE ON, jump-consumes-command-status, directive-cycle detection, the `DirectiveId`/`InvalidModeCause` enumerations and a directive-status enumeration (since replaced, see below) and the `CS_DirectiveJump`/`CS_DirectiveError`/`CS_LabelRecordInvalid` events, and the `CS_RUN`/`CS_STEP` command-response rules
+9/28/2026|Replace the directive-status enumeration with the field-specific `DirectiveError` enumeration carried by `CS_DirectiveError` and `CS_LabelRecordInvalid`; report directive failures by record index rather than executed-command count
+9/28/2026|A directive that is the last record of a sequence completes the sequence in MANUAL step mode as it does in AUTO, instead of leaving the sequencer running with nothing to step

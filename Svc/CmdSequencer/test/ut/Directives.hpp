@@ -39,7 +39,8 @@ class CmdSequencerTester : public Svc::CmdSequencerTester {
     // Tests: one directive at a time
     // ----------------------------------------------------------------------
 
-    //! A LABEL record is stepped over and does not consume a CS_STEP in auto mode
+    //! In auto mode a LABEL record is stepped over within the step that issues the
+    //! following command
     void LabelIsSkipped();
 
     //! An EXIT directive with status 0 ends the sequence successfully
@@ -103,6 +104,10 @@ class CmdSequencerTester : public Svc::CmdSequencerTester {
     //! and skipped
     void UnknownDirectiveSkippedDuringSearch();
 
+    //! A directive record too short to hold a directive ID is reported during a label
+    //! search and skipped
+    void EmptyDirectiveSkippedDuringSearch();
+
   public:
     // ----------------------------------------------------------------------
     // Tests: malformed and invalid directives
@@ -119,6 +124,9 @@ class CmdSequencerTester : public Svc::CmdSequencerTester {
 
     //! An EXIT directive with a status outside {0, 1} is rejected
     void ExitWithInvalidStatus();
+
+    //! An ERROR_MODE directive with no mode argument is rejected
+    void ErrorModeWithNoArgument();
 
     //! An ERROR_MODE directive with a mode outside {0, 1} is rejected
     void ErrorModeWithInvalidArgument();
@@ -146,13 +154,22 @@ class CmdSequencerTester : public Svc::CmdSequencerTester {
     //! CS_STEP answers OK at an orderly end of sequence and EXECUTION_ERROR on an abort
     void ManualStepResponseDistinguishesEndFromAbort();
 
+    //! A directive that is the last record completes the sequence in manual mode, rather
+    //! than leaving the sequencer running with nothing left to step
+    void ManualStepTrailingDirectiveCompletesSequence();
+
     //! A failed command advances the record index used by later events
     void FailedCommandAdvancesRecordIndex();
 
     //! A CS_RUN in BLOCK mode whose sequence ends inside the first step is answered once
     void BlockingRunAnsweredOnceWhenSequenceEndsInFirstStep();
 
-    //! CS_STEP in auto mode and CS_RUN with BLOCK in manual mode name their own cause
+    //! CS_RUN with BLOCK is answered exactly once, with EXECUTION_ERROR, when the first
+    //! step aborts the sequence
+    void BlockingRunAnsweredOnceWhenFirstStepAborts();
+
+    //! CS_RUN with BLOCK, CS_STEP in auto mode, and a port-driven run in manual mode each
+    //! name their own cause
     void InvalidModeNamesItsCause();
 
   private:

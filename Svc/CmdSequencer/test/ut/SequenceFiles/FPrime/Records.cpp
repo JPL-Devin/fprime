@@ -66,8 +66,7 @@ void serializeDirective(const U8* const payload, const U32 payloadSize, Fw::Seri
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, destBuffer.serializeFrom(uSeconds));
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, destBuffer.serializeFrom(payloadSize));
     if (payloadSize > 0) {
-        ASSERT_EQ(Fw::FW_SERIALIZE_OK,
-                  destBuffer.serializeFrom(payload, payloadSize, Fw::Serialization::OMIT_LENGTH));
+        ASSERT_EQ(Fw::FW_SERIALIZE_OK, destBuffer.serializeFrom(payload, payloadSize, Fw::Serialization::OMIT_LENGTH));
     }
 }
 

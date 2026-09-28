@@ -141,7 +141,7 @@ class DirectiveFile : public File {
 
     //! Append a directive carrying a directive ID and a label
     DirectiveFile& labelDirective(const DirectiveId::T directive,  //!< The directive
-                                  const char* const labelName  //!< The label name
+                                  const char* const labelName      //!< The label name
     );
 
     //! Append a directive carrying a directive ID and one U8 argument

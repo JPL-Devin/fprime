@@ -51,17 +51,20 @@ module Svc {
       MANUAL_NOT_STOPPED = 9          @< CS_MANUAL arrived while a sequence was running
     }
 
-    @ The result of executing a sequence directive
-    enum DirectiveStatus : U8 {
-      CONTINUE = 0               @< The directive completed; advance to the next record
-      JUMPED = 1                 @< A jump was taken; resume at the jump target
-      SEQUENCE_ENDED = 2         @< The directive ended the sequence; completion is already reported
-      ABORT_PENDING_ERROR = 3    @< A prior command failed with error mode ON and this directive does not handle it
-      ERROR_MALFORMED_RECORD = 4 @< The directive payload could not be deserialized
-      ERROR_INVALID_ARGUMENT = 5 @< A directive argument was outside its permitted range
-      ERROR_NO_PRIOR_COMMAND = 6 @< A JCF or JCS directive ran before any command executed
-      ERROR_LABEL_NOT_FOUND = 7  @< The jump target label is not present in the sequence
-      ERROR_DIRECTIVE_CYCLE = 8  @< Directives redirected execution in a cycle with no command between
+    @ Why a sequence directive failed. Each value names the check that rejected the
+    @ directive, so that a CS_DirectiveError or CS_LabelRecordInvalid report is traceable
+    @ to one field of one directive.
+    enum DirectiveError : U8 {
+      DIRECTIVE_ID_UNREADABLE = 0 @< The record payload is too short to hold a directive ID
+      UNKNOWN_DIRECTIVE = 1       @< The directive ID is not a defined DirectiveId
+      LABEL_UNREADABLE = 2        @< The label of a LABEL, JCF, or JCS is missing, truncated, or longer than 20 characters
+      EXIT_STATUS_UNREADABLE = 3  @< The status argument of EXIT is missing
+      EXIT_STATUS_INVALID = 4     @< The status argument of EXIT is not 0 or 1
+      ERROR_MODE_UNREADABLE = 5   @< The mode argument of ERROR_MODE is missing
+      ERROR_MODE_INVALID = 6      @< The mode argument of ERROR_MODE is not 0 or 1
+      NO_PRIOR_COMMAND = 7        @< A JCF or JCS ran before any command completed
+      LABEL_NOT_FOUND = 8         @< The jump target of a JCF or JCS is not in the sequence
+      DIRECTIVE_CYCLE = 9         @< Directives redirected execution in a cycle with no command between
     }
 
     # ----------------------------------------------------------------------

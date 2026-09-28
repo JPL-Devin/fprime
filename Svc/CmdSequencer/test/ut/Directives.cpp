@@ -19,7 +19,7 @@ namespace Directives {
 namespace {
 
 typedef CmdSequencer_DirectiveId DirectiveId;
-typedef CmdSequencer_DirectiveStatus DirectiveStatus;
+typedef CmdSequencer_DirectiveError DirectiveError;
 typedef CmdSequencer_InvalidModeCause InvalidModeCause;
 
 //! A label longer than Sequence::Record::MAX_LABEL_SIZE, which is 20 characters
@@ -204,14 +204,7 @@ void CmdSequencerTester ::ErrorModeOnAbortsAtNonJcfDirective() {
 
 void CmdSequencerTester ::ErrorModeOnAbortsBeforeLaterJcf() {
     SequenceFiles::DirectiveFile file("abort_before_jcf");
-    file.command(0, 1)
-        .jcs("S")
-        .jcf("F")
-        .label("S")
-        .exitSeq(0)
-        .label("F")
-        .command(1, 2)
-        .endOfSequence();
+    file.command(0, 1).jcs("S").jcf("F").label("S").exitSeq(0).label("F").command(1, 2).endOfSequence();
     const char* const fileName = this->prepare(file);
 
     this->runSequence(0, fileName);
@@ -228,15 +221,7 @@ void CmdSequencerTester ::ErrorModeOnAbortsBeforeLaterJcf() {
 
 void CmdSequencerTester ::ConsecutiveJumpsSeeSameCommand() {
     SequenceFiles::DirectiveFile file("consecutive_jumps");
-    file.errorMode(0)
-        .command(0, 1)
-        .jcs("S")
-        .jcf("F")
-        .label("S")
-        .exitSeq(0)
-        .label("F")
-        .command(1, 2)
-        .endOfSequence();
+    file.errorMode(0).command(0, 1).jcs("S").jcf("F").label("S").exitSeq(0).label("F").command(1, 2).endOfSequence();
     const char* const fileName = this->prepare(file);
 
     this->runSequence(0, fileName);
@@ -326,7 +311,8 @@ void CmdSequencerTester ::JumpConsumesCommandStatus() {
     ASSERT_EVENTS_CS_CommandError(0, fileName, 0, 0, Fw::CmdResponse::EXECUTION_ERROR);
     ASSERT_EVENTS_CS_DirectiveJump_SIZE(1);
     ASSERT_EVENTS_CS_DirectiveJump(0, fileName, DirectiveId::JCF, "R");
-    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 1, DirectiveStatus::ERROR_NO_PRIOR_COMMAND);
+    // The failing JCF is record 4, which is also what a jump does to the record index
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 4, DirectiveError::NO_PRIOR_COMMAND);
     this->assertAborted();
 }
 
@@ -345,7 +331,8 @@ void CmdSequencerTester ::DirectiveCycleDetected() {
     ASSERT_EVENTS_SIZE(3);
     ASSERT_EVENTS_CS_CommandComplete(0, fileName, 0, 0);
     ASSERT_EVENTS_CS_DirectiveJump(0, fileName, DirectiveId::JCS, "L");
-    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 1, DirectiveStatus::ERROR_DIRECTIVE_CYCLE);
+    // The step gives up after re-reading the ERROR_MODE record at index 2
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 2, DirectiveError::DIRECTIVE_CYCLE);
     ASSERT_from_comCmdOut_SIZE(0);
     this->assertAborted();
 }
@@ -368,7 +355,7 @@ void CmdSequencerTester ::MalformedLabelSkippedDuringSearch() {
     this->respond(0, Fw::CmdResponse::OK);
     ASSERT_EVENTS_SIZE(3);
     ASSERT_EVENTS_CS_CommandComplete(0, fileName, 0, 0);
-    ASSERT_EVENTS_CS_LabelRecordInvalid(0, fileName, 2, static_cast<I32>(Fw::FW_DESERIALIZE_SIZE_MISMATCH));
+    ASSERT_EVENTS_CS_LabelRecordInvalid(0, fileName, 2, DirectiveError::LABEL_UNREADABLE);
     ASSERT_EVENTS_CS_DirectiveJump(0, fileName, DirectiveId::JCS, "GOOD");
     this->assertCommandOut(1, 2);
 }
@@ -386,7 +373,24 @@ void CmdSequencerTester ::UnknownDirectiveSkippedDuringSearch() {
     this->respond(0, Fw::CmdResponse::OK);
     ASSERT_EVENTS_SIZE(3);
     ASSERT_EVENTS_CS_CommandComplete(0, fileName, 0, 0);
-    ASSERT_EVENTS_CS_LabelRecordInvalid(0, fileName, 2, static_cast<I32>(unknownId));
+    ASSERT_EVENTS_CS_LabelRecordInvalid(0, fileName, 2, DirectiveError::UNKNOWN_DIRECTIVE);
+    ASSERT_EVENTS_CS_DirectiveJump(0, fileName, DirectiveId::JCS, "GOOD");
+    this->assertCommandOut(1, 2);
+}
+
+void CmdSequencerTester ::EmptyDirectiveSkippedDuringSearch() {
+    SequenceFiles::DirectiveFile file("empty_dir_search");
+    file.command(0, 1).jcs("GOOD").emptyDirective().label("GOOD").command(1, 2).endOfSequence();
+    const char* const fileName = this->prepare(file);
+
+    this->runSequence(0, fileName);
+    this->assertCommandOut(0, 1);
+
+    // A record too short to hold a directive ID is reported by the search, then skipped
+    this->respond(0, Fw::CmdResponse::OK);
+    ASSERT_EVENTS_SIZE(3);
+    ASSERT_EVENTS_CS_CommandComplete(0, fileName, 0, 0);
+    ASSERT_EVENTS_CS_LabelRecordInvalid(0, fileName, 2, DirectiveError::DIRECTIVE_ID_UNREADABLE);
     ASSERT_EVENTS_CS_DirectiveJump(0, fileName, DirectiveId::JCS, "GOOD");
     this->assertCommandOut(1, 2);
 }
@@ -405,7 +409,7 @@ void CmdSequencerTester ::EmptyDirectiveRecord() {
     ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, CmdSequencerComponentBase::OPCODE_CS_RUN, 0, Fw::CmdResponse::EXECUTION_ERROR);
     ASSERT_EVENTS_CS_DirectiveError_SIZE(1);
-    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveStatus::ERROR_MALFORMED_RECORD);
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveError::DIRECTIVE_ID_UNREADABLE);
     this->assertAborted();
 }
 
@@ -415,9 +419,10 @@ void CmdSequencerTester ::UnknownDirectiveId() {
     const char* const fileName = this->prepare(file);
 
     this->sendRun(fileName, Svc::BlockState::NO_BLOCK);
+    ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, CmdSequencerComponentBase::OPCODE_CS_RUN, 0, Fw::CmdResponse::EXECUTION_ERROR);
     ASSERT_EVENTS_CS_DirectiveError_SIZE(1);
-    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveStatus::ERROR_INVALID_ARGUMENT);
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveError::UNKNOWN_DIRECTIVE);
     this->assertAborted();
 }
 
@@ -427,9 +432,10 @@ void CmdSequencerTester ::ExitWithNoArgument() {
     const char* const fileName = this->prepare(file);
 
     this->sendRun(fileName, Svc::BlockState::NO_BLOCK);
+    ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, CmdSequencerComponentBase::OPCODE_CS_RUN, 0, Fw::CmdResponse::EXECUTION_ERROR);
     ASSERT_EVENTS_CS_DirectiveError_SIZE(1);
-    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveStatus::ERROR_MALFORMED_RECORD);
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveError::EXIT_STATUS_UNREADABLE);
     this->assertAborted();
 }
 
@@ -439,10 +445,25 @@ void CmdSequencerTester ::ExitWithInvalidStatus() {
     const char* const fileName = this->prepare(file);
 
     this->sendRun(fileName, Svc::BlockState::NO_BLOCK);
+    ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, CmdSequencerComponentBase::OPCODE_CS_RUN, 0, Fw::CmdResponse::EXECUTION_ERROR);
     ASSERT_EVENTS_CS_DirectiveError_SIZE(1);
-    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveStatus::ERROR_INVALID_ARGUMENT);
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveError::EXIT_STATUS_INVALID);
     this->assertAborted();
+}
+
+void CmdSequencerTester ::ErrorModeWithNoArgument() {
+    SequenceFiles::DirectiveFile file("error_mode_no_arg");
+    file.directiveIdOnly(DirectiveId::ERROR_MODE).endOfSequence();
+    const char* const fileName = this->prepare(file);
+
+    this->sendRun(fileName, Svc::BlockState::NO_BLOCK);
+    ASSERT_CMD_RESPONSE_SIZE(1);
+    ASSERT_CMD_RESPONSE(0, CmdSequencerComponentBase::OPCODE_CS_RUN, 0, Fw::CmdResponse::EXECUTION_ERROR);
+    ASSERT_EVENTS_CS_DirectiveError_SIZE(1);
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveError::ERROR_MODE_UNREADABLE);
+    this->assertAborted();
+    ASSERT_TRUE(this->component.m_errorMode);
 }
 
 void CmdSequencerTester ::ErrorModeWithInvalidArgument() {
@@ -451,9 +472,10 @@ void CmdSequencerTester ::ErrorModeWithInvalidArgument() {
     const char* const fileName = this->prepare(file);
 
     this->sendRun(fileName, Svc::BlockState::NO_BLOCK);
+    ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, CmdSequencerComponentBase::OPCODE_CS_RUN, 0, Fw::CmdResponse::EXECUTION_ERROR);
     ASSERT_EVENTS_CS_DirectiveError_SIZE(1);
-    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveStatus::ERROR_INVALID_ARGUMENT);
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveError::ERROR_MODE_INVALID);
     this->assertAborted();
     // The invalid argument did not change the mode
     ASSERT_TRUE(this->component.m_errorMode);
@@ -472,7 +494,7 @@ void CmdSequencerTester ::JumpWithOverlongLabel() {
     this->respond(0, Fw::CmdResponse::OK);
     ASSERT_EVENTS_SIZE(2);
     ASSERT_EVENTS_CS_CommandComplete(0, fileName, 0, 0);
-    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 1, DirectiveStatus::ERROR_MALFORMED_RECORD);
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 1, DirectiveError::LABEL_UNREADABLE);
     this->assertAborted();
 }
 
@@ -488,7 +510,7 @@ void CmdSequencerTester ::JumpWithTruncatedLabel() {
     this->respond(0, Fw::CmdResponse::OK);
     ASSERT_EVENTS_SIZE(2);
     ASSERT_EVENTS_CS_CommandComplete(0, fileName, 0, 0);
-    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 1, DirectiveStatus::ERROR_MALFORMED_RECORD);
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 1, DirectiveError::LABEL_UNREADABLE);
     this->assertAborted();
 }
 
@@ -499,9 +521,10 @@ void CmdSequencerTester ::JumpWithNoPriorCommand() {
 
     // The JCF is the first record, so there is no command status for it to test
     this->sendRun(fileName, Svc::BlockState::NO_BLOCK);
+    ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, CmdSequencerComponentBase::OPCODE_CS_RUN, 0, Fw::CmdResponse::EXECUTION_ERROR);
     ASSERT_EVENTS_CS_DirectiveError_SIZE(1);
-    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveStatus::ERROR_NO_PRIOR_COMMAND);
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveError::NO_PRIOR_COMMAND);
     ASSERT_from_comCmdOut_SIZE(0);
     this->assertAborted();
 }
@@ -517,7 +540,7 @@ void CmdSequencerTester ::JumpToMissingLabel() {
     this->respond(0, Fw::CmdResponse::OK);
     ASSERT_EVENTS_SIZE(2);
     ASSERT_EVENTS_CS_CommandComplete(0, fileName, 0, 0);
-    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 1, DirectiveStatus::ERROR_LABEL_NOT_FOUND);
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 1, DirectiveError::LABEL_NOT_FOUND);
     ASSERT_EVENTS_CS_LabelRecordInvalid_SIZE(0);
     this->assertAborted();
 }
@@ -612,6 +635,34 @@ void CmdSequencerTester ::ManualStepResponseDistinguishesEndFromAbort() {
     }
 }
 
+void CmdSequencerTester ::ManualStepTrailingDirectiveCompletesSequence() {
+    SequenceFiles::DirectiveFile file("manual_last_directive");
+    file.command(0, 1).errorMode(0);
+    const char* const fileName = this->prepare(file);
+
+    this->goToManualMode(10);
+    this->runSequence(0, fileName);
+    this->startSequence(0, fileName);
+    this->assertCommandOut(0, 1);
+    this->respond(0, Fw::CmdResponse::OK);
+    ASSERT_EVENTS_SIZE(1);
+    ASSERT_EVENTS_CS_CommandComplete(0, fileName, 0, 0);
+    ASSERT_EQ(CmdSequencerComponentImpl::RUNNING, this->component.m_runMode);
+
+    // The ERROR_MODE directive is the last record. The step that consumes it has nothing
+    // left to run, so it ends the sequence as an auto-mode step would, and is not reported
+    // as a step of its own.
+    this->step(Fw::CmdResponse::OK);
+    ASSERT_EVENTS_SIZE(1);
+    ASSERT_EVENTS_CS_SequenceComplete(0, fileName);
+    ASSERT_EVENTS_CS_CmdStepped_SIZE(0);
+    ASSERT_from_seqDone_SIZE(1);
+    ASSERT_from_seqDone(0, 0U, 0U, Fw::CmdResponse(Fw::CmdResponse::OK));
+    ASSERT_EQ(CmdSequencerComponentImpl::STOPPED, this->component.m_runMode);
+    // Error mode returns to its default at the end of the sequence
+    ASSERT_TRUE(this->component.m_errorMode);
+}
+
 void CmdSequencerTester ::FailedCommandAdvancesRecordIndex() {
     SequenceFiles::DirectiveFile file("failed_command_index");
     file.errorMode(0).command(0, 1).command(1, 2).endOfSequence();
@@ -647,6 +698,22 @@ void CmdSequencerTester ::BlockingRunAnsweredOnceWhenSequenceEndsInFirstStep() {
     ASSERT_from_seqDone(0, 0U, 0U, Fw::CmdResponse(Fw::CmdResponse::OK));
 }
 
+void CmdSequencerTester ::BlockingRunAnsweredOnceWhenFirstStepAborts() {
+    SequenceFiles::DirectiveFile file("blocking_run_abort");
+    file.directiveIdOnly(99).endOfSequence();
+    const char* const fileName = this->prepare(file);
+
+    // The unknown directive aborts the sequence inside the first step. The cancel path
+    // answers the blocking caller with EXECUTION_ERROR; the run handler must not answer
+    // again.
+    this->sendRun(fileName, Svc::BlockState::BLOCK);
+    ASSERT_CMD_RESPONSE_SIZE(1);
+    ASSERT_CMD_RESPONSE(0, CmdSequencerComponentBase::OPCODE_CS_RUN, 0, Fw::CmdResponse::EXECUTION_ERROR);
+    ASSERT_EVENTS_CS_DirectiveError_SIZE(1);
+    ASSERT_EVENTS_CS_DirectiveError(0, fileName, 0, DirectiveError::UNKNOWN_DIRECTIVE);
+    this->assertAborted();
+}
+
 void CmdSequencerTester ::InvalidModeNamesItsCause() {
     SequenceFiles::DirectiveFile file("invalid_mode_cause");
     file.command(0, 1).endOfSequence();
@@ -670,6 +737,19 @@ void CmdSequencerTester ::InvalidModeNamesItsCause() {
     ASSERT_CMD_RESPONSE(0, CmdSequencerComponentBase::OPCODE_CS_STEP, 12, Fw::CmdResponse::EXECUTION_ERROR);
     ASSERT_EVENTS_SIZE(1);
     ASSERT_EVENTS_CS_InvalidMode(0, InvalidModeCause::STEP_NOT_MANUAL);
+    this->cancelSequence(13, fileName);
+
+    // A port-driven run cannot be stepped, so it is refused in manual mode
+    this->goToManualMode(14);
+    Fw::String portFileName(fileName);
+    Svc::SeqArgs emptyArgs{0, 0};
+    this->invoke_to_seqRunIn(0, portFileName, emptyArgs);
+    this->clearAndDispatch();
+    ASSERT_CMD_RESPONSE_SIZE(0);
+    ASSERT_from_seqDone_SIZE(1);
+    ASSERT_from_seqDone(0, 0U, 0U, Fw::CmdResponse(Fw::CmdResponse::EXECUTION_ERROR));
+    ASSERT_EVENTS_SIZE(1);
+    ASSERT_EVENTS_CS_InvalidMode(0, InvalidModeCause::PORT_RUN_IN_MANUAL);
 }
 
 // ----------------------------------------------------------------------

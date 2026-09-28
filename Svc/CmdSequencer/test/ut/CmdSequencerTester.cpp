@@ -521,7 +521,7 @@ void CmdSequencerTester ::startNewSequence(const char* const fileName) {
     ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, CmdSequencerComponentBase::OPCODE_CS_RUN, 0, Fw::CmdResponse::EXECUTION_ERROR);
     ASSERT_EVENTS_SIZE(1);
-    ASSERT_EVENTS_CS_InvalidMode_SIZE(1);
+    ASSERT_EVENTS_CS_InvalidMode(0, CmdSequencer_InvalidModeCause::RUN_NOT_STOPPED);
     // Validate the file
     this->sendCmd_CS_VALIDATE(0, 0, Fw::CmdStringArg(fileName));
     this->clearAndDispatch();
@@ -530,7 +530,7 @@ void CmdSequencerTester ::startNewSequence(const char* const fileName) {
     ASSERT_CMD_RESPONSE(0, CmdSequencerComponentBase::OPCODE_CS_VALIDATE, 0, Fw::CmdResponse::EXECUTION_ERROR);
     // Assert events
     ASSERT_EVENTS_SIZE(1);
-    ASSERT_EVENTS_CS_InvalidMode_SIZE(1);
+    ASSERT_EVENTS_CS_InvalidMode(0, CmdSequencer_InvalidModeCause::VALIDATE_NOT_STOPPED);
     // Invoke sequence port
     Fw::String fArg(fileName);
     Svc::SeqArgs emptyArgs{0, 0};
@@ -541,7 +541,7 @@ void CmdSequencerTester ::startNewSequence(const char* const fileName) {
     ASSERT_from_seqDone(0, 0U, 0U, Fw::CmdResponse(Fw::CmdResponse::EXECUTION_ERROR));
     // Assert events
     ASSERT_EVENTS_SIZE(1);
-    ASSERT_EVENTS_CS_InvalidMode_SIZE(1);
+    ASSERT_EVENTS_CS_InvalidMode(0, CmdSequencer_InvalidModeCause::PORT_RUN_NOT_STOPPED);
 }
 
 void CmdSequencerTester ::startSequence(const U32 cmdSeq, const char* const fileName) {

@@ -184,10 +184,10 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
         class Record {
           public:
             enum Descriptor {
-                ABSOLUTE,            //!< Absolute time
-                RELATIVE,            //!< Relative time
-                END_OF_SEQUENCE,     //!< end of sequence
-                SEQUENCE_DIRECTIVE   //!< sequence directive
+                ABSOLUTE,           //!< Absolute time
+                RELATIVE,           //!< Relative time
+                END_OF_SEQUENCE,    //!< end of sequence
+                SEQUENCE_DIRECTIVE  //!< sequence directive
             };
 
             //! The directive identifier. Defined by the FPP model so that it reaches the
@@ -635,10 +635,28 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
     //! directive immediately after it handled the failure
     void abortOnCommandError();
 
+    //! The outcome of one step
+    enum StepResult {
+        STEP_COMMAND_ISSUED,   //!< A command record was issued or scheduled; the sequence is running
+        STEP_DIRECTIVE_DONE,   //!< One directive ran in MANUAL step mode; the sequence is running
+        STEP_SEQUENCE_ENDED,   //!< The sequence completed; sequenceComplete has already reported it
+        STEP_SEQUENCE_ABORTED  //!< The step canceled the sequence; the failure has already been reported
+    };
+
+    //! What a directive asks performCmd_Step to do next
+    enum DirectiveResult {
+        DIRECTIVE_CONTINUE,             //!< Read the next record in this step
+        DIRECTIVE_JUMPED,               //!< A jump was taken; read the next record from the jump target
+        DIRECTIVE_SEQUENCE_ENDED,       //!< The directive completed the sequence and reported it
+        DIRECTIVE_ABORT_PENDING_ERROR,  //!< A prior command failed with error mode ON and this directive did not handle
+                                        //!< it
+        DIRECTIVE_FAILED                //!< The directive failed; directiveError has already reported it
+    };
+
     //! Perform a Step command. Processes one command record, consuming any sequence
     //! directives that precede it.
-    //! \return false if the step terminated the sequence with an error
-    bool performCmd_Step();
+    //! \return The step outcome. Only STEP_SEQUENCE_ABORTED is a failure of the step.
+    StepResult performCmd_Step();
 
     //! Perform a Step command with a relative time
     void performCmd_Step_RELATIVE(Fw::Time& currentTime  //!< The time
@@ -662,6 +680,10 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
     //! Record an error
     void error();
 
+    //! Clear the per-sequence execution state: the stored command status, the error mode,
+    //! any pending abort, and the record position
+    void clearSequenceState();
+
     //! Record an error in executing a sequence command
     void commandError(const U32 number,           //!< The command number
                       const FwOpcodeType opCode,  //!< The command opcode
@@ -670,8 +692,8 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
 
     //! Require a run mode
     //! \return Whether we are in the correct mode
-    bool requireRunMode(RunMode mode,                                 //!< The required mode
-                        CmdSequencer_InvalidModeCause::T cause        //!< Reported if the mode is wrong
+    bool requireRunMode(RunMode mode,                           //!< The required mode
+                        CmdSequencer_InvalidModeCause::T cause  //!< Reported if the mode is wrong
     );
 
     //! Set command timeout timer
@@ -681,12 +703,13 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
     //! Sequence run helper
     void doSequenceRun(const Fw::StringBase& fileName);
 
-    //! Execute a sequence directive. Reports any failure before returning it.
+    //! Execute a sequence directive. Reports any failure before returning.
     //! \return What the caller should do next
     //! The record is taken by non-const reference because the directive payload is read
     //! in place through the record's own buffer, which advances that buffer's
     //! deserialization pointer.
-    CmdSequencer_DirectiveStatus::T executeDirective(Sequence::Record& record  //!< The directive record
+    DirectiveResult executeDirective(Sequence::Record& record,  //!< The directive record
+                                     const U32 recordIndex      //!< Its index within the sequence, for reporting
     );
 
     //! Search for a label in the sequence and position the deserializer just past it
@@ -698,13 +721,13 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
     //! \return Serialize status. FW_DESERIALIZE_SIZE_MISMATCH if the length exceeds
     //!         Sequence::Record::MAX_LABEL_SIZE
     static Fw::SerializeStatus deserializeLabel(Fw::LinearBufferBase& buffer,  //!< The directive payload
-                                                Fw::StringBase& label         //!< The deserialized label
+                                                Fw::StringBase& label          //!< The deserialized label
     );
 
     //! Report a directive failure and count it as an error
-    //! \return The status that was passed in, so that callers can report and return in
-    //!         one statement
-    CmdSequencer_DirectiveStatus::T directiveError(CmdSequencer_DirectiveStatus::T status  //!< The failure reason
+    //! \return DIRECTIVE_FAILED, so that callers can report and return in one statement
+    DirectiveResult directiveError(const U32 recordIndex,                //!< The index of the failing record
+                                   CmdSequencer_DirectiveError::T error  //!< The failure reason
     );
 
   private:
@@ -761,12 +784,17 @@ class CmdSequencerComponentImpl final : public CmdSequencerComponentBase {
     bool m_join_waiting;
 
     //! Last command status (for JCF/JCS directives that come after the command)
-    bool m_lastCmdExecuted;          //!< Whether a command has been executed (for detecting JCF/JCS before any command)
-    Fw::CmdResponse m_lastCmdStatus; //!< Status of the last executed command
+    bool m_lastCmdExecuted;  //!< Whether a command has been executed (for detecting JCF/JCS before any command)
+    Fw::CmdResponse m_lastCmdStatus;  //!< Status of the last executed command
 
     //! Error mode state
-    bool m_errorMode;                //!< Whether sequence aborts on command error (true = abort, false = continue)
-    bool m_errorPendingAbort;        //!< Command failed with ERROR_MODE ON, pending abort unless JCF handles it
+    bool m_errorMode;          //!< Whether sequence aborts on command error (true = abort, false = continue)
+    bool m_errorPendingAbort;  //!< Command failed with ERROR_MODE ON, pending abort unless JCF handles it
+
+    //! Index within the sequence of the next record performCmd_Step will read. Tracked
+    //! here because the sequence reader exposes only a byte position, and events report
+    //! record indices.
+    U32 m_recordIndex;
 
     //! Telemetry to update sequence not running
     const Fw::String NO_SEQ{"<no seq>"};

@@ -238,8 +238,8 @@ event CS_DirectiveJump(
 @ A sequence directive could not be executed.
 event CS_DirectiveError(
                          fileName: string size 60 @< The name of the sequence file
-                         recordNumber: U32 @< The record number
-                         status: DirectiveStatus @< The failure reason
+                         recordNumber: U32 @< The index of the directive record within the sequence
+                         error: DirectiveError @< The failure reason
                        ) \
   severity warning high \
   id 27 \
@@ -248,9 +248,9 @@ event CS_DirectiveError(
 @ A LABEL record encountered while searching for a jump target could not be parsed.
 event CS_LabelRecordInvalid(
                              fileName: string size 60 @< The name of the sequence file
-                             recordNumber: U32 @< The record number within the sequence
-                             error: I32 @< The error code
+                             recordNumber: U32 @< The index of the directive record within the sequence
+                             error: DirectiveError @< Why the record was skipped
                            ) \
   severity warning high \
   id 28 \
-  format "Sequence file {}: label record {} invalid. Err: {}"
+  format "Sequence file {}: directive record {} skipped during label search: {}"

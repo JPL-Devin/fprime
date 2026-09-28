@@ -1,12 +1,16 @@
-# Makefile for compiling F Prime test sequences
-# This compiles all .seq files to .bin binary sequence files
+# Makefile for compiling the CmdStatusTester test sequences
+# Compiles every .seq file here to a .bin binary sequence file with fprime-seqgen
+#
+# Requires an fprime-gds whose fprime-seqgen understands sequence directives
+# (LABEL, JCF, JCS, EXIT, ERROR_MODE) on the PATH, e.g. from the activated
+# fprime-venv. Override SEQGEN or DICT on the command line if needed:
+#   make SEQGEN=/path/to/fprime-seqgen DICT=/path/to/RefTopologyDictionary.json
 
 # Project paths
 PROJECT_ROOT := ../../..
 BUILD_ARTIFACTS := $(PROJECT_ROOT)/build-artifacts
-DICT := $(BUILD_ARTIFACTS)/Linux/Ref/dict/RefTopologyDictionary.json
-SEQGEN := /home/tcanham/source/fprime-gds/src/fprime_gds/common/tools/seqgen.py
-FPRIME_GDS_SRC := /home/tcanham/source/fprime-gds/src
+DICT ?= $(BUILD_ARTIFACTS)/Linux/Ref/dict/RefTopologyDictionary.json
+SEQGEN ?= fprime-seqgen
 
 # Find all .seq files
 SEQ_FILES := $(wildcard *.seq)
@@ -22,14 +26,14 @@ check-dict:
 	@if [ ! -f "$(DICT)" ]; then \
 		echo "Error: Dictionary not found at $(DICT)"; \
 		echo "Please build the project first:"; \
-		echo "  cd $(PROJECT_ROOT) && fprime-util build"; \
+		echo "  cd $(PROJECT_ROOT)/Ref && fprime-util build"; \
 		exit 1; \
 	fi
 
 # Rule to compile .seq files to .bin files
 %.bin: %.seq
 	@echo "Compiling $< -> $@"
-	PYTHONPATH=$(FPRIME_GDS_SRC) python3 $(SEQGEN) --dictionary $(DICT) $< $@
+	$(SEQGEN) --dictionary $(DICT) $< $@
 
 # Clean target
 .PHONY: clean
