@@ -3060,11 +3060,12 @@ void CfdpManagerTester::testRxFileReopenFailedEvent() {
     // then reopen of the (now-directory) dest for writing fails -> RxFileReopenFailed.
     txn->r2RecvMd(pduBuffer);
 
-    // Verify events: MetadataReceived (from recvMd) + RxFileReopenFailed (reopen failure).
-    // After the successful rename, the transaction's dst_filename is the metadata dest (moveDest),
-    // which is the file that failed to reopen. The status field is an OS-dependent file-op code,
-    // so it is intentionally not asserted.
-    ASSERT_EVENTS_SIZE(2);
+    // Verify events: MetadataReceived (from recvMd) + RxFileReopenFailed (reopen failure) +
+    // FileRemoveFailed (the unusable destination is discarded, but it is a directory here so the
+    // removal fails). After the successful rename, the transaction's dst_filename is the metadata
+    // dest (moveDest), which is the file that failed to reopen. The status fields are OS-dependent
+    // file-op codes, so they are intentionally not asserted.
+    ASSERT_EVENTS_SIZE(3);
     ASSERT_EVENTS_MetadataReceived_SIZE(1);
     ASSERT_EVENTS_MetadataReceived(0,               // index
                                    "test_src.dat",  // srcFile from metadata
@@ -3076,6 +3077,8 @@ void CfdpManagerTester::testRxFileReopenFailedEvent() {
     ASSERT_EQ(sourceEid, this->eventHistory_RxFileReopenFailed->at(0).srcEid);
     ASSERT_EQ(seq, this->eventHistory_RxFileReopenFailed->at(0).seqNum);
     ASSERT_STREQ(moveDest, this->eventHistory_RxFileReopenFailed->at(0).filename.toChar());
+    ASSERT_EVENTS_FileRemoveFailed_SIZE(1);
+    ASSERT_STREQ(moveDest, this->eventHistory_FileRemoveFailed->at(0).filename.toChar());
 
     // Cleanup: rename succeeded, so the source no longer exists; the dest is now the directory.
     Os::FileSystem::removeDirectory(moveDest);

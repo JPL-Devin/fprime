@@ -731,6 +731,18 @@ class Engine {
      */
     void handleNotKeepFile(Transaction* txn);
 
+    /**
+     * @brief Build `<directory>/<basename(srcFile)>` for archiving a sent file
+     *
+     * Emits FilePathTooLong and returns false if the result would exceed MaxFilePathSize.
+     *
+     * @param directory Destination directory (move_dir or fail_dir)
+     * @param srcFile   Source file path whose basename is preserved
+     * @param destPath  Resulting destination path on success
+     * @returns true if destPath was built, false if the path is too long
+     */
+    bool buildArchivePath(const Fw::String& directory, const Fw::String& srcFile, Fw::String& destPath);
+
     // Friend declarations for testing
     friend class CfdpManagerTester;
 };

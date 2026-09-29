@@ -68,7 +68,7 @@ Transaction::Transaction(Channel* channel, U8 channelId, Engine* engine, CfdpMan
       m_foffs(0),
       m_fd(),
       m_crc(),
-      m_keep(Cfdp::Keep::KEEP),
+      m_keep(Cfdp::Keep::DELETE),
       m_chan_num(channelId),  // Initialize from parameter
       m_priority(0),
       m_initType(TransactionInitType::INIT_BY_COMMAND),
@@ -93,7 +93,7 @@ void Transaction::reset() {
     this->m_txn_class = Cfdp::Class::CLASS_1;
     this->m_fsize = 0;
     this->m_foffs = 0;
-    this->m_keep = Cfdp::Keep::KEEP;
+    this->m_keep = Cfdp::Keep::DELETE; /* RX only keeps the file once the CRC has been verified */
     this->m_priority = 0;
     this->m_initType = TransactionInitType::INIT_BY_COMMAND;
     this->m_crc = CFDP::Checksum(0);
@@ -320,6 +320,13 @@ void Transaction::rTick(I32* cont /* unused */) {
          * wakes up or if the network delivers severely delayed PDUs at
          * some future point, then they will be seen as spurious.  They
          * will no longer be associable with this transaction at all */
+        if (this->m_fd.isOpen()) {
+            /* the receive never completed, so discard the partial file */
+            this->m_fd.close();
+            if (!this->m_keep) {
+                this->rRemoveFile(this->m_history->fnames.dst_filename);
+            }
+        }
         this->m_chan->recycleTransaction(this);
 
         /* NOTE: this must be the last thing in here.  Do not use txn after this */
@@ -653,8 +660,10 @@ void Transaction::r1SubstateRecvEof(const Fw::Buffer& buffer) {
             if (this->rCheckCrc(crc) == Cfdp::Status::SUCCESS) {
                 /* successfully processed the file */
                 this->m_keep = Cfdp::Keep::KEEP; /* save the file */
+            } else {
+                /* CFDP_R_CheckCrc() generates an event on failure; the file is discarded on reset */
+                this->m_engine->setTxnStatus(this, TxnStatus::TXN_STATUS_FILE_CHECKSUM_FAILURE);
             }
-            /* if file failed to process, there's nothing to do. CFDP_R_CheckCrc() generates an event on failure */
         }
     }
 
@@ -1102,6 +1111,7 @@ void Transaction::r2RecvMd(const Fw::Buffer& buffer) {
                     this->m_history->fnames.dst_filename, fileSysStatus);
                 this->r2SetFinTxnStatus(TxnStatus::TXN_STATUS_FILESTORE_REJECTION);
                 this->m_cfdpManager->incrementFaultFileRename(this->m_chan_num);
+                this->rRemoveFile(fname); /* file handle is closed, so finishTransaction will not remove it */
                 success = false;
             } else {
                 // File was successfully renamed, open for writing
@@ -1112,6 +1122,7 @@ void Transaction::r2RecvMd(const Fw::Buffer& buffer) {
                         this->m_history->fnames.dst_filename, fileStatus);
                     this->r2SetFinTxnStatus(TxnStatus::TXN_STATUS_FILESTORE_REJECTION);
                     this->m_cfdpManager->incrementFaultFileOpen(this->m_chan_num);
+                    this->rRemoveFile(this->m_history->fnames.dst_filename);
                     success = false;
                 }
             }
@@ -1123,6 +1134,13 @@ void Transaction::r2RecvMd(const Fw::Buffer& buffer) {
                 this->r2Complete(true);                         /* check for completion now that md is received */
             }
         }
+    }
+}
+
+void Transaction::rRemoveFile(const Fw::String& filename) {
+    Os::FileSystem::Status status = Os::FileSystem::removeFile(filename.toChar());
+    if (status != Os::FileSystem::OP_OK) {
+        this->m_cfdpManager->log_WARNING_LO_FileRemoveFailed(filename, status);
     }
 }
 

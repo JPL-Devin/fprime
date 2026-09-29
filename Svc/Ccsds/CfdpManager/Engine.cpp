@@ -1132,10 +1132,14 @@ void Engine::handleNotKeepFile(Transaction* txn) {
             // If move directory is defined attempt move
             moveDir = m_manager->getMoveDirParam(txn->getChannelId());
             if (moveDir.length() > 0) {
-                fileStatus = Os::FileSystem::moveFile(txn->m_history->fnames.src_filename.toChar(), moveDir.toChar());
-                if (fileStatus != Os::FileSystem::OP_OK) {
-                    m_manager->log_WARNING_LO_FailKeepFileMove(txn->m_history->fnames.src_filename, moveDir,
-                                                               fileStatus);
+                Fw::String destPath;
+                if (this->buildArchivePath(moveDir, txn->m_history->fnames.src_filename, destPath)) {
+                    fileStatus =
+                        Os::FileSystem::moveFile(txn->m_history->fnames.src_filename.toChar(), destPath.toChar());
+                    if (fileStatus != Os::FileSystem::OP_OK) {
+                        m_manager->log_WARNING_LO_FailKeepFileMove(txn->m_history->fnames.src_filename, moveDir,
+                                                                   fileStatus);
+                    }
                 }
             }
 
@@ -1152,11 +1156,14 @@ void Engine::handleNotKeepFile(Transaction* txn) {
                 // If fail directory is defined attempt move
                 failDir = m_manager->getFailDirParam(txn->getChannelId());
                 if (failDir.length() > 0) {
-                    fileStatus =
-                        Os::FileSystem::moveFile(txn->m_history->fnames.src_filename.toChar(), failDir.toChar());
-                    if (fileStatus != Os::FileSystem::OP_OK) {
-                        m_manager->log_WARNING_LO_FailPollFileMove(txn->m_history->fnames.src_filename, failDir,
-                                                                   fileStatus);
+                    Fw::String destPath;
+                    if (this->buildArchivePath(failDir, txn->m_history->fnames.src_filename, destPath)) {
+                        fileStatus =
+                            Os::FileSystem::moveFile(txn->m_history->fnames.src_filename.toChar(), destPath.toChar());
+                        if (fileStatus != Os::FileSystem::OP_OK) {
+                            m_manager->log_WARNING_LO_FailPollFileMove(txn->m_history->fnames.src_filename, failDir,
+                                                                       fileStatus);
+                        }
                     }
                 }
 
@@ -1177,6 +1184,22 @@ void Engine::handleNotKeepFile(Transaction* txn) {
             m_manager->log_WARNING_LO_FileRemoveFailed(txn->m_history->fnames.dst_filename, fileStatus);
         }
     }
+}
+
+bool Engine::buildArchivePath(const Fw::String& directory, const Fw::String& srcFile, Fw::String& destPath) {
+    const char* basename = strrchr(srcFile.toChar(), '/');
+    basename = (basename != nullptr) ? (basename + 1) : srcFile.toChar();
+
+    Fw::String basenameStr(basename);
+    if ((directory.length() + 1 + basenameStr.length()) > MaxFilePathSize) {
+        m_manager->log_WARNING_LO_FilePathTooLong(directory, basenameStr, MaxFilePathSize);
+        return false;
+    }
+
+    destPath = directory;
+    destPath += "/";
+    destPath += basenameStr;
+    return true;
 }
 
 Cfdp::ChannelTelemetry& Engine::getChannelTelemetryRef(U8 channelId) {

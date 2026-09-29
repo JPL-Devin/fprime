@@ -71,8 +71,8 @@ module Cfdp {
     struct ChannelParams {
         ack_limit: U8 @< number of times to retry ACK (for ex, send FIN and wait for fin-ack)
         nack_limit: U8 @< number of times to retry NAK before giving up (resets on a single response
-        ack_timer: U32 @< Acknowledge timer in seconds
-        inactivity_timer: U32 @< Inactivity timer in seconds
+        ack_timer: U32 @< Acknowledge timer in seconds (minimum 1, lower values are clamped to 1)
+        inactivity_timer: U32 @< Inactivity timer in seconds (minimum 1, lower values are clamped to 1)
         dequeue_enabled: Fw.Enabled @< if enabled, then the channel will make pending transactions active
         move_dir: string size MaxFilePathSize @< Move directory if not empty
         max_outgoing_pdus_per_cycle: U32 @< Maximum number of PDUs to send per cycle per channel for throttling

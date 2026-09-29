@@ -66,6 +66,9 @@ class CfdpManager final : public CfdpManagerComponentBase {
     //! Size of packet descriptor prepended to PDUs for ComQueue
     static constexpr FwSizeType PACKET_DESCRIPTOR_SIZE = sizeof(FwPacketDescriptorType);
 
+    //! Minimum accepted ack/inactivity timer value in seconds; lower values are clamped
+    static constexpr U32 MinTimerSeconds = 1;
+
     // ----------------------------------------------------------------------
     // Port calls that are invoked by the CFDP engine
     // These functions are analogous to the functions in cf_cfdp_sbintf.*
@@ -495,13 +498,13 @@ class CfdpManager final : public CfdpManagerComponentBase {
     //! Get the ACK timer parameter for a channel
     //!
     //! \param channelIndex [in] Index of the channel
-    //! \return ACK timeout value in seconds
+    //! \return ACK timeout value in seconds, never less than MinTimerSeconds
     U32 getAckTimerParam(U8 channelIndex);
 
     //! Get the inactivity timer parameter for a channel
     //!
     //! \param channelIndex [in] Index of the channel
-    //! \return Inactivity timeout value in seconds
+    //! \return Inactivity timeout value in seconds, never less than MinTimerSeconds
     U32 getInactivityTimerParam(U8 channelIndex);
 
     //! Get the dequeue enabled parameter for a channel

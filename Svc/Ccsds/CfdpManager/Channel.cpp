@@ -770,6 +770,16 @@ void Channel::processPlaybackDirectory(Playback* pb) {
                 break;
             }
 
+            // Skip entries whose combined source or destination path would exceed MaxFilePathSize
+            if ((pb->fnames.src_filename.length() + 1 + path.length()) > MaxFilePathSize) {
+                this->m_cfdpManager->log_WARNING_LO_FilePathTooLong(pb->fnames.src_filename, path, MaxFilePathSize);
+                continue;
+            }
+            if ((pb->fnames.dst_filename.length() + 1 + path.length()) > MaxFilePathSize) {
+                this->m_cfdpManager->log_WARNING_LO_FilePathTooLong(pb->fnames.dst_filename, path, MaxFilePathSize);
+                continue;
+            }
+
             pb->pending_file = path;
         } else {
             txn = this->findUnusedTransaction(Direction::DIRECTION_TX);

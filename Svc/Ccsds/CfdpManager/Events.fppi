@@ -82,6 +82,23 @@ event InvalidPollInterval(
     severity warning low \
     format "Invalid poll interval {} seconds, must be non-zero"
 
+event InvalidTimerParameter(
+    channelId: U8 @< Channel whose configuration is invalid
+    timerName: string size 32 @< Name of the timer parameter
+    value: U32 @< Configured value in seconds
+    minimum: U32 @< Minimum accepted value in seconds, applied in place of the configured value
+) \
+    severity warning low \
+    format "Invalid channel {} {} of {} seconds, minimum is {} seconds (clamped)"
+
+event FilePathTooLong(
+    directory: string size MaxFilePathSize @< Directory portion of the path
+    filename: string size MaxFilePathSize @< File name portion of the path
+    maxLength: U32 @< Maximum supported file path length
+) \
+    severity warning low \
+    format "Path {}/{} exceeds maximum file path length {}, skipping"
+
 event FailKeepFileMove(
     srcFile: string size MaxFilePathSize @< Source file being moved
     moveDir: string size MaxFilePathSize @< Directory file was moved to

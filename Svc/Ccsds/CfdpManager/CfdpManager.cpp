@@ -624,7 +624,19 @@ void CfdpManager ::parameterUpdated(FwPrmIdType id) {
             break;
         }
         case PARAMID_CHANNELCONFIG: {
-            this->tlmWrite_PRM_CHANNEL_CONFIG(this->paramGet_ChannelConfig(valid));
+            ChannelArrayParams channelConfig = this->paramGet_ChannelConfig(valid);
+            for (U8 chan = 0; chan < Cfdp::NumChannels; chan++) {
+                if (channelConfig[chan].get_ack_timer() < MinTimerSeconds) {
+                    this->log_WARNING_LO_InvalidTimerParameter(chan, Fw::String("ack_timer"),
+                                                               channelConfig[chan].get_ack_timer(), MinTimerSeconds);
+                }
+                if (channelConfig[chan].get_inactivity_timer() < MinTimerSeconds) {
+                    this->log_WARNING_LO_InvalidTimerParameter(chan, Fw::String("inactivity_timer"),
+                                                               channelConfig[chan].get_inactivity_timer(),
+                                                               MinTimerSeconds);
+                }
+            }
+            this->tlmWrite_PRM_CHANNEL_CONFIG(channelConfig);
             break;
         }
         default: {
@@ -744,8 +756,9 @@ U32 CfdpManager::getAckTimerParam(U8 channelIndex) {
     ChannelArrayParams paramArray = paramGet_ChannelConfig(valid);
     FW_ASSERT(FW_PARAM_OK(valid), static_cast<FwAssertArgType>(valid.e));
 
-    // Now get individual parameter
-    return paramArray[channelIndex].get_ack_timer();
+    // Now get individual parameter, clamped to the documented minimum
+    const U32 ackTimer = paramArray[channelIndex].get_ack_timer();
+    return (ackTimer < MinTimerSeconds) ? MinTimerSeconds : ackTimer;
 }
 
 U32 CfdpManager::getInactivityTimerParam(U8 channelIndex) {
@@ -758,8 +771,9 @@ U32 CfdpManager::getInactivityTimerParam(U8 channelIndex) {
     ChannelArrayParams paramArray = paramGet_ChannelConfig(valid);
     FW_ASSERT(FW_PARAM_OK(valid), static_cast<FwAssertArgType>(valid.e));
 
-    // Now get individual parameter
-    return paramArray[channelIndex].get_inactivity_timer();
+    // Now get individual parameter, clamped to the documented minimum
+    const U32 inactivityTimer = paramArray[channelIndex].get_inactivity_timer();
+    return (inactivityTimer < MinTimerSeconds) ? MinTimerSeconds : inactivityTimer;
 }
 
 Fw::Enabled CfdpManager::getDequeueEnabledParam(U8 channelIndex) {

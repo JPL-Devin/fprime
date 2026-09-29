@@ -697,6 +697,35 @@ class CfdpManagerTester final : public CfdpManagerGTestBase {
 
   public:
     // ----------------------------------------------------------------------
+    // Regression Tests: RX retention, archive paths, timer minimum, playback bounds
+    // ----------------------------------------------------------------------
+
+    //! Class 1 RX with a CRC mismatch removes the received file
+    void testRxClass1CrcMismatchDeletesFile();
+
+    //! Class 2 RX with a CRC mismatch removes the received file once the FIN is acknowledged
+    void testRxClass2CrcMismatchDeletesFile();
+
+    //! Canceled RX transaction removes the partial file
+    void testRxCancelDeletesFile();
+
+    //! RX transaction recycled by inactivity removes the partial file
+    void testRxInactivityDeletesFile();
+
+    //! Successive files archived to move_dir keep their distinct basenames
+    void testMoveDirArchivesBasename();
+
+    //! Archive move is skipped with FilePathTooLong when <move_dir>/<basename> is too long
+    void testMoveDirPathTooLong();
+
+    //! Zero ack/inactivity timers warn, clamp to the minimum, and still time out
+    void testZeroTimerParamClamped();
+
+    //! Playback entry with an oversized combined path is skipped and later entries proceed
+    void testPlaybackDirectoryPathTooLong();
+
+  public:
+    // ----------------------------------------------------------------------
     // Miscellaneous Tests
     // ----------------------------------------------------------------------
 

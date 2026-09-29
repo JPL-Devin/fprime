@@ -236,6 +236,8 @@ Each polling slot owns an interval timer that is evaluated once per `run1Hz` cyc
 2. The interval timer only counts down while the slot's playback is **not** busy. While a directory playback triggered by a previous poll is still in progress (transactions pending or active), the timer is held so polls do not stack up.
 3. When the timer expires, the slot initiates a playback of the source directory and re-arms the timer for the next interval. Re-arming happens regardless of whether the playback started successfully — `playbackDirInitiate` emits its own event on failure, and re-arming ensures the poll retries on the next interval rather than stalling.
 
+For each directory entry, the source path `<src_dir>/<entry>` and destination path `<dst_dir>/<entry>` must each fit within `MaxFilePathSize`. An entry whose combined path is too long is skipped with a `FilePathTooLong` event and processing continues with the remaining entries.
+
 Polling continues until stopped with the `StopPollDirectory` command. Stopping is only honored for a slot that is currently enabled; stopping an inactive slot produces a `PollDirNotActive` event.
 
 ## Sequence Diagrams
@@ -452,7 +454,7 @@ These types define the size of CFDP protocol fields:
 
 | Constant | Purpose |
 |----------|---------|
-| `NakMaxSegments` | Maximum NAK segments supported in a NAK PDU. When sending or receiving NAK PDUs, this is the maximum number of segment requests supported. Should match ground CFDP engine configuration. |
+| `NakMaxSegments` | Maximum NAK segments supported in a NAK PDU. Sizes the NAK PDU segment storage; outgoing NAKs carry at most this many segment requests and an incoming NAK carrying more is rejected with `FailNakPduDeserialization`. Must fit in a U8 (at most 255). Should match ground CFDP engine configuration. |
 | `MaxTlv` | Maximum TLVs (Type-Length-Value) per PDU. Limits the number of TLV metadata fields in EOF and FIN PDUs for diagnostic information (entity IDs, fault handler overrides, messages). |
 | `R2CrcChunkSize` | Class 2 CRC calculation chunk size. Buffer size for CRC calculation upon file completion. Larger values use more stack but complete faster. Total bytes per scheduler cycle controlled by `RxCrcCalcBytesPerCycle` parameter. |
 | `CFDP_CHANNEL_NUM_RX_CHUNKS_PER_TRANSACTION` | RX chunks per transaction per channel (array). For Class 2 receive transactions, each chunk tracks a contiguous received file segment. Used for gap detection and NAK generation. Array size must match `NumChannels`. |
@@ -488,6 +490,7 @@ The CFDP Manager provides comprehensive event reporting covering all aspects of 
 | PollDirNotActive | warning low | Cannot stop directory poll - channel poll is not active |
 | InvalidChannelPoll | warning low | Invalid poll ID, maximum poll ID is specified |
 | InvalidPollInterval | warning low | Invalid poll interval requested (must be non-zero) |
+| InvalidTimerParameter | warning low | `ChannelConfig` ack_timer or inactivity_timer set below the 1 second minimum; the minimum is applied in its place |
 | SetFlowState | activity low | Set channel to specified flow state |
 | ResetCounters | activity high | Reset telemetry counters for channel (0xFF indicates all channels) |
 
@@ -583,6 +586,7 @@ The CFDP Manager provides comprehensive event reporting covering all aspects of 
 | PlaybackDirReadFailed | warning low | Failed to read from playback directory |
 | ResetFreedTransaction | diagnostic | Attempt to reset a transaction that has already been freed |
 | FileRemoveFailed | warning low | Failed to remove file |
+| FilePathTooLong | warning low | Combined `<directory>/<file>` path exceeds `MaxFilePathSize`; the playback entry or archive move is skipped |
 
 ## Commands
 
@@ -613,13 +617,13 @@ The CFDP Manager provides comprehensive event reporting covering all aspects of 
 | FileInDefaultPriority | Priority (0-255, where 0 is highest) for file transfers initiated via the `fileIn` port interface |
 | ChannelConfig.ack_limit | Maximum number of ACK retransmission attempts before abandoning a transaction. Applies when waiting for ACK(EOF) or ACK(FIN) acknowledgments |
 | ChannelConfig.nack_limit | Maximum number of NAK retransmission attempts before abandoning a transaction. Applies when waiting for retransmitted file data after sending NAK |
-| ChannelConfig.ack_timer | ACK timeout duration in seconds. Determines how long to wait for ACK(EOF) or ACK(FIN) before retransmitting |
-| ChannelConfig.inactivity_timer | Inactivity timeout duration in seconds. Transaction is abandoned if no PDUs are received within this period |
+| ChannelConfig.ack_timer | ACK timeout duration in seconds. Determines how long to wait for ACK(EOF) or ACK(FIN) before retransmitting. Minimum 1 second: a value of 0 is invalid, emits `InvalidTimerParameter` when set, and is treated as 1 |
+| ChannelConfig.inactivity_timer | Inactivity timeout duration in seconds. Transaction is abandoned if no PDUs are received within this period. Minimum 1 second: a value of 0 is invalid, emits `InvalidTimerParameter` when set, and is treated as 1 |
 | ChannelConfig.dequeue_enabled | Enable or disable transaction dequeuing and processing for this channel. Can be used to pause channel activity |
-| ChannelConfig.move_dir | Directory path to move source files after successful TX (transmit) transactions when keep is set to DELETE. If set, provides an archive mechanism to preserve files instead of deleting them. If empty or if the move fails, source files are deleted from the filesystem. Only applies to sending files, not receiving |
+| ChannelConfig.move_dir | Directory path to move source files after successful TX (transmit) transactions when keep is set to DELETE. If set, provides an archive mechanism to preserve files instead of deleting them: the file is moved to `<move_dir>/<basename of source file>`. If empty, if the move fails, or if the resulting path would exceed `MaxFilePathSize` (`FilePathTooLong` event), source files are deleted from the filesystem. Only applies to sending files, not receiving |
 | ChannelConfig.max_outgoing_pdus_per_cycle | Maximum number of outgoing PDUs to transmit per execution cycle. Throttles transmission rate to prevent overwhelming downstream components |
 | ChannelConfig.tmp_dir | Directory path for storing temporary files during receive (RX) transactions. Files are written here during transfer and moved to their final destination upon successful completion |
-| ChannelConfig.fail_dir | Directory path for storing files from polling operations that failed to transfer successfully. If empty or if the move fails, files are deleted from the filesystem |
+| ChannelConfig.fail_dir | Directory path for storing files from polling operations that failed to transfer successfully. The file is moved to `<fail_dir>/<basename of source file>`. If empty, if the move fails, or if the resulting path would exceed `MaxFilePathSize` (`FilePathTooLong` event), files are deleted from the filesystem |
 
 ### Deep Space Timer Configuration
 

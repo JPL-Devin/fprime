@@ -1181,26 +1181,25 @@ TEST_F(PduTest, NakWithMultipleSegments) {
 }
 
 TEST_F(PduTest, NakWithMaxSegments) {
-    // Test NAK PDU with maximum number of segments (58)
+    // Test NAK PDU with the maximum number of segments (NakMaxSegments)
     NakPdu txPdu;
     const FileSize scopeStart = 0;
     const FileSize scopeEnd = 100000;
 
     txPdu.initialize(PduDirection::DIRECTION_TOWARD_SENDER, Cfdp::Class::CLASS_2, 1, 2, 3, scopeStart, scopeEnd);
 
-    // Add 58 segments (NakMaxSegments)
-    for (U8 i = 0; i < 58; i++) {
+    for (U8 i = 0; i < NakMaxSegments; i++) {
         FileSize start = i * 1000;
         FileSize end = start + 500;
         ASSERT_TRUE(txPdu.addSegment(start, end)) << "Failed to add segment " << static_cast<int>(i);
     }
-    EXPECT_EQ(58, txPdu.getNumSegments());
+    EXPECT_EQ(NakMaxSegments, txPdu.getNumSegments());
 
     // Try to add one more - should fail
     EXPECT_FALSE(txPdu.addSegment(60000, 61000));
-    EXPECT_EQ(58, txPdu.getNumSegments());
+    EXPECT_EQ(NakMaxSegments, txPdu.getNumSegments());
 
-    U8 buffer[512];
+    U8 buffer[NakMaxSegments * 8 + 64];
     Fw::Buffer txBuffer(buffer, sizeof(buffer));
     // Serialize using SerialBuffer wrapper
     Fw::SerialBuffer sb_txBuffer(txBuffer.getData(), txBuffer.getSize());
@@ -1217,15 +1216,35 @@ TEST_F(PduTest, NakWithMaxSegments) {
 
     EXPECT_EQ(scopeStart, rxPdu.getScopeStart());
     EXPECT_EQ(scopeEnd, rxPdu.getScopeEnd());
-    EXPECT_EQ(58, rxPdu.getNumSegments());
+    EXPECT_EQ(NakMaxSegments, rxPdu.getNumSegments());
 
-    // Spot check a few segments
-    EXPECT_EQ(0, rxPdu.getSegment(0).offsetStart);
-    EXPECT_EQ(500, rxPdu.getSegment(0).offsetEnd);
-    EXPECT_EQ(10000, rxPdu.getSegment(10).offsetStart);
-    EXPECT_EQ(10500, rxPdu.getSegment(10).offsetEnd);
-    EXPECT_EQ(57000, rxPdu.getSegment(57).offsetStart);
-    EXPECT_EQ(57500, rxPdu.getSegment(57).offsetEnd);
+    // Check every segment survived the round trip
+    for (U8 i = 0; i < NakMaxSegments; i++) {
+        EXPECT_EQ(static_cast<FileSize>(i * 1000), rxPdu.getSegment(i).offsetStart);
+        EXPECT_EQ(static_cast<FileSize>(i * 1000 + 500), rxPdu.getSegment(i).offsetEnd);
+    }
+}
+
+TEST_F(PduTest, NakOverLimitDecodeRejected) {
+    // A NAK carrying more than NakMaxSegments segment requests must be rejected, not truncated
+    NakPdu txPdu;
+    txPdu.initialize(PduDirection::DIRECTION_TOWARD_SENDER, Cfdp::Class::CLASS_2, 1, 2, 3, 0, 100000);
+    for (U8 i = 0; i < NakMaxSegments; i++) {
+        ASSERT_TRUE(txPdu.addSegment(i * 1000, i * 1000 + 500));
+    }
+
+    U8 buffer[(NakMaxSegments + 1) * 8 + 64];
+    Fw::SerialBuffer sb(buffer, sizeof(buffer));
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK, txPdu.serializeTo(sb));
+    // Append one extra segment request beyond the configured maximum
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK, sb.serializeFrom(static_cast<FileSize>(90000)));
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK, sb.serializeFrom(static_cast<FileSize>(90500)));
+
+    NakPdu rxPdu;
+    Fw::SerialBuffer sbRx(buffer, sb.getSize());
+    sbRx.setBuffLen(sb.getSize());
+    EXPECT_EQ(Fw::FW_DESERIALIZE_SIZE_MISMATCH, rxPdu.deserializeFrom(sbRx));
+    EXPECT_EQ(0, rxPdu.getNumSegments());
 }
 
 TEST_F(PduTest, NakClearSegments) {

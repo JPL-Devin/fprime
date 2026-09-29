@@ -709,6 +709,13 @@ class Transaction {
      */
     void rSendInactivityEvent();
 
+    /************************************************************************/
+    /** @brief Removes a received file that will not be kept, logging on failure.
+     *
+     * @param filename Path of the file to remove
+     */
+    void rRemoveFile(const Fw::String& filename);
+
   private:
     // ----------------------------------------------------------------------
     // Member Variables

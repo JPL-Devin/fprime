@@ -732,6 +732,46 @@ TEST(Coverage, PrioritySearchCallback) {
     tester.testPrioritySearchCallback();
 }
 
+TEST(Regression, RxClass1CrcMismatchDeletesFile) {
+    Svc::Ccsds::Cfdp::CfdpManagerTester tester;
+    tester.testRxClass1CrcMismatchDeletesFile();
+}
+
+TEST(Regression, RxClass2CrcMismatchDeletesFile) {
+    Svc::Ccsds::Cfdp::CfdpManagerTester tester;
+    tester.testRxClass2CrcMismatchDeletesFile();
+}
+
+TEST(Regression, RxCancelDeletesFile) {
+    Svc::Ccsds::Cfdp::CfdpManagerTester tester;
+    tester.testRxCancelDeletesFile();
+}
+
+TEST(Regression, RxInactivityDeletesFile) {
+    Svc::Ccsds::Cfdp::CfdpManagerTester tester;
+    tester.testRxInactivityDeletesFile();
+}
+
+TEST(Regression, MoveDirArchivesBasename) {
+    Svc::Ccsds::Cfdp::CfdpManagerTester tester;
+    tester.testMoveDirArchivesBasename();
+}
+
+TEST(Regression, MoveDirPathTooLong) {
+    Svc::Ccsds::Cfdp::CfdpManagerTester tester;
+    tester.testMoveDirPathTooLong();
+}
+
+TEST(Regression, ZeroTimerParamClamped) {
+    Svc::Ccsds::Cfdp::CfdpManagerTester tester;
+    tester.testZeroTimerParamClamped();
+}
+
+TEST(Regression, PlaybackDirectoryPathTooLong) {
+    Svc::Ccsds::Cfdp::CfdpManagerTester tester;
+    tester.testPlaybackDirectoryPathTooLong();
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

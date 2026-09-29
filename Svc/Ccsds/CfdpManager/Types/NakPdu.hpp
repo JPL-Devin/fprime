@@ -20,6 +20,9 @@ struct SegmentRequest {
     FileSize offsetEnd;    //!< End offset of missing data
 };
 
+// Segment count is carried in a U8, so the configured bound must fit
+static_assert(NakMaxSegments <= 255, "NakMaxSegments must fit in a U8 segment count");
+
 //! The type of a NAK PDU
 class NakPdu : public PduBase {
   private:
@@ -32,8 +35,8 @@ class NakPdu : public PduBase {
     //! Number of segment requests
     U8 m_numSegments;
 
-    //! Segment requests array (max NakMaxSegments = 58)
-    SegmentRequest m_segments[58];
+    //! Segment requests array, sized by the configured NakMaxSegments
+    SegmentRequest m_segments[NakMaxSegments];
 
   public:
     //! Constructor

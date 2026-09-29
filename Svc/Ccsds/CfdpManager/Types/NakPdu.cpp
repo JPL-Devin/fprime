@@ -161,12 +161,13 @@ Fw::SerializeStatus NakPdu::fromSerialBuffer(Fw::SerialBufferBase& serialBuffer)
     Fw::Serializable::SizeType remainingBytes = serialBuffer.getDeserializeSizeLeft();
     U32 segmentSize = static_cast<U32>(sizeof(FileSize) + sizeof(FileSize));
     U32 numSegsCalculated = static_cast<U32>(remainingBytes / segmentSize);
-    this->m_numSegments = static_cast<U8>(numSegsCalculated);
 
-    // Limit to max segments
-    if (this->m_numSegments > NakMaxSegments) {
-        this->m_numSegments = NakMaxSegments;
+    // Reject PDUs carrying more segment requests than the configured storage
+    if (numSegsCalculated > NakMaxSegments) {
+        this->m_numSegments = 0;
+        return Fw::FW_DESERIALIZE_SIZE_MISMATCH;
     }
+    this->m_numSegments = static_cast<U8>(numSegsCalculated);
 
     // Deserialize segment requests
     for (U8 i = 0; i < this->m_numSegments; i++) {
