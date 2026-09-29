@@ -742,6 +742,11 @@ TEST(Regression, RxClass2CrcMismatchDeletesFile) {
     tester.testRxClass2CrcMismatchDeletesFile();
 }
 
+TEST(Regression, RxLateMetadataSizeMismatchDeletesTempFile) {
+    Svc::Ccsds::Cfdp::CfdpManagerTester tester;
+    tester.testRxLateMetadataSizeMismatchDeletesTempFile();
+}
+
 TEST(Regression, RxCancelDeletesFile) {
     Svc::Ccsds::Cfdp::CfdpManagerTester tester;
     tester.testRxCancelDeletesFile();

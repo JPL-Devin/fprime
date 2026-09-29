@@ -118,6 +118,72 @@ void CfdpManagerTester::testRxClass2CrcMismatchDeletesFile() {
     Os::FileSystem::removeFile(dstFile);
 }
 
+void CfdpManagerTester::testRxLateMetadataSizeMismatchDeletesTempFile() {
+    const U8 channelId = 0;
+    const EntityId sourceEid = TEST_GROUND_EID;
+    const EntityId destEid = this->component.getLocalEidParam();
+    const TransactionSeq transactionSeq = 8300;
+    const char* srcFile = "/ground/late_md.bin";
+    const char* dstFile = "test/ut/output/late_md.bin";
+    U8 testData[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    const U8 existingData[4] = {0xCA, 0xFE, 0xBA, 0xBE};
+    const FileSize eofSize = sizeof(testData);
+    const FileSize mdSize = eofSize + 16;
+
+    // A pre-existing file at the destination must survive a transaction that never renamed onto it
+    createFileWithData(dstFile, existingData, sizeof(existingData));
+    this->clearHistory();
+
+    // FileData before Metadata: the receiver opens a temp file and NAKs for the metadata
+    this->sendFileDataPdu(channelId, sourceEid, destEid, transactionSeq, 0, static_cast<U16>(eofSize), testData,
+                          Cfdp::Class::CLASS_2);
+    this->component.doDispatch();
+    ASSERT_EVENTS_RxTempFileCreated_SIZE(1);
+    Fw::String tmpFile(this->eventHistory_RxTempFileCreated->at(0).filename);
+    EXPECT_TRUE(Os::FileSystem::exists(tmpFile.toChar()));
+
+    this->sendEofPdu(channelId, sourceEid, destEid, transactionSeq, Cfdp::ConditionCode::CONDITION_CODE_NO_ERROR,
+                     0xDEADBEEF, eofSize, Cfdp::Class::CLASS_2);
+    this->component.doDispatch();
+
+    // Late metadata disagrees with the EOF size, so it is rejected and the temp file is never renamed
+    this->sendMetadataPdu(channelId, sourceEid, destEid, transactionSeq, mdSize, srcFile, dstFile, Cfdp::Class::CLASS_2,
+                          1);
+    this->component.doDispatch();
+    ASSERT_EVENTS_RxEofMdSizeMismatch_SIZE(1);
+    EXPECT_FALSE(Os::FileSystem::exists(tmpFile.toChar())) << "Temp file must be removed on metadata mismatch";
+    EXPECT_TRUE(Os::FileSystem::exists(dstFile));
+
+    Transaction* txn = this->findTransaction(channelId, transactionSeq);
+    ASSERT_TRUE(txn != nullptr);
+    for (U32 i = 0; (i < 20) && (txn->m_state_data.receive.sub_state != RxSubState::RX_SUB_STATE_CLOSEOUT_SYNC); i++) {
+        this->invoke_to_run1Hz(0, 0);
+        this->component.doDispatch();
+    }
+    ASSERT_EQ(RxSubState::RX_SUB_STATE_CLOSEOUT_SYNC, txn->m_state_data.receive.sub_state);
+
+    this->sendAckPdu(channelId, sourceEid, destEid, transactionSeq, Cfdp::FileDirective::FILE_DIRECTIVE_FIN, 1,
+                     Cfdp::ConditionCode::CONDITION_CODE_FILE_SIZE_ERROR,
+                     Cfdp::AckTxnStatus::ACK_TXN_STATUS_TERMINATED);
+    this->component.doDispatch();
+
+    EXPECT_EQ(TxnState::TXN_STATE_HOLD, txn->m_state);
+    ASSERT_EVENTS_RxFileTransferFailed_SIZE(1);
+    ASSERT_EVENTS_FileRemoveFailed_SIZE(0);
+    EXPECT_FALSE(Os::FileSystem::exists(tmpFile.toChar()));
+    ASSERT_TRUE(Os::FileSystem::exists(dstFile)) << "Destination named by rejected metadata must not be deleted";
+    U8 readBack[sizeof(existingData)] = {0};
+    Os::File check;
+    ASSERT_EQ(Os::File::OP_OK, check.open(dstFile, Os::File::OPEN_READ));
+    FwSizeType readSize = sizeof(readBack);
+    ASSERT_EQ(Os::File::OP_OK, check.read(readBack, readSize));
+    check.close();
+    EXPECT_EQ(sizeof(existingData), readSize);
+    EXPECT_EQ(0, memcmp(existingData, readBack, sizeof(existingData)));
+
+    Os::FileSystem::removeFile(dstFile);
+}
+
 void CfdpManagerTester::testRxCancelDeletesFile() {
     const U8 channelId = 0;
     const EntityId sourceEid = TEST_GROUND_EID;

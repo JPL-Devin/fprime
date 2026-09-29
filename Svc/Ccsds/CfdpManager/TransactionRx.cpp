@@ -1097,6 +1097,9 @@ void Transaction::r2RecvMd(const Fw::Buffer& buffer) {
                                                                         this->m_state_data.receive.r2.eof_size);
                 this->m_cfdpManager->incrementFaultFileSizeMismatch(this->m_chan_num);
                 this->r2SetFinTxnStatus(TxnStatus::TXN_STATUS_FILE_SIZE_ERROR);
+                /* the data lives in the temp file; the history now names the never-created destination */
+                this->m_fd.close();
+                this->rRemoveFile(fname);
                 success = false;
             }
         }

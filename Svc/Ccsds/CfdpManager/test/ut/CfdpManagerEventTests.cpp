@@ -923,7 +923,9 @@ void CfdpManagerTester::testRxEofMdSizeMismatchEvent() {
     // Verify events emitted:
     // 1. MetadataReceived (from Engine::recvMd)
     // 2. RxEofMdSizeMismatch (from size mismatch check)
-    ASSERT_EVENTS_SIZE(2);
+    // 3. FileRemoveFailed (the temp file is discarded; this white-box setup never created it)
+    ASSERT_EVENTS_SIZE(3);
+    ASSERT_EVENTS_FileRemoveFailed_SIZE(1);
     ASSERT_EVENTS_MetadataReceived_SIZE(1);
     ASSERT_EVENTS_MetadataReceived(0,               // index
                                    "test_src.dat",  // srcFile from metadata

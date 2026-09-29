@@ -707,6 +707,7 @@ class CfdpManagerTester final : public CfdpManagerGTestBase {
     void testRxClass2CrcMismatchDeletesFile();
 
     //! Canceled RX transaction removes the partial file
+    void testRxLateMetadataSizeMismatchDeletesTempFile();
     void testRxCancelDeletesFile();
 
     //! RX transaction recycled by inactivity removes the partial file

@@ -749,10 +749,11 @@ void Channel::processPlaybackDirectory(Playback* pb) {
     Transaction* txn;
     Fw::StringTemplate<MaxFilePathSize> path;
     Os::Directory::Status status;
+    FwSizeType skipped = 0;
 
     // either there's no transaction (first one) or the last one was finished, so check for a new one
 
-    while (pb->diropen && (pb->num_ts < NumTransactionsPerPlayback)) {
+    while (pb->diropen && (pb->num_ts < NumTransactionsPerPlayback) && (skipped < NumTransactionsPerPlayback)) {
         if (pb->pending_file.length() == 0) {
             status = pb->dir.read(path);
             if (status == Os::Directory::NO_MORE_FILES) {
@@ -770,13 +771,16 @@ void Channel::processPlaybackDirectory(Playback* pb) {
                 break;
             }
 
-            // Skip entries whose combined source or destination path would exceed MaxFilePathSize
+            // Skip entries whose combined source or destination path would exceed MaxFilePathSize; skipped
+            // entries count against the per-cycle budget so a directory of them cannot pin this cycle
             if ((pb->fnames.src_filename.length() + 1 + path.length()) > MaxFilePathSize) {
                 this->m_cfdpManager->log_WARNING_LO_FilePathTooLong(pb->fnames.src_filename, path, MaxFilePathSize);
+                ++skipped;
                 continue;
             }
             if ((pb->fnames.dst_filename.length() + 1 + path.length()) > MaxFilePathSize) {
                 this->m_cfdpManager->log_WARNING_LO_FilePathTooLong(pb->fnames.dst_filename, path, MaxFilePathSize);
+                ++skipped;
                 continue;
             }
 

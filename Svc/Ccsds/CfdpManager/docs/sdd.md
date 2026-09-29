@@ -236,7 +236,7 @@ Each polling slot owns an interval timer that is evaluated once per `run1Hz` cyc
 2. The interval timer only counts down while the slot's playback is **not** busy. While a directory playback triggered by a previous poll is still in progress (transactions pending or active), the timer is held so polls do not stack up.
 3. When the timer expires, the slot initiates a playback of the source directory and re-arms the timer for the next interval. Re-arming happens regardless of whether the playback started successfully — `playbackDirInitiate` emits its own event on failure, and re-arming ensures the poll retries on the next interval rather than stalling.
 
-For each directory entry, the source path `<src_dir>/<entry>` and destination path `<dst_dir>/<entry>` must each fit within `MaxFilePathSize`. An entry whose combined path is too long is skipped with a `FilePathTooLong` event and processing continues with the remaining entries.
+For each directory entry, the source path `<src_dir>/<entry>` and destination path `<dst_dir>/<entry>` must each fit within `MaxFilePathSize`. An entry whose combined path is too long is skipped with a `FilePathTooLong` event and processing continues with the remaining entries; at most `NumTransactionsPerPlayback` entries are skipped per cycle, so a directory full of oversized entries is drained across cycles rather than in one.
 
 Polling continues until stopped with the `StopPollDirectory` command. Stopping is only honored for a slot that is currently enabled; stopping an inactive slot produces a `PollDirNotActive` event.
 
