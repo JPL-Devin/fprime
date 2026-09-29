@@ -1186,6 +1186,9 @@ void Engine::handleNotKeepFile(Transaction* txn) {
     }
 }
 
+static_assert(static_cast<FwSizeType>(MaxFilePathSize) < static_cast<FwSizeType>(Fw::String::STRING_SIZE),
+              "archive paths bounded by MaxFilePathSize must fit an Fw::String");
+
 bool Engine::buildArchivePath(const Fw::String& directory, const Fw::String& srcFile, Fw::String& destPath) {
     const char* basename = strrchr(srcFile.toChar(), '/');
     basename = (basename != nullptr) ? (basename + 1) : srcFile.toChar();

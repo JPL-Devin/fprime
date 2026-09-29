@@ -4,6 +4,8 @@
 //         minimums, and playback path bounds
 // ======================================================================
 
+#include <cstring>
+
 #include <Fw/Prm/ParamValid.hpp>
 #include <Os/FileSystem.hpp>
 #include <Svc/Ccsds/CfdpManager/Timer.hpp>
@@ -132,8 +134,8 @@ void CfdpManagerTester::testRxCancelDeletesFile() {
     this->sendMetadataPdu(channelId, sourceEid, destEid, transactionSeq, fileSize, srcFile, dstFile,
                           Cfdp::Class::CLASS_1, 0);
     this->component.doDispatch();
-    this->sendFileDataPdu(channelId, sourceEid, destEid, transactionSeq, 0, sizeof(testData), testData,
-                          Cfdp::Class::CLASS_1);
+    this->sendFileDataPdu(channelId, sourceEid, destEid, transactionSeq, 0, static_cast<U16>(sizeof(testData)),
+                          testData, Cfdp::Class::CLASS_1);
     this->component.doDispatch();
     ASSERT_TRUE(Os::FileSystem::exists(dstFile)) << "Partial file should exist while receiving";
 
@@ -167,8 +169,8 @@ void CfdpManagerTester::testRxInactivityDeletesFile() {
     this->sendMetadataPdu(channelId, sourceEid, destEid, transactionSeq, fileSize, srcFile, dstFile,
                           Cfdp::Class::CLASS_1, 0);
     this->component.doDispatch();
-    this->sendFileDataPdu(channelId, sourceEid, destEid, transactionSeq, 0, sizeof(testData), testData,
-                          Cfdp::Class::CLASS_1);
+    this->sendFileDataPdu(channelId, sourceEid, destEid, transactionSeq, 0, static_cast<U16>(sizeof(testData)),
+                          testData, Cfdp::Class::CLASS_1);
     this->component.doDispatch();
     ASSERT_TRUE(Os::FileSystem::exists(dstFile)) << "Partial file should exist while receiving";
 
@@ -184,6 +186,88 @@ void CfdpManagerTester::testRxInactivityDeletesFile() {
     ASSERT_EVENTS_FileRemoveFailed_SIZE(0);
     EXPECT_EQ(nullptr, this->findTransaction(channelId, transactionSeq)) << "Transaction should be recycled";
     EXPECT_FALSE(Os::FileSystem::exists(dstFile)) << "Timed-out RX file must be removed";
+
+    Os::FileSystem::removeFile(dstFile);
+}
+
+void CfdpManagerTester::testRxClass1SuccessKeepsFile() {
+    const U8 channelId = 0;
+    const EntityId sourceEid = TEST_GROUND_EID;
+    const EntityId destEid = this->component.getLocalEidParam();
+    const TransactionSeq transactionSeq = 8150;
+    const char* srcFile = "/ground/keep_c1.bin";
+    const char* dstFile = "test/ut/output/keep_c1.bin";
+    U8 testData[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    const FileSize fileSize = sizeof(testData);
+    CFDP::Checksum crc;
+    crc.update(testData, 0, static_cast<U32>(fileSize));
+
+    Os::FileSystem::removeFile(dstFile);
+    this->clearHistory();
+
+    this->sendMetadataPdu(channelId, sourceEid, destEid, transactionSeq, fileSize, srcFile, dstFile,
+                          Cfdp::Class::CLASS_1, 0);
+    this->component.doDispatch();
+    this->sendFileDataPdu(channelId, sourceEid, destEid, transactionSeq, 0, static_cast<U16>(fileSize), testData,
+                          Cfdp::Class::CLASS_1);
+    this->component.doDispatch();
+    this->sendEofPdu(channelId, sourceEid, destEid, transactionSeq, Cfdp::ConditionCode::CONDITION_CODE_NO_ERROR,
+                     crc.getValue(), fileSize, Cfdp::Class::CLASS_1);
+    this->component.doDispatch();
+
+    ASSERT_EVENTS_RxCrcMismatch_SIZE(0);
+    ASSERT_EVENTS_RxFileTransferFailed_SIZE(0);
+    ASSERT_EVENTS_RxFileTransferCompleted_SIZE(1);
+    ASSERT_TRUE(Os::FileSystem::exists(dstFile)) << "Successfully received Class 1 file must be retained";
+    this->verifyReceivedFile(dstFile, testData, fileSize);
+
+    Os::FileSystem::removeFile(dstFile);
+}
+
+void CfdpManagerTester::testRxClass2SuccessKeepsFile() {
+    const U8 channelId = 0;
+    const EntityId sourceEid = TEST_GROUND_EID;
+    const EntityId destEid = this->component.getLocalEidParam();
+    const TransactionSeq transactionSeq = 8250;
+    const char* srcFile = "/ground/keep_c2.bin";
+    const char* dstFile = "test/ut/output/keep_c2.bin";
+    U8 testData[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    const FileSize fileSize = sizeof(testData);
+    CFDP::Checksum crc;
+    crc.update(testData, 0, static_cast<U32>(fileSize));
+
+    Os::FileSystem::removeFile(dstFile);
+    this->clearHistory();
+
+    this->sendMetadataPdu(channelId, sourceEid, destEid, transactionSeq, fileSize, srcFile, dstFile,
+                          Cfdp::Class::CLASS_2, 1);
+    this->component.doDispatch();
+    this->sendFileDataPdu(channelId, sourceEid, destEid, transactionSeq, 0, static_cast<U16>(fileSize), testData,
+                          Cfdp::Class::CLASS_2);
+    this->component.doDispatch();
+    this->sendEofPdu(channelId, sourceEid, destEid, transactionSeq, Cfdp::ConditionCode::CONDITION_CODE_NO_ERROR,
+                     crc.getValue(), fileSize, Cfdp::Class::CLASS_2);
+    this->component.doDispatch();
+
+    Transaction* txn = this->findTransaction(channelId, transactionSeq);
+    ASSERT_TRUE(txn != nullptr);
+    for (U32 i = 0; (i < 20) && (txn->m_state_data.receive.sub_state != RxSubState::RX_SUB_STATE_CLOSEOUT_SYNC); i++) {
+        this->invoke_to_run1Hz(0, 0);
+        this->component.doDispatch();
+    }
+    ASSERT_EQ(RxSubState::RX_SUB_STATE_CLOSEOUT_SYNC, txn->m_state_data.receive.sub_state)
+        << "FIN should have been sent after the CRC check";
+
+    this->sendAckPdu(channelId, sourceEid, destEid, transactionSeq, Cfdp::FileDirective::FILE_DIRECTIVE_FIN, 1,
+                     Cfdp::ConditionCode::CONDITION_CODE_NO_ERROR, Cfdp::AckTxnStatus::ACK_TXN_STATUS_TERMINATED);
+    this->component.doDispatch();
+
+    EXPECT_EQ(TxnState::TXN_STATE_HOLD, txn->m_state);
+    ASSERT_EVENTS_RxCrcMismatch_SIZE(0);
+    ASSERT_EVENTS_RxFileTransferFailed_SIZE(0);
+    ASSERT_EVENTS_RxFileTransferCompleted_SIZE(1);
+    ASSERT_TRUE(Os::FileSystem::exists(dstFile)) << "Successfully received Class 2 file must be retained";
+    this->verifyReceivedFile(dstFile, testData, fileSize);
 
     Os::FileSystem::removeFile(dstFile);
 }
@@ -234,6 +318,59 @@ void CfdpManagerTester::testMoveDirArchivesBasename() {
     Os::FileSystem::removeFile(archived[0]);
     Os::FileSystem::removeFile(archived[1]);
     Os::FileSystem::removeDirectory(moveDir);
+}
+
+void CfdpManagerTester::testFailDirArchivesBasename() {
+    const U8 channelId = 0;
+    const char* pollDir = "test/ut/output/poll_src";
+    const char* failDir = "test/ut/output/failed";
+    const char* srcFiles[2] = {"test/ut/output/poll_src/poll_a.bin", "test/ut/output/poll_src/poll_b.bin"};
+    const char* archived[2] = {"test/ut/output/failed/poll_a.bin", "test/ut/output/failed/poll_b.bin"};
+    const U8 testData[4] = {1, 2, 3, 4};
+
+    Os::FileSystem::removeFile(archived[0]);
+    Os::FileSystem::removeFile(archived[1]);
+    Os::FileSystem::removeDirectory(failDir);
+    ASSERT_EQ(Os::FileSystem::OP_OK, Os::FileSystem::createDirectory(failDir));
+    Os::FileSystem::Status dirStatus = Os::FileSystem::createDirectory(pollDir);
+    ASSERT_TRUE(dirStatus == Os::FileSystem::OP_OK || dirStatus == Os::FileSystem::ALREADY_EXISTS);
+
+    Fw::ParamValid valid;
+    ChannelArrayParams channelConfig = this->component.paramGet_ChannelConfig(valid);
+    ASSERT_TRUE(FW_PARAM_OK(valid));
+    channelConfig[channelId].set_fail_dir(Fw::String(failDir));
+    this->paramSet_ChannelConfig(channelConfig, Fw::ParamValid::VALID);
+    this->paramSend_ChannelConfig(0, 0);
+
+    // Files are recognized as poll files by their parent directory matching an active poll slot
+    this->component.m_engine->m_channels[channelId]->getPollDir(0)->srcDir = pollDir;
+
+    for (U32 i = 0; i < 2; i++) {
+        createFileWithData(srcFiles[i], testData, sizeof(testData));
+        Transaction* txn =
+            this->setupTestTransaction(TxnState::TXN_STATE_S1, channelId, srcFiles[i], "/ground/failed.bin",
+                                       sizeof(testData), 4300 + i, TEST_GROUND_EID);
+        ASSERT_TRUE(txn != nullptr);
+        txn->m_engine = this->component.m_engine;
+        txn->m_chan = this->component.m_engine->m_channels[channelId];
+        txn->m_keep = Cfdp::Keep::DELETE;
+        txn->m_history->txn_stat = TxnStatus::TXN_STATUS_ACK_LIMIT_NO_EOF;
+
+        this->clearEvents();
+        this->component.m_engine->handleNotKeepFile(txn);
+        ASSERT_EVENTS_SIZE(0);
+    }
+
+    EXPECT_TRUE(Os::FileSystem::exists(archived[0])) << "First failed poll file should be archived under its basename";
+    EXPECT_TRUE(Os::FileSystem::exists(archived[1])) << "Second failed poll file should be archived under its basename";
+    EXPECT_FALSE(Os::FileSystem::exists(srcFiles[0]));
+    EXPECT_FALSE(Os::FileSystem::exists(srcFiles[1]));
+
+    this->component.m_engine->m_channels[channelId]->getPollDir(0)->srcDir = "";
+    Os::FileSystem::removeFile(archived[0]);
+    Os::FileSystem::removeFile(archived[1]);
+    Os::FileSystem::removeDirectory(failDir);
+    Os::FileSystem::removeDirectory(pollDir);
 }
 
 void CfdpManagerTester::testMoveDirPathTooLong() {

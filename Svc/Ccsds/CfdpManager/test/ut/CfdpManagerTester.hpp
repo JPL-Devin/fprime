@@ -712,11 +712,20 @@ class CfdpManagerTester final : public CfdpManagerGTestBase {
     //! RX transaction recycled by inactivity removes the partial file
     void testRxInactivityDeletesFile();
 
+    //! Successful Class 1 reception retains the file
+    void testRxClass1SuccessKeepsFile();
+
+    //! Successful Class 2 reception retains the file
+    void testRxClass2SuccessKeepsFile();
+
     //! Successive files archived to move_dir keep their distinct basenames
     void testMoveDirArchivesBasename();
 
     //! Archive move is skipped with FilePathTooLong when <move_dir>/<basename> is too long
     void testMoveDirPathTooLong();
+
+    //! Two failed poll files archive into fail_dir under their own basenames
+    void testFailDirArchivesBasename();
 
     //! Zero ack/inactivity timers warn, clamp to the minimum, and still time out
     void testZeroTimerParamClamped();

@@ -117,7 +117,7 @@ The design of `CfdpManager` assumes the following:
 
 6. For Class 2 transfers, the remote entity implements the CFDP protocol correctly and responds to PDUs according to the specification.
 
-7. Received files are written to a temporary directory (`ChannelConfig.tmp_dir` per-channel parameter) during transfer and moved to their final destination upon successful completion.
+7. Received files are written to a temporary directory (`ChannelConfig.tmp_dir` per-channel parameter) until the Metadata PDU supplies the destination name, then renamed to their final destination while the remaining data is received. A received file is retained only once its checksum has been verified; on checksum mismatch, cancellation, inactivity timeout, file-size mismatch, or a filestore error the partial file is removed from whichever path it currently occupies and the transaction is reported through `RxFileTransferFailed`.
 
 8. Port-initiated file transfers (via `fileIn`) use default configuration parameters (`FileInDefaultChannel`, `FileInDefaultDestEntityId`, `FileInDefaultClass`, `FileInDefaultKeep`, and `FileInDefaultPriority`).
 
@@ -622,7 +622,7 @@ The CFDP Manager provides comprehensive event reporting covering all aspects of 
 | ChannelConfig.dequeue_enabled | Enable or disable transaction dequeuing and processing for this channel. Can be used to pause channel activity |
 | ChannelConfig.move_dir | Directory path to move source files after successful TX (transmit) transactions when keep is set to DELETE. If set, provides an archive mechanism to preserve files instead of deleting them: the file is moved to `<move_dir>/<basename of source file>`. If empty, if the move fails, or if the resulting path would exceed `MaxFilePathSize` (`FilePathTooLong` event), source files are deleted from the filesystem. Only applies to sending files, not receiving |
 | ChannelConfig.max_outgoing_pdus_per_cycle | Maximum number of outgoing PDUs to transmit per execution cycle. Throttles transmission rate to prevent overwhelming downstream components |
-| ChannelConfig.tmp_dir | Directory path for storing temporary files during receive (RX) transactions. Files are written here during transfer and moved to their final destination upon successful completion |
+| ChannelConfig.tmp_dir | Directory path for storing temporary files during receive (RX) transactions. Files are written here until the Metadata PDU is received and are then renamed to their final destination; a file that fails to complete is removed from either location |
 | ChannelConfig.fail_dir | Directory path for storing files from polling operations that failed to transfer successfully. The file is moved to `<fail_dir>/<basename of source file>`. If empty, if the move fails, or if the resulting path would exceed `MaxFilePathSize` (`FilePathTooLong` event), files are deleted from the filesystem |
 
 ### Deep Space Timer Configuration

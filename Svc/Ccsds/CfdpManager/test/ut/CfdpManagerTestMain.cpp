@@ -752,9 +752,24 @@ TEST(Regression, RxInactivityDeletesFile) {
     tester.testRxInactivityDeletesFile();
 }
 
+TEST(Regression, RxClass1SuccessKeepsFile) {
+    Svc::Ccsds::Cfdp::CfdpManagerTester tester;
+    tester.testRxClass1SuccessKeepsFile();
+}
+
+TEST(Regression, RxClass2SuccessKeepsFile) {
+    Svc::Ccsds::Cfdp::CfdpManagerTester tester;
+    tester.testRxClass2SuccessKeepsFile();
+}
+
 TEST(Regression, MoveDirArchivesBasename) {
     Svc::Ccsds::Cfdp::CfdpManagerTester tester;
     tester.testMoveDirArchivesBasename();
+}
+
+TEST(Regression, FailDirArchivesBasename) {
+    Svc::Ccsds::Cfdp::CfdpManagerTester tester;
+    tester.testFailDirArchivesBasename();
 }
 
 TEST(Regression, MoveDirPathTooLong) {

@@ -1199,7 +1199,7 @@ TEST_F(PduTest, NakWithMaxSegments) {
     EXPECT_FALSE(txPdu.addSegment(60000, 61000));
     EXPECT_EQ(NakMaxSegments, txPdu.getNumSegments());
 
-    U8 buffer[NakMaxSegments * 8 + 64];
+    U8 buffer[NakMaxSegments * 2 * sizeof(FileSize) + 64];
     Fw::Buffer txBuffer(buffer, sizeof(buffer));
     // Serialize using SerialBuffer wrapper
     Fw::SerialBuffer sb_txBuffer(txBuffer.getData(), txBuffer.getSize());
@@ -1233,7 +1233,7 @@ TEST_F(PduTest, NakOverLimitDecodeRejected) {
         ASSERT_TRUE(txPdu.addSegment(i * 1000, i * 1000 + 500));
     }
 
-    U8 buffer[(NakMaxSegments + 1) * 8 + 64];
+    U8 buffer[(NakMaxSegments + 1) * 2 * sizeof(FileSize) + 64];
     Fw::SerialBuffer sb(buffer, sizeof(buffer));
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, txPdu.serializeTo(sb));
     // Append one extra segment request beyond the configured maximum

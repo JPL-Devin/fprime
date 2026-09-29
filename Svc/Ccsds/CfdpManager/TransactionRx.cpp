@@ -924,6 +924,7 @@ Status::T Transaction::r2CalcCrcChunk() {
             fileStatus = this->m_fd.open(this->m_history->fnames.dst_filename.toChar(), Os::File::OPEN_READ);
             if (fileStatus != Os::File::OP_OK) {
                 this->m_engine->setTxnStatus(this, TxnStatus::TXN_STATUS_FILE_SIZE_ERROR);
+                this->rRemoveFile(this->m_history->fnames.dst_filename); /* handle is closed, so finish will not */
                 ret = Cfdp::Status::ERROR;
             } else {
                 // Reset cached position since we just reopened the file
