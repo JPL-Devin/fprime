@@ -1,6 +1,6 @@
 ---
 name: post-inline-review
-description: Use when posting inline review comments, the per-agent summary review, or interacting with GitHub review threads (resolve, un-resolve, reply) for an F Prime PR review agent.
+description: Use when posting inline review comments (inline, rollup), returning the per-lens state block, or interacting with GitHub review threads (silent resolve, un-resolve, exceptional replies) for an F Prime PR review agent.
 ---
 
 # Skill: Post an inline review on a GitHub PR
