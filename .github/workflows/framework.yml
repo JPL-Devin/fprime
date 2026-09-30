@@ -39,10 +39,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # macOS runs only on the nightly schedule
-        include: ${{ github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"},{"runner":"macos-latest","jobs":"2"}]') || fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"}]') }}
+        # A manual dispatch with a runner label builds a single-entry matrix from the
+        # inputs so the job name, artifacts, and -j count all follow the chosen runner.
+        # Otherwise macOS runs only on the nightly schedule.
+        include: ${{ github.event.inputs.runner && fromJSON(format('[{{"runner":"{0}","jobs":"{1}"}}]', github.event.inputs.runner, github.event.inputs.jobs || (contains(github.event.inputs.runner, 'macos') && '2' || 'random'))) || github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"},{"runner":"macos-latest","jobs":"2"}]') || fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"}]') }}
     timeout-minutes: 30
-    runs-on: ${{ github.event.inputs.runner || matrix.runner }}
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: "Checkout F' Repository"
         uses: actions/checkout@v4
@@ -58,17 +60,19 @@ jobs:
         uses: nasa/fprime-actions/build@devel
         with:
           build-all: "true"
-          jobs: ${{ github.event.inputs.jobs || matrix.jobs }}
+          jobs: ${{ matrix.jobs }}
 
   unit-tests:
     name: "UTs [${{ matrix.runner }}]"
     strategy:
       fail-fast: false
       matrix:
-        # macOS runs only on the nightly schedule
-        include: ${{ github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"},{"runner":"macos-latest","jobs":"2"}]') || fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"}]') }}
+        # A manual dispatch with a runner label builds a single-entry matrix from the
+        # inputs so the job name, artifacts, and -j count all follow the chosen runner.
+        # Otherwise macOS runs only on the nightly schedule.
+        include: ${{ github.event.inputs.runner && fromJSON(format('[{{"runner":"{0}","jobs":"{1}"}}]', github.event.inputs.runner, github.event.inputs.jobs || (contains(github.event.inputs.runner, 'macos') && '2' || 'random'))) || github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"},{"runner":"macos-latest","jobs":"2"}]') || fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"}]') }}
     timeout-minutes: 30
-    runs-on: ${{ github.event.inputs.runner || matrix.runner }}
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: "Checkout F' Repository"
         uses: actions/checkout@v4
@@ -83,7 +87,7 @@ jobs:
       - name: "Run Unit Tests"
         uses: nasa/fprime-actions/run-unit-tests@devel
         with:
-          jobs: ${{ github.event.inputs.jobs || matrix.jobs }}
+          jobs: ${{ matrix.jobs }}
 
   tsan:
     name: "TSan UTs"
