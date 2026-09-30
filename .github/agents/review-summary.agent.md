@@ -263,14 +263,17 @@ workflows`, `PR recommended for closure`. Merge readiness first, CI
 safety second, always both. There is no separate `### Merge
 readiness` or `### CI safety` section anywhere in the body.
 
-### Resolve-failure warning (when any lens reports `resolve_failed`)
+### Resolve-failure warning (when any lens reports `resolve_failed`, or the `duplicates` line carries a `resolved: false` entry)
 
 `⚠️ Could not resolve N fixed thread(s) — token lacks Write:` followed
-by one `[thread](<url>)` link per thread, comma-separated. Rendered
-**visibly, directly under the verdict line**, never collapsed: a
-refused resolve means the token lacks the permission the review
-depends on, and the maintainer must fix that, not scroll past it.
-Omitted when every lens's `resolve_failed` is empty.
+by one `[thread](<url>)` link per thread, comma-separated. `N` and
+the links cover both the lenses' `resolve_failed` URLs and every
+duplicate thread whose `resolved` flag is still `false` (§5h), on
+every run until each actually resolves. Rendered **visibly, directly
+under the verdict line**, never collapsed: a refused resolve means
+the token lacks the permission the review depends on, and the
+maintainer must fix that, not scroll past it. Omitted when every
+lens's `resolve_failed` is empty and every duplicate is resolved.
 
 ### Recommend: Close (when §5e fires)
 
