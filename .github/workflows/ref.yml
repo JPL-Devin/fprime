@@ -40,9 +40,9 @@ jobs:
       fail-fast: false
       matrix:
         # A manual dispatch with a runner label builds a single-entry matrix from the
-        # inputs so the job name, artifacts, and -j count all follow the chosen runner.
+        # runner so the job name, artifacts, and default -j count all follow it.
         # Otherwise macOS runs only on the nightly schedule.
-        include: ${{ github.event.inputs.runner && fromJSON(format('[{{"runner":"{0}","jobs":"{1}"}}]', github.event.inputs.runner, github.event.inputs.jobs || (contains(github.event.inputs.runner, 'macos') && '2' || 'random'))) || github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"},{"runner":"macos-latest","jobs":"2"}]') || fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"}]') }}
+        include: ${{ github.event.inputs.runner && fromJSON(format('[{{"runner":"{0}","jobs":"{1}"}}]', github.event.inputs.runner, contains(github.event.inputs.runner, 'macos') && '2' || 'random')) || github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"},{"runner":"macos-latest","jobs":"2"}]') || fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"}]') }}
     timeout-minutes: 30
     runs-on: ${{ matrix.runner }}
     steps:
@@ -60,7 +60,7 @@ jobs:
         uses: nasa/fprime-actions/build@devel
         with:
           working-directory: "TestDeploymentsProject"
-          jobs: ${{ matrix.jobs }}
+          jobs: ${{ github.event.inputs.jobs || matrix.jobs }}
       - name: "Archive Build Artifacts"
         uses: actions/upload-artifact@v7
         with:
@@ -75,9 +75,9 @@ jobs:
       fail-fast: false
       matrix:
         # A manual dispatch with a runner label builds a single-entry matrix from the
-        # inputs so the job name, artifacts, and -j count all follow the chosen runner.
+        # runner so the job name, artifacts, and default -j count all follow it.
         # Otherwise macOS runs only on the nightly schedule.
-        include: ${{ github.event.inputs.runner && fromJSON(format('[{{"runner":"{0}","jobs":"{1}"}}]', github.event.inputs.runner, github.event.inputs.jobs || (contains(github.event.inputs.runner, 'macos') && '2' || 'random'))) || github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04"},{"runner":"macos-latest"}]') || fromJSON('[{"runner":"ubuntu-22.04"}]') }}
+        include: ${{ github.event.inputs.runner && fromJSON(format('[{{"runner":"{0}","jobs":"{1}"}}]', github.event.inputs.runner, contains(github.event.inputs.runner, 'macos') && '2' || 'random')) || github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04"},{"runner":"macos-latest"}]') || fromJSON('[{"runner":"ubuntu-22.04"}]') }}
     timeout-minutes: 30
     runs-on: ${{ matrix.runner }}
     steps:
@@ -130,9 +130,9 @@ jobs:
       fail-fast: false
       matrix:
         # A manual dispatch with a runner label builds a single-entry matrix from the
-        # inputs so the job name, artifacts, and -j count all follow the chosen runner.
+        # runner so the job name, artifacts, and default -j count all follow it.
         # Otherwise macOS runs only on the nightly schedule.
-        include: ${{ github.event.inputs.runner && fromJSON(format('[{{"runner":"{0}","jobs":"{1}"}}]', github.event.inputs.runner, github.event.inputs.jobs || (contains(github.event.inputs.runner, 'macos') && '2' || 'random'))) || github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"},{"runner":"macos-latest","jobs":"2"}]') || fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"}]') }}
+        include: ${{ github.event.inputs.runner && fromJSON(format('[{{"runner":"{0}","jobs":"{1}"}}]', github.event.inputs.runner, contains(github.event.inputs.runner, 'macos') && '2' || 'random')) || github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"},{"runner":"macos-latest","jobs":"2"}]') || fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"}]') }}
     timeout-minutes: 30
     runs-on: ${{ matrix.runner }}
     steps:
@@ -150,7 +150,7 @@ jobs:
         uses: nasa/fprime-actions/run-unit-tests@devel
         with:
           working-directory: "TestDeploymentsProject"
-          jobs: ${{ matrix.jobs }}
+          jobs: ${{ github.event.inputs.jobs || matrix.jobs }}
 
   timing-check:
     name: "Timing Check"
