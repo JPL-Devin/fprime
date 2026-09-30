@@ -514,10 +514,13 @@ Correctness lens failed: <reason>`).
   unchanged, and add one visible line under it: `⚠️ Intended review
   event <EVENT> could not be submitted (review account authored this
   PR); posted as COMMENT — the verdict line above is authoritative.`
-  For §5d state comparison a `COMMENTED` prior review is compared by
-  its recorded `<!-- intended_event: ... -->` marker, which this path
-  always writes, so quiet-run and flip paths behave as if the intended
-  event had been submitted.
+  The body always carries `<!-- intended_event: ... -->`. On later
+  own-PR runs the submitted event is `COMMENT` regardless of verdict, so
+  a `COMMENTED` prior summary is **never dismissed** (GitHub answers
+  `422` for dismissing a `COMMENTED` review): update it in place with
+  the new body and marker on both the quiet-run and the flip path, and
+  only if that `PUT` fails submit a fresh `COMMENT` review without a
+  dismissal attempt; the newest marker match wins on later runs.
 - Read each lens's `since_last_run` state and populate the `Since
   last run` block.
 - Write the `lens-state` line from this run's blocks (carrying
