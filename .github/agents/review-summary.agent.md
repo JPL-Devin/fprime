@@ -122,7 +122,8 @@ Body shape:
 <!-- run: N -->
 <!-- maintainers_requested: <comma-separated logins, or none> -->
 <!-- lens-state: [ {<state block, contract §2>}, {...}, ... ] -->
-<!-- duplicates: [ {"duplicate": "<thread url>", "canonical": "<thread url>", "run": N}, ... ] -->
+<!-- duplicates: [ {"duplicate": "<thread url>", "canonical": "<thread url>", "run": N, "resolved": true|false}, ... ] -->
+<!-- promoted: [ {"finding_key": "<key>", "agent": "<agent-name>", "run": N}, ... ] -->
 ## Automated review — run N · `<7-char head>`
 
 🔴 **Merge: blocked** — 3 must-fix open · 🟢 **CI safety: Go**
@@ -729,8 +730,11 @@ self-heals historic duplicates on every run.
 
 1. **Collect** all OPEN agent-authored threads (any `fprime-agent:`
    footer; skip threads already listed in the prior summary's
-   `duplicates` state or, on legacy PRs, carrying a `reply-kind:
-   duplicate-close` reply). Parse each thread's site-key from its
+   `duplicates` state **with `resolved: true`** or, on legacy PRs,
+   carrying a `reply-kind: duplicate-close` reply). A recorded pair
+   with `resolved: false` is not skipped: retry its
+   `resolveReviewThread` first, flip the flag on success, and keep
+   it in the resolve-failure warning (§5b) while it stays open. Parse each thread's site-key from its
    `v2` footer; for legacy `v1` footers, recompute a best-effort
    site-key from the comment's path and anchor context.
 2. **Group** threads by site-key.
@@ -747,12 +751,16 @@ self-heals historic duplicates on every run.
 5. **Close each non-canonical duplicate, silently**:
    - Resolve the thread via GraphQL `resolveReviewThread`. **No
      reply.** Record `{"duplicate": <url>, "canonical": <url>,
-     "run": N}` in the summary's `duplicates` line; the *Since last
-     run* block renders the pair with links, which is where a reader
-     wondering why a thread is resolved will find the answer.
-   - If the mutation is refused, still record the pair, do not
-     reply, and count the thread in the resolve-failure warning
-     (§5b) — the same loud failure as a refused fix resolve.
+     "run": N, "resolved": true}` in the summary's `duplicates`
+     line; the *Since last run* block renders the pair with links,
+     which is where a reader wondering why a thread is resolved will
+     find the answer.
+   - If the mutation is refused, record the pair with `"resolved":
+     false`, do not reply, and count the thread in the
+     resolve-failure warning (§5b) — the same loud failure as a
+     refused fix resolve. The warning persists, and step 1 retries
+     the mutation, on every run until the thread is actually
+     resolved.
    - If the duplicate carries a **stricter tag** than the canonical
      thread, post one severity-promotion-style reply on the
      canonical thread (§5j shape, consequence = the stricter lens's
@@ -851,9 +859,13 @@ verdicts see.
 5. **Account**: a promoted finding counts as `must fix` in `Totals`,
    in the promoting reviewer's row, in the must-fix list, and in both
    verdicts (§5c). Lens state counts are NOT rewritten (as in §5h). A
-   promoted **note** is listed in the must-fix list linking to its
-   Notes line; the owning lens posts it inline on its next run
-   (contract §9a).
+   promoted **note** or **rollup site** is listed in the must-fix
+   list linking to its Notes line (or rollup thread), and its
+   finding-key is persisted in the summary's hidden `promoted` line
+   (§Output) with the owning agent and run; the owning lens reads it
+   from its kickoff and posts the finding inline on its next run
+   without re-counting it (contract §7 Phase C, promoted row). Entries
+   stay in `promoted` until the key disappears.
 6. **Log** every promotion **and** every deliberate non-promotion — a
    finding tested against the list and left alone — in the
    `Severity reconciliation` block (§Output), one row each, with the

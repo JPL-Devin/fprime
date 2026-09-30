@@ -88,10 +88,18 @@ PR diff.
 
 ### 1c. Index by finding-key and site-key
 
-Build a dictionary keyed by `finding-key` (own comments only) whose
-value is `{ comment_id, thread_id, path, line, is_resolved,
+Build a dictionary keyed by `finding-key` whose value is
+`{ comment_id, thread_id, path, line, is_resolved,
 resolved_by_maintainer, has_contributor_replies,
-has_prior_disagreement_reply }`. `resolved_by_maintainer` is true iff
+has_prior_disagreement_reply, kind }`, where `kind` is `comment`
+(own inline comment or own rollup site footer), `note` (from the
+prior state block's `notes`) or `concur` (from the prior block's
+`concur`, pointing at another lens's thread). All three are prior
+keys; a concurrence or note that is not indexed here would be
+re-counted as new on every run. Group rollup keys by `thread_id` so
+§3b can tell a partially fixed rollup from a fully fixed one. Keys
+already in the prior `resolved_keys` ledger are excluded from
+`prior_keys` — they are settled. `resolved_by_maintainer` is true iff
 `is_resolved` and `resolvedBy.login` is in the core-maintainer set.
 `has_prior_disagreement_reply` is true iff a comment in the thread
 carries `reply-kind: disagreement` in its HTML footer.
@@ -188,9 +196,11 @@ Rule text: review contract §7 Phase B. Mechanics:
    otherwise — it is outside this run's scope and is not counted in
    any column. Must-fix candidates, incorrect-fix follow-ups (§3c),
    and every finding with a prior key are never dropped.
-4. **Zero-commit guard** (`last_reviewed_head == head_sha`, or the
-   orchestrator's kickoff says `ZERO-COMMIT RE-RUN`): `delta_hunks`
-   is empty by definition. Drop **every** `f` with no prior
+4. **Zero-commit guard** (**this lens's own** prior
+   `last_reviewed_head == head_sha`; the orchestrator's per-lens
+   `ZERO-COMMIT RE-RUN` marker is advisory and never applies to a
+   lens with no prior state block — that lens is on run 1 and uses
+   step 5): `delta_hunks` is empty by definition. Drop **every** `f` with no prior
    finding-key and `f.tag != must fix` — no new inline thread, no new
    rollup, no new note. Must-fix candidates, incorrect-fix follow-ups
    (§3c) and every finding with a prior key are still processed. The
@@ -232,6 +242,14 @@ For each `k` in `intersect`, decide which row of the table applies:
 | `true` | `false` | — | **Improperly resolved.** Un-resolve + reply (see §3a-i). |
 | `false` | — | `true` | **Disagreement escalation.** Reply once + maintainer ping (see §3a-ii). |
 | `false` | — | `false` | **Do nothing.** Leave the comment as-is. **Never repost.** |
+
+Two `intersect` cases bypass the table: a `kind: concur` key is
+always **do nothing** (the owning lens handles its thread; do not
+re-count, do not reply); a `kind: note` key — or a rollup-site key —
+listed in the summary's `promoted` line is **posted inline** as a
+must-fix comment (contract §9) under the same finding-key, removed
+from `notes`, and **not** incremented in any tag column (it was
+counted when first recorded).
 
 #### 3a-0. Maintainer-adjudicated action
 
@@ -278,7 +296,9 @@ For each `k` in `resolved`:
 | `false`, not in prior `resolve_failed`, no legacy own `Fixed in` reply | **Clean resolution.** GraphQL `resolveReviewThread`. **No reply.** On success append the thread URL to `since_last_run.resolved_threads`; on refusal append it to `resolve_failed` (still no reply). |
 | `false`, in prior `resolve_failed` or a legacy own `Fixed in` reply present | **Resolve failed earlier** (permissions). Retry `resolveReviewThread` once; do not reply. On success move it to `resolved_threads`; on refusal keep it in `resolve_failed`. |
 | `true` | **Already settled** (by the agent on an earlier run, a core maintainer, or the contributor after fixing). Do nothing — no reply, no re-resolve. |
-| *(note, no thread)* | **Note no longer applies.** Remove it from `notes`. Nothing to post. |
+| *(rollup site whose thread still has a key in `intersect`)* | **Partially fixed rollup.** Do not resolve the thread. Append the site's key to `resolved_keys`. Apply the rows above to the thread only when every one of its keys is in `resolved`. |
+| *(note, no thread)* | **Note no longer applies.** Remove it from `notes`, append its key to `resolved_keys`. Nothing to post. |
+| *(concur, another lens's thread)* | **Concurred finding no longer applies.** Append its key to `resolved_keys`; leave the thread to its owning lens. Nothing to post. |
 
 A "Fixed in" reply is never posted: the resolved thread is the
 acknowledgement, and the summary's *Since last run* block links every
@@ -319,8 +339,9 @@ For each `k` in `new`:
   `closed_as_duplicate`) at the same site-key describing the **same
   underlying issue**:
 
-  - Do NOT open a new thread. Append `{"site_key", "thread", "tag"}`
-    to the state block's `concur` list. POST a reply **only** if the
+  - Do NOT open a new thread. Append `{"finding_key", "site_key",
+    "class", "thread", "tag"}` (the agent's **own** finding-key and
+    class) to the state block's `concur` list. POST a reply **only** if the
     agent's tag is stricter than the thread's current tag (the
     severity-concurrence shape, review contract §9), and only if
     `has_own_concurrence_reply` is not already true (one per agent
@@ -378,9 +399,10 @@ Update:
   the threads the agent counts in its tag columns (its own comments
   plus threads in its `concur` list, §3c) and let `R` = those with
   `isResolved == true`, plus those in `resolve_failed` (the finding
-  is gone; only the mutation was refused), plus notes dropped this
-  run because their finding-key disappeared, minus any the agent
-  tried to un-resolve this run (§3a-i, even if that failed).
+  is gone; only the mutation was refused), plus every key in
+  `resolved_keys` (notes, concurrences and rollup sites dropped this
+  run or any earlier run — the ledger is cumulative), minus any the
+  agent tried to un-resolve this run (§3a-i, even if that failed).
   Then `outstanding = (cumulative tag-column sum) − R`. Adjudicated
   (§3a-0), agent-resolved (§3b), and contributor-resolved-after-fixing
   threads are all simply members of `R`; a thread is counted once
@@ -391,9 +413,9 @@ Update:
   `newly_added`, `incorrect_fix`, `improperly_resolved`,
   `disagreements`) plus `resolved_threads`, the URLs resolved this
   run.
-- `concur`, `notes`, `resolve_failed`: the lists as they stand after
-  Phase C (prior entries carried forward, this run's additions and
-  removals applied).
+- `concur`, `notes`, `resolved_keys`, `resolve_failed`: the lists as
+  they stand after Phase C (prior entries carried forward, this run's
+  additions and removals applied). `resolved_keys` only ever grows.
 
 `resolved` = `max(0, R − R_prev)` where
 `R_prev = (prior cumulative tag-column sum) − (prior outstanding)`,

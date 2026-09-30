@@ -123,8 +123,9 @@ State block shape (one JSON object per lens):
   "since_last_run": {"resolved": X, "still_open": Y, "newly_added": Z, "incorrect_fix": W, "improperly_resolved": V, "disagreements": U,
                      "resolved_threads": ["<thread url>"]},
   "unexplored_below_must_fix": N,
-  "concur": [{"site_key": "<skey>", "thread": "<url>", "tag": "<tag>"}],
+  "concur": [{"finding_key": "<key>", "site_key": "<skey>", "class": "<finding_class>", "thread": "<url>", "tag": "<tag>"}],
   "notes": [{"finding_key": "<key>", "site_key": "<skey>", "path": "<file>", "tag": "<tag>", "class": "<finding_class>", "title": "<one line>"}],
+  "resolved_keys": ["<finding_key>"],
   "resolve_failed": ["<thread url>"],
   "ci_safety": "Go" | "No-Go",            (CI-safety lenses only)
   "ci_safety_rationale": "<one line>",    (CI-safety lenses only)
@@ -134,7 +135,19 @@ State block shape (one JSON object per lens):
 
 - `concur` lists the other-agent threads this lens concurs with (§6a).
   Concurrence is recorded here, not replied on the thread, unless the
-  lens's severity is stricter than the thread's tag.
+  lens's severity is stricter than the thread's tag. Each entry
+  carries the lens's **own** `finding_key`, so Phase A indexes it
+  exactly like an own comment: a concurrence is counted once, on the
+  run it is recorded, and never re-counted as new on a later run.
+- `resolved_keys` is the cumulative ledger of finding-keys this lens
+  counts as resolved but that have no thread of their own to carry
+  `isResolved`: a note whose key disappeared, a concurrence whose key
+  disappeared, an individual rollup site fixed while the rollup
+  thread stays open. A key is entered once, never removed, and
+  carried forward every run, so it contributes to `R` exactly once
+  per run like a resolved thread — dropping the entry from `notes`
+  alone would make the finding reappear in `outstanding` one run
+  later.
 - `notes` lists the below-must-fix findings this lens routed to the
   summary's collapsed *Notes* section instead of an inline thread
   (§9a). Each carries a `finding_key` so later runs can tell whether
@@ -409,8 +422,9 @@ The agent reads its prior state block from the summary review's
 `lens-state` line (§2; legacy fallback: its old metadata review), then
 fetches **all** agent-authored prior inline comments via the GitHub
 API (any `fprime-agent:` marker). It indexes its own comments (marker
-matches `<self>`) **and its own prior `notes` entries** by
-`finding-key`, and indexes every agent-authored comment — its own and
+matches `<self>`), **its own prior `notes` entries and its own prior
+`concur` entries** by `finding-key` (a concurrence has no own comment;
+its key lives only in state), and indexes every agent-authored comment — its own and
 others' — by `site-key` for the cross-agent concurrence check (§6a).
 A rollup comment (§9a) carries one footer per site; each of its
 finding-keys is indexed separately. For each prior comment,
@@ -460,7 +474,11 @@ own prior state block (§2; legacy fallback: its old metadata review's
   re-checked across the whole PR diff, and rows 1–5 of Phase C still
   run so fixes and resolutions are honoured. Same head, same
   lower-tier findings; anything else is sampling noise dressed up as
-  review.
+  review. The guard is evaluated **per lens against the lens's own
+  prior `reviewed_head`**; the orchestrator's `ZERO-COMMIT RE-RUN`
+  marker is advisory and is attached per lens. A lens with no prior
+  state block is on run 1 and reviews the full diff, however many
+  other lenses have already seen this head.
 - If `last_reviewed_head` cannot be resolved or compared (e.g. it was
   discarded by a force-push and the compare returns 404), fall back
   to the full PR diff for all tiers. When the *comparison* is in
@@ -481,16 +499,20 @@ touched since the last pass is churn, not review. Mechanics live in
 | present | present | not resolved, but contributor has replied | Possible disagreement | **Reply + escalate** per §11. Increment `disagreements escalated` in Since-last-run. |
 | present | absent | not resolved | Cleanly fixed | **Resolve:** GraphQL `resolveReviewThread`, **no reply**. The fix is recorded in `since_last_run.resolved` and listed (with its link) in the summary's *Since last run* block. If the mutation is refused, append the thread URL to `resolve_failed` in the state block — still no reply (§"Resolution mechanism"). |
 | present | absent | already resolved | Already settled (resolved by the agent on an earlier run, by a core maintainer, or by the contributor after fixing) | **Do nothing.** No reply, no re-resolve. |
+| present (rollup site) | absent | rollup thread still carries a site whose key is present | Partially fixed rollup | **Do not resolve the thread.** Add the site's finding-key to `resolved_keys`. Rollup keys are grouped by thread before this phase; the thread is resolved (row above) only on the run its last remaining site disappears. |
+| present (concur) | present | any | Concurred finding still applies | **Do nothing.** No re-count, no reply; the owning lens handles the thread. |
+| present (concur) | absent | any | Concurred finding no longer applies | Add its key to `resolved_keys`; the owning lens resolves the shared thread. Nothing to post. |
+| present (note or rollup site) whose key is in the summary's `promoted` line | present | n/a | Aggregator promoted it to `must fix` (§14) | **Post it inline** as a must-fix comment (§9) with the same finding-key, remove it from `notes` (a rollup site stays in the rollup thread as well), and do **not** increment any tag column — it was counted when first recorded. |
 | absent | present, same `(file, symbol)` as a prior but different `finding_class` | n/a | Author attempted a fix that left a different problem in the same spot | **Incorrect-fix follow-up:** new inline comment, body starts with `[<review_label>] **<tag>** Follow-up to <link to prior>: <new issue>`. |
 | absent | present, no related prior, **another agent's open thread shares the site-key and describes the same issue** | n/a | Cross-agent duplicate (§6a) | **Record concurrence** in the state block's `concur` list; reply only if own severity is stricter (§6a / §9); count the finding in own state; do not open a new thread. |
 | absent | present, no related prior | n/a | Brand-new finding (new code) | **Route it** per §9a: inline thread, per-file rollup, or summary note. Post per §9 / §10. |
-| present (note) | absent | n/a | A note-channel finding no longer applies | Drop it from `notes`; it counts toward `R` like a resolved thread. No reply anywhere. |
+| present (note) | absent | n/a | A note-channel finding no longer applies | Drop it from `notes` and add its key to `resolved_keys` (§2); that is what keeps it counted toward `R` on every later run. No reply anywhere. |
 
 ### Phase D — Report per-lens state
 
 Compose the refreshed state block (§2) — `reviewed_head` (the new
 head), cumulative tag counts, `outstanding`, `run`, `since_last_run`,
-verdict, `concur`, `notes`, `resolve_failed` — and return it in the
+verdict, `concur`, `notes`, `resolved_keys`, `resolve_failed` — and return it in the
 session completion report for the aggregator to store in the summary
 review. Never post it as a review of its own. The
 Since-last-run state carries six counters:
@@ -519,9 +541,11 @@ Since-last-run state carries six counters:
   sum) − R`, where `R` = number of threads the agent counts in its tag
   columns whose `isResolved` is true after this run's Phase C actions,
   plus threads in `resolve_failed` (the finding is gone; only the
-  mutation failed), plus notes dropped because their finding-key
-  disappeared (threads it tried to un-resolve as improperly resolved
-  do not count). `R_prev` = prior cumulative sum −
+  mutation failed), plus every key in `resolved_keys` — notes,
+  concurrences and rollup sites whose finding-key disappeared on this
+  or any earlier run; the ledger is carried forward, so a keyless
+  finding stays counted after it is dropped (threads it tried to
+  un-resolve as improperly resolved do not count). `R_prev` = prior cumulative sum −
   prior `outstanding`. A thread therefore counts as resolved exactly
   once, no matter how many runs it stays resolved or whether its
   finding-key later disappears.
@@ -801,15 +825,18 @@ What the channels do **not** change:
   `outstanding`, whatever its channel.
 - A note has a finding-key and a site-key and is re-checked on every
   run exactly like a thread; when the key disappears, it is dropped
-  from `notes` and counted as resolved (§7 Phase C).
-- A rollup's sites are individually keyed; a partially fixed rollup
-  stays open until every site is fixed, and the summary lists the
-  remaining count.
+  from `notes` and its key entered in `resolved_keys`, which is how
+  it stays counted as resolved on every later run (§7 Phase C).
+- A rollup's sites are individually keyed. Phase C groups a rollup's
+  keys by thread: a site that disappears goes into `resolved_keys`
+  and the thread stays open; the thread is resolved only on the run
+  its last site disappears. The summary lists the remaining count.
 - Severity reconciliation (§14) may promote a note or rollup site to
   `must fix`; the aggregator then lists it in the must-fix list with
-  its summary line as the link target, and the **next** run of the
-  owning lens posts it inline (it is now must-fix, and must-fix is
-  always inline).
+  its summary line as the link target, records the finding-key in
+  the summary's hidden `promoted` line, and the **next** run of the
+  owning lens posts it inline (§7 Phase C, promoted row) under the
+  same key without counting it again.
 - A note is never a way to avoid saying something awkward. If the
   title needs a `Why:` to be understood, it is not a note.
 
