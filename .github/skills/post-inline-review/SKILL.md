@@ -53,8 +53,9 @@ A single PR review can carry many inline comments. Prefer one review
 per agent run rather than many small reviews — the GitHub UI groups
 them together.
 
-**First run** — the metadata block (see §4) goes in `body` alongside
-the inline `comments[]`:
+Every run — the `body` is **empty**; the review exists only to carry
+the inline `comments[]`, and it is posted only when there is at least
+one new inline comment. Per-lens state is never posted (see §4):
 
 ```http
 POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews
@@ -65,13 +66,13 @@ Content-Type: application/json
 {
   "commit_id": "<head SHA>",
   "event": "COMMENT",
-  "body": "<per-agent hidden metadata block — see §4>",
+  "body": "",
   "comments": [
     {
       "path": "Svc/CmdDispatcher/CmdDispatcher.cpp",
       "line": 142,
       "side": "RIGHT",
-      "body": "[Security] **must fix** … \n\n<!-- fprime-agent: security-review; finding-key: abc; v1 -->"
+      "body": "[Security] **must fix** `len` unchecked before `memcpy` from ground argument\nWhy: A command with `len > sizeof(buf)` overruns `buf` and corrupts the dispatcher state.\nFix: Reject `len > sizeof(buf)` with a command-response error before the copy.\n\n<!-- fprime-agent: security-review; finding-key: abc; site-key: s1; v2 -->"
     },
     {
       "path": "Svc/CmdDispatcher/CmdDispatcher.cpp",
@@ -79,22 +80,22 @@ Content-Type: application/json
       "line": 207,
       "start_side": "RIGHT",
       "side": "RIGHT",
-      "body": "[Security] **suggestion** … \n\n```suggestion\n…\n```\n\n<!-- fprime-agent: security-review; finding-key: def; v1 -->"
+      "body": "[Security] **suggestion** Return value of `read()` discarded\nWhy: A short read leaves the tail of `buf` uninitialised and it is later sent to the ground.\nFix: below\n\n```suggestion\n…\n```\n\n<!-- fprime-agent: security-review; finding-key: def; site-key: s2; v2 -->"
     }
   ]
 }
 ```
 
-**Re-run** — posted **only if there are new inline comments**; it
-has an **empty `body`** (no metadata), and the metadata review is
-updated in place separately per §4:
+A **rollup** comment (review contract §9a) is one entry in
+`comments[]` anchored at the first site, with a `Sites:` line and one
+footer per site:
 
 ```json
 {
-  "commit_id": "<head SHA>",
-  "event": "COMMENT",
-  "body": "",
-  "comments": [ ... ]
+  "path": "Svc/CmdDispatcher/CmdDispatcher.cpp",
+  "line": 88,
+  "side": "RIGHT",
+  "body": "[C++ Design] **could fix** `sizeof` on a pointer parameter (4 sites in this file)\nWhy: Each call copies `sizeof(void*)` bytes instead of the buffer length, truncating the payload.\nFix: Use the length parameter that accompanies each buffer.\nSites: L88 `dispatch`, L131 `enqueue`, L164 `flush`, L202 `reset`\n\n<!-- fprime-agent: fprime-code-review; finding-key: k1; site-key: s1; v2 -->\n<!-- fprime-agent: fprime-code-review; finding-key: k2; site-key: s2; v2 -->\n<!-- fprime-agent: fprime-code-review; finding-key: k3; site-key: s3; v2 -->\n<!-- fprime-agent: fprime-code-review; finding-key: k4; site-key: s4; v2 -->"
 }
 ```
 
@@ -108,9 +109,8 @@ verdicts — see review-contract.md §10.
 
 `commit_id` MUST be the head SHA the agent analyzed; this is what
 binds the comments to specific line positions. It is **not** a
-record of the last reviewed head — the `reviewed_head` line in the
-metadata body is (review contract §2), because a body edit leaves
-`commit_id` untouched.
+record of the last reviewed head — the `reviewed_head` field of the
+lens's state block is (review contract §2).
 
 ---
 
@@ -125,69 +125,77 @@ Authorization: Bearer ${TOKEN}
 Content-Type: application/json
 
 {
-  "body": "[Security] Fixed in <commit-sha>.\n\n<!-- fprime-agent: security-review; v1; reply-kind: resolution -->"
+  "body": "[Security] **Improperly resolved.** The finding is still present at <head-sha>: <one sentence>.\n\ncc @<maintainer> — please adjudicate.\n\n<!-- fprime-agent: security-review; finding-key: <key>; site-key: <skey>; v2; reply-kind: improper-resolution -->"
 }
 ```
 
-Replies are used for:
+Replies are the **exception**, not the bookkeeping channel. They are
+used only for:
 
-- `[<review_label>] Fixed in <sha>.` after a clean resolution.
 - The **Improperly resolved.** reply on an un-resolved thread (see
   the improper-resolution body shape in the review contract §9).
 - The **Disagreement — escalating.** reply when contributor pushback
   meets the escalation criteria (review contract §11).
-- The **Concur** reply a reviewer posts on another agent's thread
-  that already covers the same issue at the same site-key (review
-  contract §6a / §9, `reply-kind: concurrence`).
-- The **Duplicate** reply the aggregator posts on a non-canonical
-  duplicate thread during its de-duplication post-pass
-  (review-summary.agent.md §5h, `reply-kind: duplicate-close`),
-  followed by `resolveReviewThread` on that thread:
+- The **severity-concurrence** reply a reviewer posts on another
+  agent's thread when its own severity for the same issue is
+  **stricter** than the thread's tag (review contract §6a / §9,
+  `reply-kind: concurrence`). Ordinary agreement is recorded in the
+  lens's `concur` state and never replied.
+- The **severity-promotion** reply the aggregator posts when it
+  promotes a finding to must-fix (review-summary.agent.md §5j).
 
-  ```
-  [Summary] **Duplicate** — consolidated into <link to canonical thread>.
+Never posted, by anyone:
 
-  <!-- fprime-review-summary; site-key: <skey>; v2; reply-kind: duplicate-close -->
-  ```
+- `Fixed in <sha>.` — a clean fix is a silent `resolveReviewThread`
+  (§5); the summary's *Since last run* block links every thread
+  resolved. A refused resolve goes in the lens's `resolve_failed`
+  state and is rendered visibly by the summary, not replied.
+- Plain `Concur` — recorded in `concur` state.
+- `Duplicate — consolidated into …` — the aggregator resolves the
+  duplicate silently and records the pair in the summary's
+  `duplicates` line (review-summary.agent.md §5h).
 
 ---
 
-## 4. Per-agent hidden metadata review
+## 4. Per-lens state — reported, never posted
 
-On first run, the metadata block lives in the `body` of the
-combined review described in §2 (which also carries the inline
-`comments[]` array). There is no separate metadata-only review on
-first run.
+Reviewers post no metadata review and never call
+`PUT /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}`.
+Each lens returns its state block (review contract §2) to the
+orchestrator in its session completion report, as one
+`<!-- lens-state: {...} -->` JSON line; the aggregator writes every
+lens's block into the hidden `lens-state` line of the single summary
+review, which is the only persistent store of per-lens state on the
+PR. This removes the ~10 metadata-only review objects per run that the
+previous design left on the PR page and the `404`/`403` in-place-edit
+failures that multiplied them.
 
-On re-run, any new inline comments go in a fresh review with an
-empty `body` (see §2 re-run template); if there are none, that
-review is not posted. The metadata is handled separately by
-**editing the prior metadata review's body in place**:
+The **aggregator** is the only agent that edits a review body in
+place (its own summary, `review-summary.agent.md` §5d):
 
 ```http
 PUT /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}
 Authorization: Bearer ${TOKEN}
 Content-Type: application/json
 
-{ "body": "<!-- fprime-agent: security-review v1 -->\n<!-- reviewed_head: <head SHA> -->\n<!-- counts: ... -->\n..." }
+{ "body": "<!-- fprime-review-summary v1 -->\n<!-- reviewed_head: <head SHA> -->\n<!-- run: N -->\n<!-- maintainers_requested: ... -->\n<!-- lens-state: [...] -->\n<!-- duplicates: [...] -->\n## Automated review — run N · `<sha7>`\n..." }
 ```
 
-This endpoint ("Update a review for a pull request") changes only the
-summary body; the review's state, `commit_id`, and attached inline
-comments are unchanged, and no notification is sent. Do **not** use
-`PUT .../reviews/{review_id}/dismissals` on a metadata review: GitHub
-only dismisses `APPROVED` / `CHANGES_REQUESTED` reviews and returns
-`422 Can not dismiss a commented pull request review` for the
-`COMMENTED` reviews reviewers post. The review body contains **only**
-HTML-comment metadata (reviewed head, counts, verdict, run ordinal,
-since-last-run) — no visible summary table. The HTML marker is the
-de-dup key; `reviewed_head` is what tells the next run (and any
-external trigger) which head this metadata describes.
+This endpoint changes only the summary body; the review's state,
+`commit_id`, and attached inline comments are unchanged, and no
+notification is sent. The aggregator dismisses-and-resubmits only
+when the verdict event flips (`APPROVE` ↔ `REQUEST_CHANGES`), and
+GitHub permits that because those events are dismissable; a
+`COMMENTED` review returns `422 Can not dismiss a commented pull
+request review`. If the `PUT` fails with `404`/`403` (the prior
+summary was authored under a different token identity), submit a
+fresh summary review carrying the full hidden state and let later
+runs take the newest marker match.
 
-If the `PUT` fails with `404`/`403` (review not editable by this
-token), fall back to submitting a fresh metadata-only review
-(`event: COMMENT`, no `comments[]`) and let later runs take the
-newest marker match.
+**Legacy PRs** may still carry `<!-- fprime-agent: <name> v1 -->`
+metadata reviews from the previous design. Read them once as the
+fallback prior state (`re-review-state` §1b-bis); never edit or
+re-post them.
 
 ---
 
@@ -271,10 +279,10 @@ The agent uses this to:
 
 | Failure | Fallback |
 |---|---|
-| `resolveReviewThread` returns `403` or the token lacks the discussion-write scope | Post the `[<review_label>] Fixed in <sha>.` reply and proceed. The thread visibly remains open but the audit trail is preserved; the own `Fixed in` reply makes it count as resolved in the `re-review-state` §4 recomputation. |
+| `resolveReviewThread` returns `403` / `FORBIDDEN` (the token lacks Write on the repository) | **Do not reply.** Append the thread URL to the lens's `resolve_failed` state; the summary renders it visibly as `⚠️ Could not resolve N fixed thread(s) — token lacks Write` so the permission is fixed. The thread counts as resolved in the `re-review-state` §4 recomputation (the finding is gone); the next run retries the mutation once. |
 | `unresolveReviewThread` returns `403` | Post the improperly-resolved reply anyway. The thread remains visibly resolved on GitHub but the reply + maintainer ping is visible inline. Increment `improperly resolved` regardless. |
 | Inline-comment POST returns `422 Pull Request Review thread cannot be created on this line of the diff` | The line is not in the PR's diff. Re-anchor to the nearest line that is in the diff (typically the function header) and prefix the comment body with `(Anchored above the offending line; the diff does not include line N.)` |
-| `PUT .../reviews/{review_id}` (body update) returns `404`/`403` | Submit a fresh metadata-only review instead (§4). Never attempt `/dismissals` on a `COMMENTED` review. |
+| `PUT .../reviews/{review_id}` (summary body update, aggregator only) returns `404`/`403` | Submit a fresh summary review carrying the full hidden state (§4). Never attempt `/dismissals` on a `COMMENTED` review. |
 | Token missing entirely | Fail fast. The agent emits a single line to the orchestrator: `Cannot post review: TOKEN not provided.` and exits. The orchestrator treats this as a FAILED reviewer per review-summary.agent.md §5. |
 
 ---
@@ -322,23 +330,26 @@ more than this review. On a `429`, or a `403` whose body mentions
 ## 8. Worked example: the full flow on one PR
 
 1. Read PR head SHA. Bind every subsequent call to this SHA.
-2. Fetch the agent's prior metadata review by HTML marker (review
-   contract §6). Note its review ID, run count, `reviewed_head`
-   (fallback: `commit_id`), and the `finding-key` index.
+2. Take the lens's prior state block from the kickoff prompt (or the
+   summary review's `lens-state` line; legacy: its old metadata
+   review). Note its run count, `reviewed_head`, `notes`,
+   `resolve_failed`, and build the `finding-key` index from its
+   prior inline comments plus its notes.
 3. Run the agent's analysis on the new head. Compute the new
    `finding-key` set; scope new below-must-fix findings to the diff
-   since `reviewed_head` (`re-review-state` §2a).
+   since `reviewed_head` (`re-review-state` §2a) — none at all on a
+   zero-commit re-run.
 4. Match prior vs current per review contract §7 phase C. Build the
-   action list: `post-new`, `reply-fixed`, `resolve-thread`,
-   `reply-improper`, `unresolve-thread`, `reply-disagreement`,
+   action list: `post-new` (inline / rollup / note),
+   `resolve-thread`, `reply-improper`, `unresolve-thread`,
+   `reply-disagreement`, `record-concurrence`,
    `post-incorrect-fix-followup`, `do-nothing`.
-5. Execute the action list. Compose the per-agent hidden metadata
-   block from the resulting state.
-6. POST the umbrella review (inline comments + hidden metadata body)
-   or, on re-run, `PUT` the updated metadata body onto the prior
-   metadata review and, only if there are new inline comments, POST
-   them as one fresh empty-body review.
-7. Return success to the orchestrator.
+5. Execute the action list. Resolves are silent; refused resolves go
+   in `resolve_failed`.
+6. Only if there are new inline comments, POST them as one
+   empty-body review (§2).
+7. Return `<lens>: completed` plus the refreshed
+   `<!-- lens-state: {...} -->` block to the orchestrator (§4).
 
 ---
 

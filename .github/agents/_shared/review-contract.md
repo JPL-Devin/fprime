@@ -95,43 +95,70 @@ than lost — but the reviewer tags correctly in the first place.
 
 ---
 
-## 2. Per-agent review submission
+## 2. Per-lens state (reported, not posted)
 
-Each **reviewer** agent submits its findings as a single GitHub PR
-review (event: `COMMENT`) containing **only inline comments** attached
-to the relevant diff lines. The review body contains a minimal hidden
-metadata block for aggregator consumption and re-review tracking — it
-does **not** contain a visible summary table.
+Each **reviewer** lens submits its findings as inline comments only
+(§9, §10). A lens posts a GitHub PR review (event: `COMMENT`, empty
+body) **only when it has new inline comments to carry**; a lens with
+nothing new to post posts nothing. There is no per-lens metadata
+review: the ten metadata-only review objects per run that the earlier
+design produced were the single largest source of PR-page clutter and
+carried nothing a human could read.
 
-Review body shape (the ONLY content in the review body):
+Instead each lens reports one **state block** to the orchestrator in
+its session completion report, and the aggregator stores every lens's
+block in the hidden `<!-- lens-state: ... -->` line of the single
+summary review (§10, `review-summary.agent.md` §Output). The summary
+review is the only persistent store of per-lens state on the PR.
+
+State block shape (one JSON object per lens):
 
 ```
-<!-- fprime-agent: <agent-name> v1 -->
-<!-- reviewed_head: <full 40-char head SHA the agent analyzed> -->
-<!-- counts: {"must_fix": N, "suggestion": N, "could_fix": N, "future_work": N, "outstanding": N} -->
-<!-- verdict: Go | No-Go -->
-<!-- run: N -->
-<!-- since_last_run: {"resolved": X, "still_open": Y, "newly_added": Z, "incorrect_fix": W, "improperly_resolved": V, "disagreements": U} -->
-<!-- unexplored_below_must_fix: N -->
+<!-- lens-state: {
+  "agent": "<agent-name>",
+  "reviewed_head": "<full 40-char head SHA the lens analyzed>",
+  "run": N,
+  "counts": {"must_fix": N, "suggestion": N, "could_fix": N, "future_work": N, "outstanding": N},
+  "verdict": "Go" | "No-Go",
+  "since_last_run": {"resolved": X, "still_open": Y, "newly_added": Z, "incorrect_fix": W, "improperly_resolved": V, "disagreements": U,
+                     "resolved_threads": ["<thread url>"]},
+  "unexplored_below_must_fix": N,
+  "concur": [{"site_key": "<skey>", "thread": "<url>", "tag": "<tag>"}],
+  "notes": [{"finding_key": "<key>", "site_key": "<skey>", "path": "<file>", "tag": "<tag>", "class": "<finding_class>", "title": "<one line>"}],
+  "resolve_failed": ["<thread url>"],
+  "ci_safety": "Go" | "No-Go",            (CI-safety lenses only)
+  "ci_safety_rationale": "<one line>",    (CI-safety lenses only)
+  "surfaces": {...}                         (supply-chain lens only, §"Supply-chain agent: surfaces emission")
+} -->
 ```
+
+- `concur` lists the other-agent threads this lens concurs with (§6a).
+  Concurrence is recorded here, not replied on the thread, unless the
+  lens's severity is stricter than the thread's tag.
+- `notes` lists the below-must-fix findings this lens routed to the
+  summary's collapsed *Notes* section instead of an inline thread
+  (§9a). Each carries a `finding_key` so later runs can tell whether
+  it still applies.
+- `resolve_failed` lists threads whose finding disappeared but whose
+  `resolveReviewThread` mutation was refused (§7 "Resolution
+  mechanism"). The aggregator renders these **visibly** — a refused
+  resolve is a permissions defect the maintainer must see, never a
+  quiet fallback.
 
 `unexplored_below_must_fix` is the count of below-must-fix candidate
 sites the lens deliberately left unexplored under the effort budget
 (§13b); it is `0` for an exempt lens (§13d) and tells a maintainer how
 much nit-tier surface was traded away for cost.
 
-This metadata is machine-readable by the aggregator but invisible to
-human reviewers browsing the PR. The visible output of each reviewer
-is its inline comments only.
-
-`reviewed_head` is the authoritative record of which head the
-metadata describes. It is needed because the metadata review is
-updated in place on re-runs (§6), and GitHub does not change a
-review's `commit_id` when its body is edited — so `commit_id` only
-records the head of run 1. Consumers (the aggregator, re-review Phase
-B, any external trigger deciding whether a PR needs a new pass) MUST
-read `reviewed_head` and fall back to `commit_id` only when the line
-is absent (metadata written before this field existed).
+`reviewed_head` is the authoritative record of which head the state
+describes. Consumers (the aggregator, re-review Phase A, any external
+trigger deciding whether a PR needs a new pass) read it from the
+summary's `lens-state` line. **Legacy PRs** reviewed before this
+design carry per-lens metadata reviews keyed
+`<!-- fprime-agent: <name> v1 -->`; a lens finding no `lens-state`
+entry for itself falls back to the newest such review (its
+`reviewed_head` line, else its `commit_id`) and never posts or edits
+one again.
 
 ### Column semantics
 
@@ -145,6 +172,8 @@ is absent (metadata written before this field existed).
 ### Verdict (Go / No-Go)
 
 - `Go` iff **outstanding must-fix == 0** AND the agent ran cleanly.
+  Notes (§9a) are below must-fix by construction and never affect the
+  verdict.
 - Otherwise `No-Go`.
 
 Cumulative must-fix history does not block `Go`; what matters is
@@ -153,12 +182,7 @@ what's still outstanding.
 ### Optional CI safety metadata
 
 Agents that contribute to CI safety (security, supply-chain) also
-include in their hidden metadata block:
-
-```
-<!-- ci_safety: Go | No-Go -->
-<!-- ci_safety_rationale: <one line> -->
-```
+carry `ci_safety` and `ci_safety_rationale` in their state block.
 
 `CI safety: No-Go` rule (applies to the security agent and the
 supply-chain agent): **iff outstanding `**must fix**` count > 0 within
@@ -167,22 +191,21 @@ future-work) triggers a CI No-Go.
 
 ### Supply-chain agent: surfaces emission
 
-The supply-chain agent (only) also emits a structured surfaces block
-in its hidden metadata, below the `ci_safety_rationale` HTML comment.
-The aggregator parses this block to render its `Supply-chain surfaces`
-table. One bullet per supply-chain scope category, in this fixed
-order, wrapped in a single HTML comment:
+The supply-chain agent (only) also carries a `surfaces` object in its
+state block. The aggregator renders it as the collapsed
+`Supply-chain surfaces` table. One entry per supply-chain scope
+category, in this fixed order:
 
 ```
-<!-- surfaces:
-- Dependencies: clean | <one-line description>
-- Vendored / submodule: clean | <one-line description>
-- Build / test infrastructure: clean | <one-line description>
-- Workflows / actions / scripts: clean | <one-line description>
-- Generator output: clean | <one-line description>
-- Prompt-injection: clean | <one-line description>
-- Review-system integrity: clean | <one-line description>
--->
+"surfaces": {
+  "Dependencies": "clean | <one-line description>",
+  "Vendored / submodule": "clean | <one-line description>",
+  "Build / test infrastructure": "clean | <one-line description>",
+  "Workflows / actions / scripts": "clean | <one-line description>",
+  "Generator output": "clean | <one-line description>",
+  "Prompt-injection": "clean | <one-line description>",
+  "Review-system integrity": "clean | <one-line description>"
+}
 ```
 
 Cell-content rules:
@@ -194,13 +217,13 @@ Cell-content rules:
   it. Counts roll up the current outstanding triage-tag tiers. The
   one-line description names the worst-tier finding for the surface
   (e.g., `1 must-fix — action 'org/foo@main' unpinned in build-image.yml`).
-- The bullet order is fixed; every category appears on every run so a
+- The key order is fixed; every category appears on every run so a
   reviewer can confirm coverage without inferring from absences.
 
 If the supply-chain agent FAILED (orchestrator reports
-`FAILED: <reason>`), the agent's review (with hidden metadata) is not
-posted and the aggregator handles surfaces emission as an error case
-(see `review-summary.agent.md` §5).
+`FAILED: <reason>`), no state block exists for it and the aggregator
+handles surfaces emission as an error case (see
+`review-summary.agent.md` §5).
 
 ---
 
@@ -264,21 +287,16 @@ This is a one-way orchestrator→agent prompt-level convention.
 
 ## 6. De-duplication
 
-Per-agent reviews are identified by their HTML comment marker
-(`<!-- fprime-agent: <name> v1 -->`). There is exactly **one** such
-review per agent per PR for the life of the PR: when re-running, the
-agent **updates the body of its existing review in place** (REST
-`PUT /repos/{o}/{r}/pulls/{n}/reviews/{id}`) rather than dismissing
-and resubmitting. Dismissal is not an option for these reviews —
-GitHub only allows dismissing `APPROVED` / `CHANGES_REQUESTED`
-reviews, and rejects it for `COMMENTED` ones with a 422 — and a body
-edit emits no new notification or timeline entry, so a quiet re-run
-produces no visible churn.
+Per-lens state is identified by the `agent` field of its entry in
+the summary review's `lens-state` line (§2). Lenses post no review of
+their own except to carry new inline comments; that review's body is
+empty and it is never edited, dismissed, or re-posted. A quiet re-run
+(nothing new to post) therefore leaves **no** new object on the PR.
 
 Inline comments are identified by `(file_path, finding-key)` — see §7
-for finding-key. New inline comments on a re-run go in a separate
-review with an empty body (§10); if a re-run has no new inline
-comments, no such review is posted at all.
+for finding-key. New inline comments on a re-run go in one review
+with an empty body (§10); if a re-run has no new inline comments, no
+review is posted at all.
 
 The aggregator's review is identified by
 `<!-- fprime-review-summary v1 -->`. On re-runs the aggregator
@@ -317,31 +335,39 @@ Before posting a new finding, the reviewer checks for an existing
 open thread at the same site-key:
 
 - **Same underlying issue, different lens** → do NOT post a new
-  thread. Post one **concurrence reply** on the existing thread using
-  the concurrence body shape (§9). The concurring agent still counts
-  the finding in its own hidden metadata (Priority 1 is preserved:
-  the finding is counted and visible, just not re-posted as a
-  separate thread). If the concurring agent's severity is **higher**
-  than the thread's current tag (e.g. it would say `must fix` where
-  the original said `suggestion`), the concurrence reply states the
-  escalated tag, and the concurring agent's metadata carries it as
-  outstanding at its own severity so verdicts stay correct.
+  thread and do NOT reply. Record the concurrence in the `concur`
+  list of the lens's state block (§2); the aggregator renders it as
+  `— also: <label>` on the finding in the summary. The concurring
+  agent still counts the finding in its own state (Priority 1 is
+  preserved: the finding is counted and attributed, just not
+  re-posted). **Exception — stricter severity:** if the concurring
+  agent's severity is **higher** than the thread's current tag (e.g.
+  it would say `must fix` where the original said `suggestion`), it
+  posts one **severity-concurrence reply** (§9) stating the escalated
+  tag, because that changes what the author must do; its state
+  carries the finding as outstanding at its own severity so verdicts
+  stay correct. A plain "I agree" reply is never posted: it tells the
+  author nothing and was one fifth of all bot replies.
 - **Same spot, genuinely different issue** → post normally. The
   site-key match alone never suppresses a distinct finding.
 
 Resolution semantics on shared threads: a thread with concurrences is
 resolved only when the fix satisfies every concurring agent. Each
 concurring agent's Phase C (§7) treats the shared thread as its own
-for resolve / un-resolve purposes, keyed by its concurrence reply.
+for resolve / un-resolve purposes, keyed by its `concur` state entry
+(or, on legacy PRs, its concurrence reply).
 
 **Aggregator post-pass backstop.** The aggregator runs a mandatory
 de-duplication post-pass on every run: it groups open agent-authored
 threads by site-key, detects duplicates the concurrence rule missed,
-replies on each non-canonical duplicate with a link to the canonical
-thread, and resolves it. Mechanics and canonical-thread election live
-in `review-summary.agent.md` §5h. Reviewers MUST NOT un-resolve a
-thread closed by the aggregator's `reply-kind: duplicate-close` reply;
-they track their finding on the linked canonical thread instead.
+resolves each non-canonical duplicate **without a reply**, and records
+the `duplicate → canonical` pair in the summary's `duplicates` state
+so the consolidation is auditable from the summary. Mechanics and
+canonical-thread election live in `review-summary.agent.md` §5h.
+Reviewers MUST NOT un-resolve a thread listed in the summary's
+`duplicates` state (or, on legacy PRs, one carrying a
+`reply-kind: duplicate-close` reply); they track their finding on the
+canonical thread instead.
 
 ---
 
@@ -379,11 +405,15 @@ order: enclosing symbol name (function / class / FPP entity) + a
 that, the nearest stable structural anchor (file + symbol). The skill
 specifies the exact algorithm.
 
-The agent fetches **all** agent-authored prior inline comments via
-the GitHub API (any `fprime-agent:` marker). It indexes its own
-comments (marker matches `<self>`) by `finding-key`, and indexes
-every agent-authored comment — its own and others' — by `site-key`
-for the cross-agent concurrence check (§6a). For each prior comment,
+The agent reads its prior state block from the summary review's
+`lens-state` line (§2; legacy fallback: its old metadata review), then
+fetches **all** agent-authored prior inline comments via the GitHub
+API (any `fprime-agent:` marker). It indexes its own comments (marker
+matches `<self>`) **and its own prior `notes` entries** by
+`finding-key`, and indexes every agent-authored comment — its own and
+others' — by `site-key` for the cross-agent concurrence check (§6a).
+A rollup comment (§9a) carries one footer per site; each of its
+finding-keys is indexed separately. For each prior comment,
 the agent also fetches via GraphQL:
 
 - **Resolution status** of the parent review thread (`isResolved`,
@@ -404,8 +434,8 @@ current set of finding-keys.
 
 **Re-review scope for new findings (runs ≥ 2).** Let
 `last_reviewed_head` be the `reviewed_head` recorded in the agent's
-own prior metadata review (§2; fall back to that review's `commit_id`
-if the line is absent). Then:
+own prior state block (§2; legacy fallback: its old metadata review's
+`reviewed_head` line, else that review's `commit_id`). Then:
 
 - **Must-fix candidates** are always in scope across the whole PR diff
   (`<base>...<head>`), exactly as on run 1.
@@ -422,10 +452,19 @@ if the line is absent). Then:
 - Findings with a **prior finding-key** (rows 1–5 of Phase C) and
   **incorrect-fix follow-ups** are unaffected by scoping — they are
   matched, resolved, un-resolved, or escalated across the whole PR.
+- **Zero-commit guard.** If `last_reviewed_head == <head>` — the PR
+  was re-reviewed without a new commit (a manual re-trigger, a
+  retry after a failed run) — the incremental diff is empty and
+  **no new below-must-fix finding is in scope**: no new inline
+  thread, no new rollup, no new note. Must-fix candidates are still
+  re-checked across the whole PR diff, and rows 1–5 of Phase C still
+  run so fixes and resolutions are honoured. Same head, same
+  lower-tier findings; anything else is sampling noise dressed up as
+  review.
 - If `last_reviewed_head` cannot be resolved or compared (e.g. it was
-  discarded by a force-push and the compare returns 404), or
-  `last_reviewed_head == <head>`, fall back to the full PR diff for
-  all tiers. When in doubt, widen the scope, never narrow it.
+  discarded by a force-push and the compare returns 404), fall back
+  to the full PR diff for all tiers. When the *comparison* is in
+  doubt, widen the scope; only an exact head match narrows it.
 
 The point is that a re-run responds to what the author changed:
 reposting low-severity observations on code the author has not
@@ -440,23 +479,28 @@ touched since the last pass is churn, not review. Mechanics live in
 | present | present | **resolved by a core maintainer** | **Maintainer adjudicated.** The maintainer has decided the finding does not need to be fixed. | **Do nothing.** Leave the thread resolved; no reply, no un-resolve, no repost — on this and every later run. The resolved thread counts against `outstanding` via the Phase D recomputation. |
 | present | present | **resolved by anyone else** | **Improperly resolved.** Finding still applies on the new head. | **Un-resolve + reply.** GraphQL `unresolveReviewThread`; reply with the improper-resolution body shape (§9). Append maintainer ping per §4. Increment `improperly resolved` in Since-last-run. |
 | present | present | not resolved, but contributor has replied | Possible disagreement | **Reply + escalate** per §11. Increment `disagreements escalated` in Since-last-run. |
-| present | absent | not resolved | Cleanly fixed | **Resolve:** reply `[<review_label>] Fixed in <sha>.` + GraphQL `resolveReviewThread`. |
+| present | absent | not resolved | Cleanly fixed | **Resolve:** GraphQL `resolveReviewThread`, **no reply**. The fix is recorded in `since_last_run.resolved` and listed (with its link) in the summary's *Since last run* block. If the mutation is refused, append the thread URL to `resolve_failed` in the state block — still no reply (§"Resolution mechanism"). |
 | present | absent | already resolved | Already settled (resolved by the agent on an earlier run, by a core maintainer, or by the contributor after fixing) | **Do nothing.** No reply, no re-resolve. |
 | absent | present, same `(file, symbol)` as a prior but different `finding_class` | n/a | Author attempted a fix that left a different problem in the same spot | **Incorrect-fix follow-up:** new inline comment, body starts with `[<review_label>] **<tag>** Follow-up to <link to prior>: <new issue>`. |
-| absent | present, no related prior, **another agent's open thread shares the site-key and describes the same issue** | n/a | Cross-agent duplicate (§6a) | **Concurrence reply** on the existing thread per §6a / §9; count the finding in own metadata; do not open a new thread. |
-| absent | present, no related prior | n/a | Brand-new finding (new code) | **Post a new comment.** |
+| absent | present, no related prior, **another agent's open thread shares the site-key and describes the same issue** | n/a | Cross-agent duplicate (§6a) | **Record concurrence** in the state block's `concur` list; reply only if own severity is stricter (§6a / §9); count the finding in own state; do not open a new thread. |
+| absent | present, no related prior | n/a | Brand-new finding (new code) | **Route it** per §9a: inline thread, per-file rollup, or summary note. Post per §9 / §10. |
+| present (note) | absent | n/a | A note-channel finding no longer applies | Drop it from `notes`; it counts toward `R` like a resolved thread. No reply anywhere. |
 
-### Phase D — Update per-agent review metadata
+### Phase D — Report per-lens state
 
-Update the body of the prior metadata review in place (§6) with the
-refreshed hidden metadata: `reviewed_head` (the new head), cumulative
-tag counts, `outstanding`, `run`, `since_last_run`, verdict. Never
-dismiss it and never post a second metadata review. The
-Since-last-run metadata carries six counters:
+Compose the refreshed state block (§2) — `reviewed_head` (the new
+head), cumulative tag counts, `outstanding`, `run`, `since_last_run`,
+verdict, `concur`, `notes`, `resolve_failed` — and return it in the
+session completion report for the aggregator to store in the summary
+review. Never post it as a review of its own. The
+Since-last-run state carries six counters:
 
 - `X resolved` — own threads that became resolved since the prior
   run, however they got there (agent, core maintainer, or contributor
-  after fixing): `max(0, R − R_prev)` per the recomputation below.
+  after fixing), plus notes that no longer apply: `max(0, R − R_prev)`
+  per the recomputation below. The lens also lists the thread URLs
+  it resolved this run in `since_last_run.resolved_threads` so the
+  summary can link them.
 - `Y still open` — prior findings that still apply (unchanged threads).
 - `Z newly added` — brand-new findings posted this run.
 - `W incorrect-fix follow-ups` — same-spot-different-finding-class new
@@ -473,26 +517,40 @@ Since-last-run metadata carries six counters:
 - `outstanding` is **recomputed from thread state every run, never
   carried forward incrementally**: `outstanding = (cumulative tag-column
   sum) − R`, where `R` = number of threads the agent counts in its tag
-  columns whose `isResolved` is true after this run's Phase C actions
-  (threads the agent replied `Fixed in` to but could not resolve for
-  permission reasons also count; threads it tried to un-resolve as
-  improperly resolved do not). `R_prev` = prior cumulative sum −
+  columns whose `isResolved` is true after this run's Phase C actions,
+  plus threads in `resolve_failed` (the finding is gone; only the
+  mutation failed), plus notes dropped because their finding-key
+  disappeared (threads it tried to un-resolve as improperly resolved
+  do not count). `R_prev` = prior cumulative sum −
   prior `outstanding`. A thread therefore counts as resolved exactly
   once, no matter how many runs it stays resolved or whether its
   finding-key later disappears.
 
 ### Resolution mechanism
 
-Belt-and-suspenders, using the appropriately-permissioned `TOKEN` the
-external trigger provides:
+A fixed finding is acknowledged by **resolving its thread**, using the
+`TOKEN` the external trigger provides (GitHub requires the PR author
+or repository **Write** access for `resolveReviewThread`; triage is
+not enough):
 
-- GraphQL `resolveReviewThread` mutation collapses the thread in the
-  PR UI.
-- A REST reply `[<review_label>] Fixed in <commit-sha>.` keeps an audit trail.
+- GraphQL `resolveReviewThread` collapses the thread in the PR UI.
+- **No reply is posted.** The audit trail is the summary's *Since last
+  run* block, which links every thread resolved this run. A "Fixed in
+  <sha>" reply on an open thread was the single largest source of
+  visible clutter (275 such threads were left open across 88 PRs)
+  and, once the resolve lands, it says nothing the collapsed thread
+  does not.
 
-If `resolveReviewThread` fails, the reply alone is acceptable
-degradation; the thread still counts toward `R` above, and later runs
-skip it (an own `Fixed in` reply is already present).
+If `resolveReviewThread` is refused, the lens **does not fall back to
+a reply**. It appends the thread URL to `resolve_failed` in its state
+block; the aggregator renders every such thread in a visible
+`⚠️ Could not resolve N fixed thread(s) — token lacks Write` line at
+the top of the summary, so the permissions defect is seen and fixed
+rather than papered over. The thread still counts toward `R`, and the
+next run retries the mutation once (`re-review-state` §3b).
+
+Legacy threads that already carry an own `Fixed in` reply from an
+earlier run are retried the same way, never replied to again.
 
 ### Guardrails (never)
 
@@ -513,9 +571,15 @@ skip it (an own `Fixed in` reply is already present).
 - **Never open a new thread** for a finding whose site-key matches
   another agent's open thread describing the same issue — concur on
   that thread instead (§6a).
-- **Never un-resolve** a thread the aggregator closed with a
-  `reply-kind: duplicate-close` reply; the canonical thread it links
-  is the live home of the finding.
+- **Never un-resolve** a thread the aggregator recorded as a
+  duplicate (summary `duplicates` state, or a legacy
+  `reply-kind: duplicate-close` reply); the canonical thread is the
+  live home of the finding.
+- **Never post a bookkeeping reply** — no "Fixed", no plain "Concur",
+  no "Duplicate". The only replies a reviewer posts are the
+  improper-resolution, disagreement, incorrect-fix follow-up and
+  severity-concurrence shapes of §9; everything else lives in state
+  and in the summary.
 
 ---
 
@@ -525,10 +589,15 @@ Tiebreakers when other contract rules underdetermine behavior. Apply
 in strict order; the earlier wins.
 
 **Priority 1 — Do not discard or omit findings.**
-- If the agent saw something in-scope, it posts. Tag conveys
-  importance; the agent does not gatekeep on "is it worth saying?"
-  Scope is defined by the PR diff (`pr-diff-scoping`) and, on re-runs,
-  by §7 Phase B; a finding outside that scope is not "omitted".
+- If the agent saw something in-scope, it records it — as an inline
+  thread, as a site in a per-file rollup, or as a summary note (§9a).
+  Tag conveys importance; the agent does not gatekeep on "is it worth
+  saying?", it only chooses the **channel**. Choosing the note channel
+  is not omission: the finding is counted, listed in the summary, and
+  tracked by finding-key like any other. Scope is defined by the PR
+  diff (`pr-diff-scoping`) and, on re-runs, by §7 Phase B (including
+  the zero-commit guard); a finding outside that scope is not
+  "omitted".
 - Low confidence is not a reason to omit (§4).
 - Every currently-true finding is reflected in the agent's summary
   counts even if its comment was inherited from a prior run.
@@ -543,30 +612,41 @@ in strict order; the earlier wins.
   before applying)` and tag the maintainer per §4.
 - Priority 2 never overrides Priority 1.
 
-**Priority 3 — Be succinct.**
-- One finding per inline comment.
-- Comment **prose** body ≤ 6 lines. The suggestion block itself does
-  not count toward the line budget — GitHub renders it specially and
-  it is the *useful* part of the comment.
-- No restating context the reviewer sees in the diff.
+**Priority 3 — Be succinct, in fixed fields.**
+- One finding per inline comment (a rollup is one *class* of finding
+  per comment, §9a).
+- Comment prose uses the fixed fields of §9 — a one-line title, one
+  `Why:` line, one `Fix:` line — each a complete sentence. Fixed
+  fields are what keep brevity from "running together": the reader
+  always knows which sentence is the consequence and which is the
+  remedy. The suggestion block does not count toward the budget —
+  GitHub renders it specially and it is the *useful* part of the
+  comment.
+- No restating context the reviewer sees in the diff; no preamble,
+  no restatement of the tag's meaning, no closing pleasantry.
 - Summary tables are tables; no narrative around them.
-- Outstanding-must-fix bullets are one line each.
-- Aggregator's top-level comment fits roughly one screen on average.
+- Must-fix bullets in the summary are one line each.
+- The summary's always-visible part (verdict line + must-fix list)
+  fits in one screen; everything else is collapsed.
 - Priority 3 never overrides Priorities 1 or 2.
 
 ---
 
 ## 9. Inline comment body shape
 
-Three shapes, depending on whether the comment is a fresh finding, an
-improper-resolution reply, or a disagreement escalation.
+Fixed fields, always in the same order, so a reader can find the
+consequence and the remedy without reading the whole comment. Graders
+comparing this shape against free prose rated it clearer (4.2 vs 3.8)
+and far more succinct (4.6 vs 2.4), with zero "runs together"
+complaints — the failure mode of earlier brevity attempts.
 
 ### Fresh finding (initial post on a thread)
 
 ```
-[<review_label>] **<tag>** <one-line description of the issue>
-
-<≤ 5 prose lines of why it matters / how to verify>
+[<review_label>] **<tag>** <title: one line, what is wrong, ≤ 12 words>
+Why: <one complete sentence — the consequence, or the claim that is now false>
+Fix: <one complete sentence — the remedy; or `below` when a suggestion block follows>
+Sites: <optional, rollups only — see §9a>
 
 ```suggestion
 <concrete fix>          (omitted if no fix expressible)
@@ -583,9 +663,45 @@ cc @<maintainer1> @<maintainer2> — low-confidence finding, please confirm.
 `C++ Design`, `Documentation`, `Design`, `Test Quality`,
 `Correctness`, `Operational`, `Maintainability`).
 
-Total prose ≤ 6 lines. The reviewer-label prefix, suggestion block,
-maintainer-ping line, and HTML footer don't count toward the line
-budget.
+Field rules:
+
+- **Title** names the defect, not the rule ("`len` unchecked before
+  `memcpy`", not "possible buffer issue"). No trailing period.
+- **Why** is one sentence and states the *consequence* — what goes
+  wrong, for whom, under what input — or, for documentation findings,
+  the sentence that is now false. Not the rule number, not "this is
+  bad practice".
+- **Fix** is one sentence naming the remedy. When a suggestion block
+  follows, write `Fix: below` (or `Fix: below; <one clause>` when the
+  block needs a caveat, e.g. `Fix: below; verify the enum default`).
+  A best-effort suggestion still carries `(best-effort fix; verify
+  before applying)` per Priority 2.
+- **Evidence** the reader cannot see in the diff — the call site that
+  reaches the assert, the doc sentence that is now false — goes in the
+  `Why:` sentence as a parenthetical or a path:line reference, never
+  as a fourth paragraph. If one sentence genuinely cannot carry it,
+  add **one** further line beginning `Evidence:`. That is the whole
+  budget: title, Why, Fix, optional Evidence/Sites.
+- No greeting, no restatement of the tag, no closing remark.
+  Priority 3 governs.
+
+### Rollup (several sites, one class, one file — §9a)
+
+```
+[<review_label>] **<tag>** <title, phrased for the class> (<N> sites in this file)
+Why: <one sentence, the consequence shared by every site>
+Fix: <one sentence, the remedy that applies to every site>
+Sites: L<n1> `<symbol>`, L<n2> `<symbol>`, L<n3> `<symbol>`[, …]
+
+<!-- fprime-agent: <name>; finding-key: <key1>; site-key: <skey1>; v2 -->
+<!-- fprime-agent: <name>; finding-key: <key2>; site-key: <skey2>; v2 -->
+<!-- fprime-agent: <name>; finding-key: <key3>; site-key: <skey3>; v2 -->
+```
+
+The rollup is anchored at the first site. One footer per site keeps
+every site individually trackable on re-review (§7 Phase A). A rollup
+carries no suggestion block — a per-site fix is what makes a finding
+inline-worthy in the first place (§9a).
 
 ### Improper-resolution reply
 
@@ -623,21 +739,22 @@ The `reply-kind` HTML attribute lets the agent recognize its own prior
 escalation replies on subsequent runs and avoid double-escalating the
 same thread.
 
-### Concurrence reply (cross-agent de-duplication, §6a)
+### Severity-concurrence reply (cross-agent de-duplication, §6a)
 
-Posted by a reviewer on another agent's open thread that already
-covers the same underlying issue at the same site-key.
+Posted by a reviewer on another agent's open thread **only** when the
+reviewer's severity for the same issue is stricter than the thread's
+tag. Ordinary agreement is recorded in the lens's `concur` state and
+rendered by the summary; it is never replied.
 
 ```
-[<review_label>] **Concur** — also in scope for <my scope>: <≤ 1 line of lens-specific detail>[; severity from my scope: **<tag>**].
+[<review_label>] **<stricter tag>** from my scope — <one sentence: the consequence that raises the severity>.
 
 <!-- fprime-agent: <name>; finding-key: <key>; site-key: <skey>; v2; reply-kind: concurrence -->
 ```
 
-The bracketed severity clause appears only when the concurring
-agent's tag is stricter than the thread's current tag. One
-concurrence reply per agent per thread; the `reply-kind: concurrence`
-attribute is the de-dup key on later runs.
+One such reply per agent per thread; the `reply-kind: concurrence`
+attribute is the de-dup key on later runs, and legacy plain
+concurrence replies carrying it are recognised the same way.
 
 ### Severity-promotion reply (severity reconciliation, §14)
 
@@ -659,6 +776,45 @@ because of it.
 
 ---
 
+## 9a. Posting channel — inline thread, rollup, or note
+
+Every in-scope finding is recorded (Priority 1); this section decides
+**where**. Historically 71 % of findings were `could fix` or
+`suggestion`, each opened its own thread, and the maintainer had to
+scroll past all of them to find the blockers. Three channels:
+
+| Channel | What goes there | Rendered as |
+|---|---|---|
+| **Inline thread** | Every `must fix`. Any finding that carries a concrete ` ```suggestion ` block. Any below-must-fix finding whose *understanding* needs the code in view: behaviour changes, state-machine / sequence, ownership / lifetime, timing / resource, safety, or any judgment call the author may reasonably dispute. | One comment per finding (§9). |
+| **Rollup** | Three or more below-must-fix findings of the **same `finding_class` in the same file** that share one remedy (e.g. five missing `const`, four unqualified `sizeof`). | One comment at the first site, `Sites:` line, one footer per site (§9 Rollup). |
+| **Note** | A below-must-fix finding that is self-explanatory from its title alone, has no suggestion block, and needs no code in view to act on (a typo, a naming nit, a stale comment, a missing `explicit`). | One line in the summary's collapsed **Notes** section, attributed to the lens; carried in the lens's `notes` state (§2). |
+
+Decision order: must-fix → inline. Suggestion block present → inline.
+Judgment/behaviour class → inline. ≥ 3 same-class same-file → rollup.
+Otherwise → note. When genuinely unsure whether the author needs the
+code in view, post inline: a misplaced inline comment costs one
+thread; a misplaced note costs the author a search.
+
+What the channels do **not** change:
+
+- Every finding is counted in the lens's tag columns and
+  `outstanding`, whatever its channel.
+- A note has a finding-key and a site-key and is re-checked on every
+  run exactly like a thread; when the key disappears, it is dropped
+  from `notes` and counted as resolved (§7 Phase C).
+- A rollup's sites are individually keyed; a partially fixed rollup
+  stays open until every site is fixed, and the summary lists the
+  remaining count.
+- Severity reconciliation (§14) may promote a note or rollup site to
+  `must fix`; the aggregator then lists it in the must-fix list with
+  its summary line as the link target, and the **next** run of the
+  owning lens posts it inline (it is now must-fix, and must-fix is
+  always inline).
+- A note is never a way to avoid saying something awkward. If the
+  title needs a `Why:` to be understood, it is not a note.
+
+---
+
 ## 10. Posting mechanics
 
 Inline review comments are posted through the GitHub Pull Request
@@ -666,11 +822,12 @@ Review API. Mechanics, the suggestion-block syntax, the GraphQL
 mutations (`resolveReviewThread`, `unresolveReviewThread`), and the
 `TOKEN` env var live in `.github/skills/post-inline-review/SKILL.md`.
 
-Each reviewer submits a single PR review (event: `COMMENT`) whose
-body is the hidden metadata block from §2 and whose inline comments
-are the findings. On re-runs the metadata body is updated in place
-(§6) and any new inline comments go in one additional empty-body
-review; a re-run with nothing new to say posts no review at all.
+Each reviewer submits **at most one** PR review per run (event:
+`COMMENT`, **empty body**) whose inline comments are its new findings
+— on run 1 and on every later run alike. A run with no new inline
+comment posts no review at all. Per-lens state is never posted by the
+reviewer; it is reported to the orchestrator and stored in the summary
+review's `lens-state` line (§2).
 
 The aggregator submits a single PR review keyed by its HTML marker
 (`<!-- fprime-review-summary v1 -->`). The review event is:
@@ -678,12 +835,15 @@ The aggregator submits a single PR review keyed by its HTML marker
 - **`APPROVE`** when both CI safety and Merge readiness are `Go`.
 - **`REQUEST_CHANGES`** when either verdict is `No-Go`.
 
-The review body contains the consolidated summary table (see
-`review-summary.agent.md`) and carries the
-`<!-- reviewed_head: <sha> -->` line immediately after the marker.
-On re-runs the aggregator updates the body in place when the event
-is unchanged, and dismisses-and-resubmits only when the event flips
-or the prior review is already `DISMISSED` (§6).
+The review body is the blocker-first summary (see
+`review-summary.agent.md`) and carries, immediately after the marker,
+the `<!-- reviewed_head: <sha> -->` line and the hidden
+`<!-- lens-state: [...] -->` and `<!-- duplicates: [...] -->` lines
+that hold every lens's state (§2). On re-runs the aggregator updates
+the body in place when the event is unchanged, and
+dismisses-and-resubmits only when the event flips or the prior review
+is already `DISMISSED` (§6). The hidden state travels with the body
+either way, so an edit or a resubmit never loses it.
 
 On an `APPROVE` event the aggregator additionally requests the core
 maintainers (`maintainer-lookup` §1b) as reviewers, once per PR,
@@ -747,14 +907,15 @@ Each entry in `agent-registry.yml` carries a `role` field:
 - `orchestrator` — the single human entry point. Drives the reviewer
   sessions and then performs the aggregation itself. Posts no inline
   comments.
-- `reviewer` — posts inline comments only (no visible summary table).
-  Submits a single PR review (event: `COMMENT`) whose body contains
-  only a hidden metadata block (§2) and whose inline comments are the
-  findings.
-- `aggregator` — consumes per-agent hidden metadata and inline
-  comments, reconciles severity (§14), then submits ONE PR review
-  with event `APPROVE` or `REQUEST_CHANGES` based on the consolidated
-  Go/No-Go verdict.
+- `reviewer` — posts inline comments only (no visible summary table,
+  no metadata review). Submits at most one empty-body PR review
+  (event: `COMMENT`) per run carrying its new inline comments, routes
+  minor findings to the summary's Notes (§9a), and reports its state
+  block (§2) to the orchestrator.
+- `aggregator` — consumes per-lens state blocks and inline comments,
+  reconciles severity (§14), then submits ONE PR review with event
+  `APPROVE` or `REQUEST_CHANGES` based on the consolidated Go/No-Go
+  verdict; the review body carries every lens's state.
 
 The orchestrator iterates over `role: reviewer` entries to drive
 reviewers, then executes the `role: aggregator` entry.
@@ -765,9 +926,8 @@ posted:
 
 - Several `role: reviewer` lenses may share one review session. Each
   lens still posts its own inline comments under its own
-  `review_label`, its own hidden-metadata review keyed by its own
-  marker (§2), and its own run ordinal. A reader of the PR cannot tell
-  how lenses were packed.
+  `review_label`, reports its own state block (§2), and keeps its own
+  run ordinal. A reader of the PR cannot tell how lenses were packed.
 - The orchestrator executes the `role: aggregator` entry itself rather
   than delegating it to a further session; the aggregator's own file
   governs the summary's content, and while acting in that role the
@@ -812,15 +972,14 @@ candidate cheap to confirm from context already read.
 - Do not open new files or trace new call chains solely to firm up a
   `could fix` or `future work` item. Report those when already
   evident, and stop after roughly three per lens.
-- Note in the lens's hidden metadata how many below-must-fix
-  candidates were left unexplored:
-  `<!-- unexplored_below_must_fix: N -->`.
+- Note in the lens's state block how many below-must-fix candidates
+  were left unexplored: `"unexplored_below_must_fix": N`.
 
 ### 13c. Slim first-pass reading (non-exempt lenses, run 1 only)
 
 On run 1 a non-exempt lens reads of this contract only §0, §1/§1a,
-§3, §4, and §8 — the sections that govern what it is looking for and
-how to tag it. The remaining sections govern posting mechanics,
+§3, §4, §8, §9 and §9a — the sections that govern what it is looking
+for, how to tag it, how to word it, and where to put it. The remaining sections govern posting mechanics,
 de-duplication and re-review state, which the lens follows through
 `post-inline-review` and `re-review-state` as it posts.
 
