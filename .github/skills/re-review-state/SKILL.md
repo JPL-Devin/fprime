@@ -466,9 +466,12 @@ Update:
 both read from the prior state block. Threads that became resolved
 between runs are counted once, whoever resolved them.
 
-`still open` = `|intersect|` minus maintainer-adjudicated (§3a-0),
-improperly-resolved and disagreement-escalated entries; the latter
-two are reported in their own counters.
+`still open` = `|intersect|` minus maintainer-adjudicated (§3a-0)
+and adjudicated-concurrence entries, minus improperly-resolved and
+disagreement-escalated entries (reported in their own counters), minus
+reintroduced keys (the own-resolved row of §3a and `kind: settled`),
+which were not open on the prior run and are reported under `newly
+added` only.
 
 The cumulative tag columns and outstanding-driven verdict are
 defined in the review contract §2.
