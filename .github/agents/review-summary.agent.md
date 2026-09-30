@@ -120,6 +120,7 @@ Body shape:
 <!-- fprime-review-summary v1 -->
 <!-- reviewed_head: <full head SHA this summary describes> -->
 <!-- run: N -->
+<!-- intended_event: APPROVE|REQUEST_CHANGES -->
 <!-- maintainers_requested: <comma-separated logins, or none> -->
 <!-- lens-state: [ {<state block, contract §2>}, {...}, ... ] -->
 <!-- duplicates: [ {"duplicate": "<thread url>", "canonical": "<thread url>", "run": N, "resolved": true|false}, ... ] -->
@@ -506,6 +507,17 @@ Correctness lens failed: <reason>`).
   submitted review cannot be edited). If the dismissal is refused
   (`403`), still submit the new review; the
   newest marker match wins on later runs.
+- **Own-PR fallback** — GitHub refuses `APPROVE` and `REQUEST_CHANGES`
+  from the PR author (`422 Can not approve/request changes on your own
+  pull request`). When the PR author is the review account, submit the
+  review with event `COMMENT` instead, keep the computed verdict line
+  unchanged, and add one visible line under it: `⚠️ Intended review
+  event <EVENT> could not be submitted (review account authored this
+  PR); posted as COMMENT — the verdict line above is authoritative.`
+  For §5d state comparison a `COMMENTED` prior review is compared by
+  its recorded `<!-- intended_event: ... -->` marker, which this path
+  always writes, so quiet-run and flip paths behave as if the intended
+  event had been submitted.
 - Read each lens's `since_last_run` state and populate the `Since
   last run` block.
 - Write the `lens-state` line from this run's blocks (carrying
