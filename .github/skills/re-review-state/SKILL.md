@@ -98,10 +98,14 @@ prior state block's `notes`) or `concur` (from the prior block's
 keys; a concurrence or note that is not indexed here would be
 re-counted as new on every run. Group rollup keys by `thread_id` so
 §3b can tell a partially fixed rollup from a fully fixed one. Every
-key in the prior `resolved_keys` ledger is also a prior key: if it has
-an own comment it is already indexed as `comment`; otherwise index it
-as `kind: settled` (a note, concurrence or rollup site settled on an
-earlier run, kept so that a reintroduced finding is recognised, §3a).
+key in the prior `resolved_keys` ledger is also a prior key: if it
+already has an entry above (`comment`, `note`, or `concur` — an
+adjudicated concurrence keeps its `concur` entry for the life of the
+PR) leave that entry; otherwise index it as `kind: settled` (a note,
+concurrence or rollup site settled on an earlier run, kept so that a
+reintroduced finding is recognised, §3a). The ledger is a list and may
+hold a key more than once (one entry per settled occurrence); index
+the key once.
 `resolved_by_maintainer` is true iff
 `is_resolved` and `resolvedBy.login` is in the core-maintainer set.
 `has_prior_disagreement_reply` is true iff a comment in the thread
@@ -242,21 +246,27 @@ For each `k` in `intersect`, decide which row of the table applies:
 | `thread.isResolved` | `resolved_by_maintainer` | `has_contributor_replies` AND NOT `has_prior_disagreement_reply` | Action |
 |---|---|---|---|
 | `true` | `true` | — | **Maintainer adjudicated.** Do nothing (see §3a-0). |
-| `true` | `false` | — | **Improperly resolved.** Un-resolve + reply (see §3a-i). |
+| `true` | `false`, `resolvedBy.login` is this lens's own account | — | **Reintroduced** (§6a): the lens resolved it as fixed on an earlier run and the same key is back. Process as `new` (§3c) with the §6a prefix; ledger untouched. |
+| `true` | `false`, resolved by anyone else | — | **Improperly resolved.** Un-resolve + reply (see §3a-i). |
 | `false` | — | `true` | **Disagreement escalation.** Reply once + maintainer ping (see §3a-ii). |
 | `false` | — | `false` | **Do nothing.** Leave the comment as-is. **Never repost.** |
 
-Bookkeeping on the rows above: an adjudicated thread (§3a-0) adds its
-key to `resolved_keys`; an un-resolved thread (§3a-i) removes its key
-from `resolved_keys`.
+Bookkeeping on the rows above: an adjudicated thread (§3a-0) adds one
+entry for its key to `resolved_keys` (once, on the run it is first
+seen adjudicated); an un-resolved thread (§3a-i) removes one entry for
+its key from `resolved_keys` if one is present.
 
 Three `intersect` kinds have their own handling:
 
-- `kind: concur` — the finding still applies and lives on another
-  lens's thread. Read that thread's state: not resolved → **do
-  nothing** (no re-count, no reply). Resolved by a core maintainer →
-  adjudicated for this lens too: add the key to `resolved_keys`, drop
-  the `concur` entry, nothing on the thread. Resolved by anyone else →
+- `kind: concur` with `adjudicated: true` — terminal: **do nothing**
+  in any phase (no re-count, no ledger entry, no reintroduction, no
+  reply), whether or not the key is still present, and keep the entry.
+- `kind: concur` (not adjudicated) — the finding still applies and
+  lives on another lens's thread. Read that thread's state: not
+  resolved → **do nothing** (no re-count, no reply). Resolved by a core
+  maintainer → adjudicated for this lens too: append the key to
+  `resolved_keys` once, set the entry's `adjudicated: true` and keep
+  it, nothing on the thread. Resolved by anyone else →
   **improperly resolved** from this lens's point of view (contract §6a:
   a shared thread is settled only when every concurring finding is
   satisfied): apply §3a-i as for an own thread — un-resolve, reply with
@@ -267,11 +277,15 @@ Three `intersect` kinds have their own handling:
   a shared thread are the owning lens's to escalate (§3a-ii); the
   concurring lens never replies to them.
 - `kind: settled` (a note, concurrence or rollup site the ledger says
-  was fixed, with no own thread) — the same key is back in
-  `current_keys`, so the finding was **reintroduced** (§6a). Remove the
-  key from `resolved_keys` and process it as `new` (§3c): route it per
-  contract §9a, count it in the tag column and `newly added`, and
-  prefix the body per §6a.
+  was fixed, with no own thread and no `concur` entry) — the same key
+  is back in `current_keys`, so the finding was **reintroduced** (§6a).
+  **Leave the ledger alone** and process the key as `new` (§3c): route
+  it per contract §9a, count it in the tag column and `newly added`,
+  and prefix the body per §6a. The earlier ledger entry settles the
+  earlier occurrence; this occurrence enters the ledger when it is
+  fixed (§3b), which is what keeps `Σ tags − |resolved_keys|` equal to
+  the number of live findings through any number of fix/reintroduce
+  cycles.
 - `kind: note` — or a rollup-site key — listed in the summary's
   `promoted` line is **posted inline** as a must-fix comment (contract
   §9) under the same finding-key, removed from `notes`, and **not**
@@ -422,15 +436,19 @@ Update:
   (incorrect-fix follow-ups and brand-new findings). Never decrement.
 - The `outstanding` column: recompute from the ledger, never by
   adjusting the prior value. After the Phase C actions above, let
-  `R = |resolved_keys|` and `outstanding = (cumulative tag-column
-  sum) − R`. Every counted finding is one key, and Phase C has already
-  entered each settled key exactly once — own threads resolved by
-  anyone (§3a-0, §3b), threads in `resolve_failed`, rollup sites,
-  notes and concurrences that disappeared — and removed the keys of
-  threads it un-resolved (§3a-i) and of reintroduced findings (§3a
-  `settled`). Never count threads directly: a rollup thread is several
-  keys, a shared thread is one key per concurring lens, and each key
-  is counted once however many runs it stays settled.
+  `R = |resolved_keys|` (list length; a key fixed, reintroduced and
+  fixed again appears twice, matching its two tag-column increments)
+  and `outstanding = (cumulative tag-column sum) − R`. Every counted
+  occurrence is one entry, and Phase C has already appended each
+  settled occurrence exactly once — own threads resolved by anyone
+  (§3a-0, §3b), threads in `resolve_failed`, rollup sites, notes and
+  concurrences that disappeared, concurrences adjudicated — and
+  removed one entry for each thread it un-resolved (§3a-i). A
+  reintroduced finding (§3a `settled` / own-resolved row) added one to
+  a tag column and nothing to the ledger. Never count threads
+  directly: a rollup thread is several entries, a shared thread is one
+  entry per concurring lens, and each occurrence is counted once
+  however many runs it stays settled.
 - `verdict`: `Go` iff outstanding must-fix == 0, else `No-Go`.
 - `run`: increment the run ordinal.
 - `since_last_run`: the six counters (`resolved`, `still_open`,
@@ -439,9 +457,9 @@ Update:
   run.
 - `concur`, `notes`, `resolved_keys`, `resolve_failed`: the lists as
   they stand after Phase C (prior entries carried forward, this run's
-  additions and removals applied). `resolved_keys` loses a key only
-  through §3a-i (un-resolve) or a §3a `settled` reintroduction;
-  `concur` holds active concurrences only.
+  additions and removals applied). `resolved_keys` loses an entry only
+  through §3a-i (un-resolve); `concur` holds active concurrences plus
+  adjudicated ones (`adjudicated: true`, kept for the life of the PR).
 
 `resolved` = `max(0, R − R_prev)` where
 `R_prev = (prior cumulative tag-column sum) − (prior outstanding)`,
@@ -498,10 +516,14 @@ identical to a prior (resolved) one.
 
 Behavior: the agent posts a **new** inline comment (or, for a key
 that was settled as a note, concurrence or rollup site, routes it
-afresh per contract §9a). The cumulative tag column increments. The
-key is removed from `resolved_keys`, so `outstanding` increments. The
+afresh per contract §9a). The cumulative tag column increments; the
+`resolved_keys` ledger is **not** touched (its earlier entry settles
+the earlier occurrence), so `outstanding` increments by one and drops
+back when this occurrence is fixed and its key is appended again. The
 prior resolved thread, if any, stays resolved (it's a different
 comment now). Since-last-run reports the finding under `newly added`.
+A concurrence the maintainer adjudicated (`adjudicated: true`) is
+never a reintroduction, however long the finding stays present.
 
 This is suboptimal — ideally the comment would re-open the prior
 thread — but GitHub does not support that operation. The agent's

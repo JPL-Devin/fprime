@@ -735,9 +735,13 @@ self-heals historic duplicates on every run.
    footer; skip threads already listed in the prior summary's
    `duplicates` state **with `resolved: true`** or, on legacy PRs,
    carrying a `reply-kind: duplicate-close` reply). A recorded pair
-   with `resolved: false` is not skipped: retry its
-   `resolveReviewThread` first, flip the flag on success, and keep
-   it in the resolve-failure warning (§5b) while it stays open. Parse each thread's site-key from its
+   with `resolved: false` is reconciled first, before anything is
+   rendered: read the thread's `isResolved`; if it is already resolved
+   (by a maintainer, the contributor, anyone) flip the flag to `true`
+   and drop it from the warning; otherwise retry
+   `resolveReviewThread`, flip the flag on success, and keep the
+   thread in the resolve-failure warning (§5b) while it stays open.
+   Parse each thread's site-key from its
    `v2` footer; for legacy `v1` footers, recompute a best-effort
    site-key from the comment's path and anchor context.
 2. **Group** threads by site-key.

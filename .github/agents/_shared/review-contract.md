@@ -123,7 +123,7 @@ State block shape (one JSON object per lens):
   "since_last_run": {"resolved": X, "still_open": Y, "newly_added": Z, "incorrect_fix": W, "improperly_resolved": V, "disagreements": U,
                      "resolved_threads": ["<thread url>"]},
   "unexplored_below_must_fix": N,
-  "concur": [{"finding_key": "<key>", "site_key": "<skey>", "class": "<finding_class>", "thread": "<url>", "tag": "<tag>"}],
+  "concur": [{"finding_key": "<key>", "site_key": "<skey>", "class": "<finding_class>", "thread": "<url>", "tag": "<tag>", "adjudicated": false}],
   "notes": [{"finding_key": "<key>", "site_key": "<skey>", "path": "<file>", "tag": "<tag>", "class": "<finding_class>", "title": "<one line>"}],
   "resolved_keys": ["<finding_key>"],
   "resolve_failed": ["<thread url>"],
@@ -139,24 +139,33 @@ State block shape (one JSON object per lens):
   carries the lens's **own** `finding_key`, so Phase A indexes it
   exactly like an own comment: a concurrence is counted once, on the
   run it is recorded, and never re-counted as new on a later run.
-  `concur` holds only *active* concurrences: an entry whose key
-  settles (§7 Phase C) moves to `resolved_keys` and is dropped here,
-  so the shared thread is never attributed to this lens twice.
-- `resolved_keys` is the ledger of every counted finding-key this
-  lens regards as settled, whatever channel carried it: an own thread
-  that is resolved (by the lens, a maintainer, or the contributor
-  after fixing) or sits in `resolve_failed`, a rollup site that
-  disappeared, a note that disappeared, a concurrence that
-  disappeared. `R` in Phase D is simply `|resolved_keys|`, so every
-  finding is settled exactly once no matter whether it had its own
-  thread, shared one, or had none — a rollup's three sites are three
-  keys and one thread, and the thread itself is never counted. The
-  ledger is carried forward every run; a key leaves it only when the
-  finding becomes active again: the lens un-resolves the thread as
-  improperly resolved (§7), or the same key reappears in the current
-  diff as a reintroduced finding (§7, `re-review-state` §6a), which
-  is then counted as new. Maintainer-adjudicated keys stay in the
-  ledger even if the finding is still present.
+  An entry whose finding disappears (§7 Phase C) is entered in
+  `resolved_keys` and dropped here, so the shared thread is never
+  attributed to this lens twice. An entry whose shared thread a core
+  maintainer resolved is entered in `resolved_keys` once and **kept**
+  with `"adjudicated": true`: it is terminal state — never re-counted,
+  never re-entered, never treated as reintroduced while it stands —
+  exactly as a maintainer-resolved own thread is.
+- `resolved_keys` is the ledger of settled finding **occurrences**, one
+  entry per occurrence this lens counted in a tag column and then saw
+  settle, whatever channel carried it: an own thread that is resolved
+  (by the lens, a maintainer, or the contributor after fixing) or sits
+  in `resolve_failed`, a rollup site that disappeared, a note that
+  disappeared, a concurrence that disappeared or was adjudicated. It
+  is a list, not a set: the same key may appear more than once, once
+  per fix of a finding that was reintroduced and fixed again, because
+  the tag columns count occurrences and the ledger must match them.
+  `R` in Phase D is simply `|resolved_keys|` (list length), so every
+  counted occurrence is settled exactly once no matter whether it had
+  its own thread, shared one, or had none — a rollup's three sites are
+  three entries and one thread, and the thread itself is never
+  counted. The ledger is carried forward every run and only grows,
+  with one exception: when the lens un-resolves a thread as improperly
+  resolved (§7) the occurrence was never settled, so one entry for
+  that key is removed. A reintroduced finding (§7, `re-review-state`
+  §6a) does **not** touch the ledger: it is a new occurrence, counted
+  again in the tag column, and enters the ledger again when it is
+  fixed again.
 - `notes` lists the below-must-fix findings this lens routed to the
   summary's collapsed *Notes* section instead of an inline thread
   (§9a). Each carries a `finding_key` so later runs can tell whether
@@ -504,16 +513,18 @@ touched since the last pass is churn, not review. Mechanics live in
 |---|---|---|---|---|
 | present | present | not resolved, no contributor replies | Same finding still applies | **Do nothing.** Leave comment as-is. **Never repost.** |
 | present | present | **resolved by a core maintainer** | **Maintainer adjudicated.** The maintainer has decided the finding does not need to be fixed. | **Do nothing.** Leave the thread resolved; no reply, no un-resolve, no repost — on this and every later run. Add the key to `resolved_keys` (it stays there for the life of the PR). |
-| present | present | **resolved by anyone else** | **Improperly resolved.** Finding still applies on the new head. | **Un-resolve + reply.** GraphQL `unresolveReviewThread`; reply with the improper-resolution body shape (§9). Remove the key from `resolved_keys`. Append maintainer ping per §4. Increment `improperly resolved` in Since-last-run. |
+| present | present | **resolved by this lens on an earlier run** (fixed then) | **Reintroduced** (`re-review-state` §6a). The same key is a new occurrence. | **New comment** per §9a with the §6a prefix; count it again in the tag column and `newly added`. The prior thread stays resolved; the ledger is untouched. |
+| present | present | **resolved by anyone else** | **Improperly resolved.** Finding still applies on the new head. | **Un-resolve + reply.** GraphQL `unresolveReviewThread`; reply with the improper-resolution body shape (§9). Remove one entry for the key from `resolved_keys` if present. Append maintainer ping per §4. Increment `improperly resolved` in Since-last-run. |
 | present | present | not resolved, but contributor has replied | Possible disagreement | **Reply + escalate** per §11. Increment `disagreements escalated` in Since-last-run. |
 | present | absent | not resolved | Cleanly fixed | **Resolve:** GraphQL `resolveReviewThread`, **no reply**. Add the key to `resolved_keys` either way: on success the fix is recorded in `since_last_run.resolved` and listed (with its link) in the summary's *Since last run* block; if the mutation is refused, also append the thread URL to `resolve_failed` — still no reply (§"Resolution mechanism"). |
 | present | absent | already resolved | Already settled (resolved by the agent on an earlier run, by a core maintainer, or by the contributor after fixing) | **Do nothing.** No reply, no re-resolve. The key is (or is now added) in `resolved_keys`. |
 | present (rollup site) | absent | rollup thread still carries a site whose key is present | Partially fixed rollup | **Do not resolve the thread.** Add the site's finding-key to `resolved_keys`. Rollup keys are grouped by thread before this phase; the thread is resolved (rows above) only on the run its last remaining site disappears, and every site key resolved on that run is added to the ledger individually — the thread itself is never a unit of `R`. |
 | present (concur) | present | shared thread not resolved | Concurred finding still applies | **Do nothing.** No re-count, no reply; the owning lens handles the thread. |
-| present (concur) | present | shared thread **resolved by a core maintainer** | Adjudicated for every concurring lens too | **Do nothing** on the thread. Add the key to `resolved_keys`, drop the `concur` entry. |
+| present (concur, `adjudicated: true`) | any | any | Already adjudicated on an earlier run | **Do nothing**, anywhere: no re-count, no ledger entry, no reintroduction, keep the entry. |
+| present (concur) | present | shared thread **resolved by a core maintainer** | Adjudicated for every concurring lens too | **Do nothing** on the thread. Add the key to `resolved_keys` once and mark the `concur` entry `adjudicated: true` (keep it). |
 | present (concur) | present | shared thread **resolved by anyone else** | Improperly resolved from this lens's point of view (§6a: a shared thread is resolved only when every concurring finding is satisfied) | **Un-resolve + reply** exactly as for an own thread (improper-resolution shape, §9), unless the thread already carries an `improper-resolution` reply newer than the resolution — then un-resolve only. Key stays out of `resolved_keys`; increment `improperly resolved`. Contributor disagreement on a shared thread is the owning lens's to escalate. |
-| present (concur) | absent | any | Concurred finding no longer applies | Add its key to `resolved_keys` and **drop the `concur` entry**; the owning lens resolves the shared thread. Nothing to post. |
-| present only in `resolved_keys` (a settled note, concurrence or rollup site; no own thread) | present | n/a | Reintroduced finding (`re-review-state` §6a) | **Remove the key from `resolved_keys`** and treat it as brand-new: route per §9a, count it again in the tag column and `newly added`, prefix the body per §6a. |
+| present (concur, not adjudicated) | absent | any | Concurred finding no longer applies | Add its key to `resolved_keys` and **drop the `concur` entry**; the owning lens resolves the shared thread. Nothing to post. |
+| present only in `resolved_keys` (a settled note, concurrence or rollup site; no own thread, no `concur` entry) | present | n/a | Reintroduced finding (`re-review-state` §6a) | Treat it as a new occurrence: route per §9a, count it again in the tag column and `newly added`, prefix the body per §6a. **Leave the ledger alone** — the earlier entry settles the earlier occurrence; this one enters the ledger when it is fixed. |
 | present (note or rollup site) whose key is in the summary's `promoted` line | present | n/a | Aggregator promoted it to `must fix` (§14) | **Post it inline** as a must-fix comment (§9) with the same finding-key, remove it from `notes` (a rollup site stays in the rollup thread as well), and do **not** increment any tag column — it was counted when first recorded. |
 | absent | present, same `(file, symbol)` as a prior but different `finding_class` | n/a | Author attempted a fix that left a different problem in the same spot | **Incorrect-fix follow-up:** new inline comment, body starts with `[<review_label>] **<tag>** Follow-up to <link to prior>: <new issue>`. |
 | absent | present, no related prior, **another agent's open thread shares the site-key and describes the same issue** | n/a | Cross-agent duplicate (§6a) | **Record concurrence** in the state block's `concur` list; reply only if own severity is stricter (§6a / §9); count the finding in own state; do not open a new thread. |
@@ -551,15 +562,17 @@ Since-last-run state carries six counters:
 - `outstanding` is **recomputed from thread state every run, never
   carried forward incrementally**: `outstanding = (cumulative tag-column
   sum) − R`, where `R = |resolved_keys|` after this run's Phase C
-  actions. The ledger is the single unit of account: an own thread
-  that is resolved (by anyone) or sits in `resolve_failed`, a rollup
-  site, a note or a concurrence whose key disappeared — each is one
-  key, entered when it settles and carried forward; a thread the lens
-  un-resolved this run, or a key that reappeared as a reintroduced
-  finding, has been removed from the ledger by Phase C and so does not
-  count. Threads are never counted directly: a rollup thread with
-  three sites contributes zero to `R` and its three keys contribute
-  one each as they settle. `R_prev` = prior cumulative sum − prior
+  actions. The ledger is the single unit of account and counts
+  occurrences, as the tag columns do: an own thread that is resolved
+  (by anyone) or sits in `resolve_failed`, a rollup site, a note or a
+  concurrence whose key disappeared, a concurrence adjudicated — each
+  is one entry, appended when it settles and carried forward. Only an
+  improper un-resolve (Phase C) removes an entry. A reintroduced key
+  adds one to the tag column and nothing to the ledger, so
+  `outstanding` rises by exactly one and returns to its prior value
+  when the new occurrence is fixed. Threads are never counted
+  directly: a rollup thread with three sites contributes zero to `R`
+  and its three keys contribute one each as they settle. `R_prev` = prior cumulative sum − prior
   `outstanding`. A finding therefore counts as resolved exactly once,
   however many runs it stays resolved and whichever channel carried
   it.
