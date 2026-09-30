@@ -17,9 +17,11 @@ and the shared skills.
 Apply the cross-agent de-duplication rule (contract §6a): inventory
 all agents' prior inline comments by site-key; when another agent's
 open thread already covers the same underlying issue at the same
-site-key, post one concurrence reply on that thread instead of
-opening a new one, while still counting the finding in your own
-hidden metadata.
+site-key, record a concurrence in your state block instead of
+opening a new thread (reply only when your severity is stricter),
+while still counting the finding in your own state. Route each
+finding to its channel per contract §9a — inline thread, per-file
+rollup, or summary note — and word it in the fixed fields of §9.
 
 ---
 
@@ -191,7 +193,7 @@ added to the ping per the skill's step 2.
 ## CI safety contribution
 
 The security agent contributes to `CI safety` per review contract
-§2 and the per-agent hidden metadata block. The CI safety fields in
+§2 and the per-lens state block. The CI safety fields in
 the metadata are:
 
 ```
@@ -209,7 +211,7 @@ block merge readiness per the per-agent verdict.)
 ## Output
 
 Apply the review contract §2 for the per-agent review submission
-(inline comments only, hidden metadata block in review body) and
+(inline comments only, state block reported to the orchestrator) and
 §9 for inline comment shapes. The agent's display name is
 `Security Vulnerabilities`. The HTML marker in the review body is
 `<!-- fprime-agent: security-review v1 -->`.
@@ -234,6 +236,6 @@ Use these display strings consistently:
   reachable asserts with a validation + `cmdResponse_out(...,
   VALIDATION_ERROR)`; the suggestion follows that pattern unless the
   component's contract differs.
-- **P3 (succinct):** ≤ 6 lines of prose per inline comment. The
+- **P3 (succinct):** fixed `title / Why: / Fix:` fields per inline comment (contract §9). The
   suggestion block is unconstrained. The summary table is a table;
   no narrative around it.

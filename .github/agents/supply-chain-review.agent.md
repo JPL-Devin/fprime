@@ -17,9 +17,11 @@ and the shared skills.
 Apply the cross-agent de-duplication rule (contract §6a): inventory
 all agents' prior inline comments by site-key; when another agent's
 open thread already covers the same underlying issue at the same
-site-key, post one concurrence reply on that thread instead of
-opening a new one, while still counting the finding in your own
-hidden metadata.
+site-key, record a concurrence in your state block instead of
+opening a new thread (reply only when your severity is stricter),
+while still counting the finding in your own state. Route each
+finding to its channel per contract §9a — inline thread, per-file
+rollup, or summary note — and word it in the fixed fields of §9.
 
 ---
 
@@ -283,7 +285,7 @@ Append a maintainer ping per
 ## CI safety contribution
 
 The supply-chain agent contributes to `CI safety` per review contract
-§2 and the per-agent hidden metadata block. The CI safety fields in
+§2 and the per-lens state block. The CI safety fields in
 the metadata are:
 
 ```
@@ -300,7 +302,7 @@ unverified privileged-surface change is severe enough on its own.
 ## Surfaces emission
 
 The supply-chain agent additionally emits a structured
-`<!-- surfaces: ... -->` block in its hidden metadata (review body),
+`surfaces` object in its state block (contract §2),
 below the `ci_safety_rationale` HTML comment. The aggregator parses
 this block to render the `Supply-chain surfaces` table in the
 top-level summary.
@@ -387,7 +389,7 @@ inferring coverage from absences.
 ## Output
 
 Apply the review contract §2 for the per-agent review submission
-(inline comments only, hidden metadata block in review body) and §9
+(inline comments only, state block reported to the orchestrator) and §9
 for inline comment shapes. The agent's display name is `Supply Chain
 / Runner Safety`. The HTML marker in the review body is
 `<!-- fprime-agent: supply-chain-review v1 -->`.
@@ -411,5 +413,5 @@ Use these display strings consistently:
   package, the suggestion includes `--hash=sha256:<hash>` when the
   agent can fetch an authoritative hash; otherwise the agent emits
   a best-effort hash with `(verify the hash before applying)`.
-- **P3 (succinct):** ≤ 6 lines of prose per inline comment. One
+- **P3 (succinct):** fixed `title / Why: / Fix:` fields per inline comment (contract §9). One
   finding per dependency / action / generator surface.

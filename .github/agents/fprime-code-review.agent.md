@@ -17,9 +17,11 @@ and the shared skills.
 Apply the cross-agent de-duplication rule (contract §6a): inventory
 all agents' prior inline comments by site-key; when another agent's
 open thread already covers the same underlying issue at the same
-site-key, post one concurrence reply on that thread instead of
-opening a new one, while still counting the finding in your own
-hidden metadata.
+site-key, record a concurrence in your state block instead of
+opening a new thread (reply only when your severity is stricter),
+while still counting the finding in your own state. Route each
+finding to its channel per contract §9a — inline thread, per-file
+rollup, or summary note — and word it in the fixed fields of §9.
 
 The C/C++ design rules this agent enforces live in
 `.github/skills/fprime-cpp-design/SKILL.md`. That skill is the
@@ -294,7 +296,7 @@ build-system surface; this agent covers the source-level change.)
 ## Output
 
 Apply the review contract §2 for the per-agent review submission
-(inline comments only, hidden metadata block in review body) and §9
+(inline comments only, state block reported to the orchestrator) and §9
 for inline comment shapes. The agent's display name is `F Prime
 C/C++ Design`. The HTML marker in the review body is
 `<!-- fprime-agent: fprime-code-review v1 -->`.
@@ -305,7 +307,7 @@ Use these display strings consistently:
 - Aggregator status keyword (returned to the orchestrator):
   `completed` or `FAILED: <one-line reason>`.
 
-The per-agent hidden metadata block omits the optional CI safety
+The per-lens state block omits the optional CI safety
 fields (see review contract §2 — those fields apply only to the
 CI-safety agents).
 
@@ -341,7 +343,7 @@ process(m_scratch);
   member initializer; an `Fw::String` substitution for a `char[N]`
   member; a `static_cast` substitution for a C-style cast), the
   agent attaches a fenced suggestion block.
-- **P3 (succinct):** ≤ 6 lines of prose per inline comment. One
+- **P3 (succinct):** fixed `title / Why: / Fix:` fields per inline comment (contract §9). One
   finding per rule violation; the agent does not bundle "this
   function violates CPP-6 and CPP-9 and CPP-19" into a single
   comment — those are three separate findings, three separate

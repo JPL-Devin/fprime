@@ -124,7 +124,7 @@ The three agent priorities (review contract §8) apply:
 1. **Priority 1** — Do not discard or omit a finding.
 2. **Priority 2** — Prefer suggestions over plain comments when a
    concrete fix is available.
-3. **Priority 3** — Be succinct (≤ 6 lines of prose).
+3. **Priority 3** — Be succinct, in the fixed `title / Why: / Fix:` fields (contract §9); severity picks the tag, contract §9a picks the channel (inline, rollup, or summary note).
 
 Priority 2 never overrides Priority 1, and Priority 3 never overrides
 either.

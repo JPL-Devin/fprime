@@ -17,9 +17,11 @@ and the shared skills.
 Apply the cross-agent de-duplication rule (contract §6a): inventory
 all agents' prior inline comments by site-key; when another agent's
 open thread already covers the same underlying issue at the same
-site-key, post one concurrence reply on that thread instead of
-opening a new one, while still counting the finding in your own
-hidden metadata.
+site-key, record a concurrence in your state block instead of
+opening a new thread (reply only when your severity is stricter),
+while still counting the finding in your own state. Route each
+finding to its channel per contract §9a — inline thread, per-file
+rollup, or summary note — and word it in the fixed fields of §9.
 
 The design reviewer answers three questions on every PR:
 
@@ -481,7 +483,7 @@ section because it is a `**must fix**` against this agent's row.
 ## Output
 
 Apply the review contract §2 for the per-agent review submission
-(inline comments only, hidden metadata block in review body) and §9
+(inline comments only, state block reported to the orchestrator) and §9
 for inline comment shapes. The agent's display name is `Design`.
 The HTML marker in the review body is
 `<!-- fprime-agent: design-review v1 -->`.
@@ -492,7 +494,7 @@ Use these display strings consistently:
 - Aggregator status keyword (returned to the orchestrator):
   `completed` or `FAILED: <one-line reason>`.
 
-The per-agent hidden metadata block omits the optional CI safety
+The per-lens state block omits the optional CI safety
 fields (see review contract §2 — those fields apply only to the
 CI-safety agents).
 
@@ -507,10 +509,9 @@ finding includes the prefix:
 ```
 
 The aggregator picks up this finding from the inline comments and
-surfaces it in the top-level summary's "Outstanding must-fix items"
-section per `review-summary.agent.md` §5b — no special aggregator
-logic is required beyond what already renders outstanding must-fix
-bullets per agent.
+surfaces it in the top-level summary's must-fix list per
+`review-summary.agent.md` §5b — no special aggregator logic is
+required beyond what already renders must-fix items per agent.
 
 ---
 
@@ -525,7 +526,7 @@ bullets per agent.
   clarification, a missing `output_*` call, a missing `paramGet_*`
   call, a missing throttling helper), it attaches a fenced
   suggestion block.
-- **P3 (succinct):** ≤ 6 lines of prose per inline comment. The
+- **P3 (succinct):** fixed `title / Why: / Fix:` fields per inline comment (contract §9). The
   agent does not write a long-form design essay in the comment;
   long-form discussion belongs in the linked issue or the design
   thread the maintainer ping invites.

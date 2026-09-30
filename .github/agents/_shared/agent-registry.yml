@@ -289,14 +289,14 @@ agents:
     path: .github/agents/review-summary.agent.md
     invocable_by_humans: true
     notes: >
-      Consumes per-agent hidden metadata and inline comments on the
+      Consumes per-lens state blocks and inline comments on the
       PR (matched by HTML marker plus the orchestrator-provided
       status list) and submits ONE PR review (APPROVE or
-      REQUEST_CHANGES) with the consolidated table, CI safety
-      verdict, merge readiness verdict, optional Recommend Close
-      section, outstanding must-fix bullets, a since-last-run delta
-      table, and the severity-reconciliation promotion log
-      (contract 14). The orchestrator executes this role itself once
+      REQUEST_CHANGES) that leads with a glyph Merge / CI-safety
+      verdict line and a numbered, thread-linked must-fix list, with
+      the per-lens table, notes, since-last-run delta, supply-chain
+      surfaces and severity-reconciliation log (contract 14)
+      collapsed beneath; its hidden lines store every lens's state. The orchestrator executes this role itself once
       the reviewer sessions have settled, rather than spawning a
       further session for it (review-orchestrator.agent.md
       Aggregation); this file remains the source of truth for what

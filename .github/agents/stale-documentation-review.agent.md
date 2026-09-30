@@ -17,9 +17,11 @@ and the shared skills.
 Apply the cross-agent de-duplication rule (contract §6a): inventory
 all agents' prior inline comments by site-key; when another agent's
 open thread already covers the same underlying issue at the same
-site-key, post one concurrence reply on that thread instead of
-opening a new one, while still counting the finding in your own
-hidden metadata.
+site-key, record a concurrence in your state block instead of
+opening a new thread (reply only when your severity is stricter),
+while still counting the finding in your own state. Route each
+finding to its channel per contract §9a — inline thread, per-file
+rollup, or summary note — and word it in the fixed fields of §9.
 
 ---
 
@@ -274,7 +276,7 @@ treats this agent's verdict as merge-readiness signal only.
 ## Output
 
 Apply the review contract §2 for the per-agent review submission
-(inline comments only, hidden metadata block in review body) and §9
+(inline comments only, state block reported to the orchestrator) and §9
 for inline comment shapes. The agent's display name is
 `Documentation Currency`. The HTML marker in the review body is
 `<!-- fprime-agent: stale-documentation-review v1 -->`.
@@ -285,7 +287,7 @@ Use these display strings consistently:
 - Aggregator status keyword (returned to the orchestrator):
   `completed` or `FAILED: <one-line reason>`.
 
-The per-agent hidden metadata block omits the optional CI safety
+The per-lens state block omits the optional CI safety
 fields (see review contract §2 — those fields apply only to the
 CI-safety agents).
 
@@ -301,7 +303,7 @@ CI-safety agents).
   line markdown edit (a renamed section, an updated path, a new
   bullet for a new FPP element), the agent attaches a fenced
   suggestion block.
-- **P3 (succinct):** ≤ 6 lines of prose per inline comment. One
+- **P3 (succinct):** fixed `title / Why: / Fix:` fields per inline comment (contract §9). One
   finding per doc surface; if the same code change invalidates three
   separate doc surfaces, that is three separate inline comments,
   each anchored on the doc file that needs the change.
