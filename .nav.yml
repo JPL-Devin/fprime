@@ -45,6 +45,7 @@ nav:
           - "Drv/**/docs/sdd.md"
         - Os:
           - "Os/**/docs/sdd.md"
+      - Continuous Integration: docs/reference/continuous-integration.md
       - Specifications: 
         - FPP Language Spec: 'https://nasa.github.io/fpp/fpp-spec.html'
         - GDS Plugins: docs/reference/gds-plugins/
