@@ -413,6 +413,12 @@ bool FaultManager ::Svc_FaultProtection_FaultManagerStateMachine_guard_countdown
     return this->m_sm_state.countdown == 0;
 }
 
+bool FaultManager ::Svc_FaultProtection_FaultManagerStateMachine_guard_countdownConfigured(
+    SmId smId,
+    Svc_FaultProtection_FaultManagerStateMachine::Signal signal) const {
+    return FaultConfig::RESPONSE_COUNTDOWN_TICKS > 0;
+}
+
 bool FaultManager ::Svc_FaultProtection_FaultManagerStateMachine_guard_responseDone(
     SmId smId,
     Svc_FaultProtection_FaultManagerStateMachine::Signal signal) const {

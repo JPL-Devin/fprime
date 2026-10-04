@@ -63,6 +63,10 @@ class SequenceResponderTester final : public SequenceResponderGTestBase {
     //! A step dispatched with no sequencer connected fails
     void testUnconnectedSequencer();
 
+    //! The configured directory (even a misconfigured one) names the sequence file; a sequencer load failure then
+    //! fails the step
+    void testDirectoryConfiguration();
+
   private:
     // ----------------------------------------------------------------------
     // Helper functions

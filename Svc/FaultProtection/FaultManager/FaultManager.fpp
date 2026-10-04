@@ -45,6 +45,9 @@ module FaultProtection {
         @ Check if countdown has expired
         guard countdownExpired
 
+        @ Check if a countdown is configured (RESPONSE_COUNTDOWN_TICKS > 0)
+        guard countdownConfigured
+
         @ Check if response is done executing each step
         guard responseDone
 
@@ -69,12 +72,22 @@ module FaultProtection {
             if hasReport enter COUNTDOWN else enter IDLE
         }
 
+        @ On an IDLE tick that finds a report, a zero countdown responds on that tick; otherwise wait out the countdown
+        choice CHECK_IDLE_REPORT {
+            if hasReport enter CHECK_COUNTDOWN_CONFIGURED else enter IDLE
+        }
+
+        @ Skip the COUNTDOWN state when no countdown is configured
+        choice CHECK_COUNTDOWN_CONFIGURED {
+            if countdownConfigured enter COUNTDOWN else enter RESPONSE
+        }
+
         @ Enter IDLE state on initialization
         initial enter IDLE
 
         @ IDLE state: wait for fault report, warning on other signals
         state IDLE {
-            on Tick enter CHECK_REPORT
+            on Tick enter CHECK_IDLE_REPORT
         }
 
         @ COUNTDOWN state: wait for the countdown to expire allowing reports to accumulate
@@ -271,11 +284,14 @@ module FaultProtection {
         @ Fault response setting table
         external param FAULT_RESPONSE_TABLE: FaultResponseTable default FaultConfig.FaultResponseTable
 
-        @ Response enabled table
-        external param RESPONSE_TABLE: ResponsesEnabled
+        @ Response enabled table (all responses enabled by default; the default also allows PRM_SAVE before PRM_SET)
+        external param RESPONSE_TABLE: ResponsesEnabled default Fw.Enabled.ENABLED
 
-        @ Step failure mode table
-        external param STEP_TABLE: StepFailureModes
+        @* Step failure mode table
+        @*
+        @* The default marks the parameter valid so that PRM_SAVE is accepted before any PRM_SET; the active failure
+        @* modes come from the FaultConfig step definitions until a VALID table is loaded or set.
+        external param STEP_TABLE: StepFailureModes default FaultConfig.FailureMode.FAULT
 
         ###############################################################################
         # Standard AC Ports: Required for Channels, Events, Commands, and Parameters  #

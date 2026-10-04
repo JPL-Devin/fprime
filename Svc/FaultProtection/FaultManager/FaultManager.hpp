@@ -52,6 +52,7 @@ class FaultManager final : public FaultManagerComponentBase, public Fw::ParamExt
     ~FaultManager();
 
   private:
+    friend class FaultManagerTester;  //!< Unit tests redefine the construction-time tables
     // ----------------------------------------------------------------------
     // Handler implementations for typed input ports
     // ----------------------------------------------------------------------
@@ -177,6 +178,12 @@ class FaultManager final : public FaultManagerComponentBase, public Fw::ParamExt
         Svc_FaultProtection_FaultManagerStateMachine::Signal signal  //!< The signal
     ) const override;
 
+    //! Implementation for guard countdownConfigured of state machine Svc_FaultProtection_FaultManagerStateMachine
+    bool Svc_FaultProtection_FaultManagerStateMachine_guard_countdownConfigured(
+        SmId smId,                                                   //!< The state machine id
+        Svc_FaultProtection_FaultManagerStateMachine::Signal signal  //!< The signal
+    ) const override;
+
     //! Implementation for guard responseDone of state machine Svc_FaultProtection_FaultManagerStateMachine
     bool Svc_FaultProtection_FaultManagerStateMachine_guard_responseDone(
         SmId smId,                                                   //!< The state machine id
@@ -234,10 +241,10 @@ class FaultManager final : public FaultManagerComponentBase, public Fw::ParamExt
     //! Per-step failure modes; backs STEP_TABLE
     StepFailureModes m_step_parameter;
 
-    //! Response definitions (immutable configuration)
-    const ResponseDefinitionTable m_response_definition_table;
-    //! Step definitions (immutable configuration)
-    const StepDefinitionTable m_step_definition_table;
+    //! Response definitions (configuration, fixed after construction)
+    ResponseDefinitionTable m_response_definition_table;
+    //! Step definitions (configuration, fixed after construction)
+    StepDefinitionTable m_step_definition_table;
 
     //! State governed by the state machine
     GovernedState m_sm_state;

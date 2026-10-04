@@ -15,5 +15,8 @@
     "Svc.FaultProtection.FaultManager": "Svc.FaultProtection.faultManager",
     "Svc.FaultProtection.SequenceResponder": "Svc.FaultProtection.sequenceResponder",
     "Ref.MonitoredCounter": "Ref.monitoredCounter",
-    "Ref.FaultSequencer": "Ref.fpSeq"
+    "Ref.FaultSequencer": "Ref.fpSeq",
+    "Svc.FaultProtection.RebootResponder": "Svc.FaultProtection.rebootResponder",
+    "Svc.FaultProtection.FatalToFault": "CdhCore.fatalHandler",
+    "Ref.PingReceiver": "Ref.pingRcvr"
 }

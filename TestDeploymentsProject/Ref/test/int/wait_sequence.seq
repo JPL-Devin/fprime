@@ -1,0 +1,2 @@
+; Test sequence that keeps the fault sequencer busy: a long relative wait before a harmless command
+R00:00:45 CdhCore.cmdDisp.CMD_NO_OP

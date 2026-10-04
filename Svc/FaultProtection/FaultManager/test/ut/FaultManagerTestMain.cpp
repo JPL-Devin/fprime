@@ -100,6 +100,131 @@ TEST(OffNominal, ResponseFailureNoRecursion) {
     tester.testResponseFailureNoRecursion();
 }
 
+TEST(FaultManagerVariants, TwoStepResponse) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testTwoStepResponse();
+}
+
+TEST(FaultManagerVariants, FullLengthResponse) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testFullLengthResponse();
+}
+
+TEST(FaultManagerVariants, SharedStepAcrossResponses) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testSharedStepAcrossResponses();
+}
+
+TEST(FaultManagerVariants, SharedResponseAcrossFaults) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testSharedResponseAcrossFaults();
+}
+
+TEST(FaultManagerVariants, FailureModeMatrix) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testFailureModeMatrix();
+}
+
+TEST(FaultManagerVariants, DeferThenFault) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testDeferThenFault();
+}
+
+TEST(FaultManagerVariants, DeferThenIgnore) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testDeferThenIgnore();
+}
+
+TEST(FaultManagerVariants, EqualPrecedenceCountdown) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testEqualPrecedenceCountdown();
+}
+
+TEST(FaultManagerVariants, EqualPrecedenceNoPreempt) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testEqualPrecedenceNoPreempt();
+}
+
+TEST(FaultManagerVariants, LowerPrecedenceDuringCountdown) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testLowerPrecedenceDuringCountdown();
+}
+
+TEST(FaultManagerVariants, CountdownNotRestarted) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testCountdownNotRestarted();
+}
+
+TEST(FaultManagerVariants, PreemptAtEachStep) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testPreemptAtEachStep();
+}
+
+TEST(FaultManagerVariants, ThreeFaultChain) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testThreeFaultChain();
+}
+
+TEST(FaultManagerVariants, FlappingReporter) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testFlappingReporter();
+}
+
+TEST(FaultManagerVariants, CompletionDuringDispatch) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testCompletionDuringDispatch();
+}
+
+TEST(FaultManagerVariants, QueueFullReportLatched) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testQueueFullReportLatched();
+}
+
+TEST(FaultManagerVariants, QueueFullSignalAsserts) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testQueueFullSignalAsserts();
+}
+
+TEST(FaultManagerVariants, DisableFaultDuringCountdown) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testDisableFaultDuringCountdown();
+}
+
+TEST(FaultManagerVariants, DisableFaultDuringResponse) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testDisableFaultDuringResponse();
+}
+
+TEST(FaultManagerVariants, DisableResponseMidResponse) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testDisableResponseMidResponse();
+}
+
+TEST(FaultManagerVariants, ParameterPersistence) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testParameterPersistence();
+}
+
+TEST(FaultManagerVariants, ParameterValidation) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testParameterValidation();
+}
+
+TEST(FaultManagerVariants, CommandInvalidEnumerations) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testCommandInvalidEnumerations();
+}
+
+TEST(FaultManagerVariants, StepPortNumPorts) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testStepPortNumPorts();
+}
+
+TEST(FaultManagerVariants, UnconnectedDispatchPort) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testUnconnectedDispatchPort();
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

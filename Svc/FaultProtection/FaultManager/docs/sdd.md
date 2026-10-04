@@ -37,7 +37,8 @@ state. Each `run` tick advances the `FaultManagerStateMachine`:
 ```mermaid
 stateDiagram-v2
     [*] --> IDLE
-    IDLE --> COUNTDOWN: Tick [hasReport]
+    IDLE --> COUNTDOWN: Tick [hasReport && countdownConfigured]
+    IDLE --> RESPONSE: Tick [hasReport && !countdownConfigured] / selectResponse, dispatchStep
     COUNTDOWN --> COUNTDOWN: Tick [!countdownExpired]
     COUNTDOWN --> RESPONSE: Tick [countdownExpired] / selectResponse, dispatchStep
     RESPONSE --> RESPONSE: StepSuccessful / StepDeferredFailure [!responseDone] / dispatchStep
@@ -48,7 +49,9 @@ stateDiagram-v2
 ```
 
 1. **IDLE**: each tick checks for a latched report.
-2. **COUNTDOWN**: `FaultConfig.RESPONSE_COUNTDOWN_TICKS` ticks allow further reports to accumulate.
+2. **COUNTDOWN**: `FaultConfig.RESPONSE_COUNTDOWN_TICKS` ticks allow further reports to accumulate. The response
+   starts `RESPONSE_COUNTDOWN_TICKS + 1` ticks after the report; a value of 0 skips this state and responds on the
+   tick that finds the latched report.
 3. **RESPONSE**: the enabled fault of highest precedence is selected; its latch is cleared; the response's steps are
    dispatched in order on `stepDispatchOut[<step port>]`. A completion on `stepCompletionIn` for the active step
    advances to the next step. `SKIP` steps and the steps of a disabled response are skipped with `StepSkipped`.
@@ -116,6 +119,9 @@ default and `TestDeploymentsProject/Ref/Config/FaultConfig.fpp` for an example o
 | `StepDefinitionTable`       | One `StepDefinitionEntry` (failure mode, port, context) per step except `SKIP`           |
 
 The tables are loaded at construction and may be overridden by the `FAULT_RESPONSE_TABLE`, `RESPONSE_TABLE`, and
-`STEP_TABLE` parameters when those are valid in the parameter database. The `Svc.FaultProtection.Subtopology`
+`STEP_TABLE` parameters when those are valid in the parameter database. Each parameter declares a default so
+that `PRM_SAVE` persists the tables modified by `SET_FAULT_ENABLED`, `SET_RESPONSE_ENABLED`, and
+`UPDATE_STEP_FAILURE_MODE` even before any `PRM_SET`; a default (not `VALID`) `STEP_TABLE` leaves the
+construction-time failure modes in effect. The `Svc.FaultProtection.Subtopology`
 instantiates the FaultManager with a `SequenceResponder` and a `RebootResponder` and exposes `reportIn`,
 `faultManagerRun`, and the sequencer ports for the deployment to connect.
