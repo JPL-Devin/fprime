@@ -143,6 +143,78 @@ TEST(OffNominal, ResponseFailureNoRecursion) {
     tester.testResponseFailureNoRecursion();
 }
 
+TEST(FaultManagerVariants, SharedResponseAcrossFaults) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testSharedResponseAcrossFaults();
+}
+
+TEST(FaultManagerVariants, EqualPrecedenceCountdown) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testEqualPrecedenceCountdown();
+}
+
+TEST(FaultManagerVariants, EqualPrecedenceNoPreempt) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testEqualPrecedenceNoPreempt();
+}
+
+TEST(FaultManagerVariants, PendingReportAfterResponse) {
+    COMMENT(
+        "A report latched during a response is responded to at the completion (zero countdown) or after the countdown");
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testPendingReportAfterResponse();
+}
+
+TEST(FaultManagerVariants, LowerPrecedenceDuringCountdown) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testLowerPrecedenceDuringCountdown();
+}
+
+TEST(FaultManagerVariants, CountdownNotRestarted) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testCountdownNotRestarted();
+}
+
+TEST(FaultManagerVariants, ThreeFaultChain) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testThreeFaultChain();
+}
+
+TEST(FaultManagerVariants, FlappingReporter) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testFlappingReporter();
+}
+
+TEST(FaultManagerVariants, QueueFullSignalAsserts) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testQueueFullSignalAsserts();
+}
+
+TEST(FaultManagerVariants, DisableFaultDuringResponse) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testDisableFaultDuringResponse();
+}
+
+TEST(FaultManagerVariants, ParameterPersistence) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testParameterPersistence();
+}
+
+TEST(FaultManagerVariants, ParameterValidation) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testParameterValidation();
+}
+
+TEST(FaultManagerVariants, CommandInvalidEnumerations) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testCommandInvalidEnumerations();
+}
+
+TEST(FaultManagerVariants, UnconnectedDispatchPort) {
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testUnconnectedDispatchPort();
+}
+
 TEST(Nominal, ParameterSave) {
     COMMENT("PRM_SAVE of the never-set RESPONSE_TABLE and STEP_TABLE persists the active tables");
     Svc::FaultProtection::FaultManagerTester tester;

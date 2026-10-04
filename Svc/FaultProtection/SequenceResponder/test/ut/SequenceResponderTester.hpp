@@ -64,6 +64,10 @@ class SequenceResponderTester final : public SequenceResponderGTestBase {
     void testUnconnectedSequencer();
     void testFileNameTooLong();
 
+    //! The configured directory (even a misconfigured one) names the sequence file; a sequencer load failure then
+    //! fails the step
+    void testDirectoryConfiguration();
+
   private:
     // ----------------------------------------------------------------------
     // Helper functions

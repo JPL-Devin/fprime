@@ -1,0 +1,4 @@
+; Test sequence that fails mid-way: the first command is rejected by the fault manager (NUM_FAULTS is not a fault)
+R00:00:00 CdhCore.cmdDisp.CMD_NO_OP
+R00:00:00 Svc.FaultProtection.faultManager.SET_FAULT_ENABLED NUM_FAULTS ENABLED
+R00:00:00 CdhCore.cmdDisp.CMD_NO_OP_STRING "never reached"

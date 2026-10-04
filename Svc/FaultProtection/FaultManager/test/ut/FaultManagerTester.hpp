@@ -17,7 +17,7 @@ namespace FaultProtection {
 class FaultManagerTester final : public FaultManagerGTestBase {
   public:
     // Maximum size of histories storing events, telemetry, and port outputs
-    static const FwSizeType MAX_HISTORY_SIZE = 20;
+    static const FwSizeType MAX_HISTORY_SIZE = 60;
 
     // Instance ID supplied to the component instance under test
     static const FwEnumStoreType TEST_INSTANCE_ID = 0;
@@ -89,6 +89,72 @@ class FaultManagerTester final : public FaultManagerGTestBase {
     void testDisableClearsLatch();
     void testTableParameters();
 
+    // ----------------------------------------------------------------------
+    // Variant tests: multi-step responses
+    // ----------------------------------------------------------------------
+
+    //! Two faults mapped to one response: one response clears both latches
+    void testSharedResponseAcrossFaults();
+
+    // ----------------------------------------------------------------------
+    // Variant tests: failure modes
+    // ----------------------------------------------------------------------
+
+    // ----------------------------------------------------------------------
+    // Variant tests: precedence and preemption
+    // ----------------------------------------------------------------------
+
+    //! Equal-precedence faults latched during the countdown: the earliest table entry wins
+    void testEqualPrecedenceCountdown();
+
+    //! An equal-precedence report during a response does not preempt
+    void testEqualPrecedenceNoPreempt();
+
+    //! A report latched during a response starts its response at the completion (zero countdown) or after the countdown
+    void testPendingReportAfterResponse();
+
+    //! A lower-precedence report during the countdown waits for the higher-precedence response
+    void testLowerPrecedenceDuringCountdown();
+
+    //! A second report during the countdown does not restart the countdown
+    void testCountdownNotRestarted();
+
+    //! Three faults of mixed precedence reported in various orders are responded to in precedence order
+    void testThreeFaultChain();
+
+    // ----------------------------------------------------------------------
+    // Variant tests: latching and timing
+    // ----------------------------------------------------------------------
+
+    //! A reporter flapping every tick is bounded to one FaultReported and throttled FaultIgnored events
+    void testFlappingReporter();
+
+    //! A state machine signal sent while the queue is full asserts (documents SVC_FAULTMANAGER_018 gap)
+    void testQueueFullSignalAsserts();
+
+    // ----------------------------------------------------------------------
+    // Variant tests: enable/disable
+    // ----------------------------------------------------------------------
+
+    //! Disabling a fault during its response lets the response finish; new reports are then ignored
+    void testDisableFaultDuringResponse();
+
+    //! Parameter persistence: PRM_SAVE of every table after the commands that alter them
+    void testParameterPersistence();
+
+    //! Invalid parameter values are rejected and leave the active tables untouched
+    void testParameterValidation();
+
+    // ----------------------------------------------------------------------
+    // Variant tests: input validation
+    // ----------------------------------------------------------------------
+
+    //! Commands with out-of-range values beyond the sentinels are rejected
+    void testCommandInvalidEnumerations();
+
+    //! A step whose dispatch port is not connected is treated as failed
+    void testUnconnectedDispatchPort();
+
     //! A report whose handleReport message is dropped from a full queue is still responded to on the next ticks
     void testReportDroppedFromQueue();
 
@@ -112,6 +178,9 @@ class FaultManagerTester final : public FaultManagerGTestBase {
                                       const FaultConfig::Context& context) override;
 
     void from_stepCancelOut_handler(FwIndexType portNum) override;
+
+    //! FaultReported hook: optionally fill the component queue to stage a full queue
+    void logIn_ACTIVITY_HI_FaultReported(const FaultConfig::Fault& fault) override;
 
     //! Print text events to aid debugging
     void textLogIn(FwEventIdType id,
@@ -150,6 +219,17 @@ class FaultManagerTester final : public FaultManagerGTestBase {
     //! Assert nothing has been dispatched
     void assertNotDispatched();
 
+    //! A completion, failure, or preemption that leaves a report latched starts that response after
+    //! RESPONSE_COUNTDOWN_TICKS ticks (on the completing dispatch itself when zero): wait for it, assert the most
+    //! recent ResponseStarted is the given one and that exactly its first step was dispatched, then clear the history
+    //! Tick enough for a full countdown while a step is active, staying short of the step's timeout
+    void tickWithinTimeout(const FaultConfig::Step& step);
+
+    void awaitPendingResponse(const FaultConfig::Response& response,
+                              const FaultConfig::Fault& fault,
+                              const FaultConfig::Port& port,
+                              const FaultConfig::Step& step);
+
     //! Drive a report through countdown to its first dispatched step
     void reportAndDispatch(const FaultConfig::Fault& fault,
                            const FaultConfig::Port& port,
@@ -170,6 +250,20 @@ class FaultManagerTester final : public FaultManagerGTestBase {
                                           const FaultConfig::FailureMode& mode,
                                           const Fw::CmdResponse& expected);
 
+    //! Set a fault's precedence via the FAULT_RESPONSE_TABLE parameter
+    void setPrecedence(const FaultConfig::Fault& fault, U8 precedence);
+
+    //! Assert the component's active tables: PRM_SAVE each one, the tester base asserts it equals the copy set here
+    void assertActiveTables(const FaultResponseTable& faults,
+                            const ResponsesEnabled& responses,
+                            const StepFailureModes& steps);
+
+    //! The construction-time step failure modes (from the step definitions)
+    static StepFailureModes definedStepModes();
+
+    //! Send a command built from a raw argument buffer (used to inject malformed enumeration values)
+    void sendRawCommand(FwOpcodeType opcode, U32 cmdSeq, Fw::CmdArgBuffer& args, const Fw::CmdResponse& expected);
+
     //! Connect ports
     void connectPorts();
 
@@ -182,7 +276,15 @@ class FaultManagerTester final : public FaultManagerGTestBase {
 
     //! Port number of the most recent step dispatch
     FwIndexType m_last_dispatch_port;
+
+    //! Port number of the most recent step cancel
     FwIndexType m_last_cancel_port;
+
+    //! When set, the FaultReported event handler fills the component queue
+    bool m_fill_queue_on_report;
+
+    //! The FAULT_RESPONSE_TABLE as last loaded into the component (starts at the FaultConfig default)
+    FaultResponseTable m_fault_table;
 };
 
 }  // namespace FaultProtection

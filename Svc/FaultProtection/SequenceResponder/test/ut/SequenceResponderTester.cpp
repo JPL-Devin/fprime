@@ -140,6 +140,32 @@ void SequenceResponderTester ::testUnconnectedSequencer() {
     ASSERT_from_faultResponseComplete(0, Fw::Success::FAILURE, SEQUENCE_RESPONSE, RUN_SEQUENCE);
 }
 
+void SequenceResponderTester ::testDirectoryConfiguration() {
+    // Reconfiguration (e.g. a misconfigured directory) is reflected in the next dispatch: the responder does not check
+    // that the directory or file exist; the sequencer reports a load failure which fails the step
+    this->component.configure(Fw::String("/nonexistent"));
+    this->invoke_to_faultResponseDispatch(0, SEQUENCE_RESPONSE, RUN_SEQUENCE, FaultConfig::Context());
+    ASSERT_EVENTS_SequenceStarted_SIZE(1);
+    ASSERT_from_seqRunOut_SIZE(1);
+#if FW_SERIALIZABLE_TO_STRING
+    ASSERT_STREQ(this->fromPortHistory_seqRunOut->at(0).filename.toChar(), "/nonexistent/RUN_SEQUENCE.seq");
+#else
+    ASSERT_STREQ(this->fromPortHistory_seqRunOut->at(0).filename.toChar(), "/nonexistent/0.seq");
+#endif
+    // Svc.CmdSequencer reports a failed load on seqDone with EXECUTION_ERROR
+    this->sequenceDone(Fw::CmdResponse::EXECUTION_ERROR);
+    ASSERT_EVENTS_SequenceFailed_SIZE(1);
+    ASSERT_from_faultResponseComplete_SIZE(1);
+    ASSERT_from_faultResponseComplete(0, Fw::Success::FAILURE, SEQUENCE_RESPONSE, RUN_SEQUENCE);
+    // A trailing directory separator is not normalized: the responder forwards exactly what was configured
+    this->clearHistory();
+    this->component.configure(Fw::String("/fault/sequences/"));
+    this->invoke_to_faultResponseDispatch(0, SEQUENCE_RESPONSE, RUN_SEQUENCE, FaultConfig::Context());
+#if FW_SERIALIZABLE_TO_STRING
+    ASSERT_STREQ(this->fromPortHistory_seqRunOut->at(0).filename.toChar(), "/fault/sequences//RUN_SEQUENCE.seq");
+#endif
+}
+
 // ----------------------------------------------------------------------
 // Helpers
 // ----------------------------------------------------------------------

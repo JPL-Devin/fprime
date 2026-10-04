@@ -60,3 +60,9 @@ int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+
+TEST(OffNominal, DirectoryConfiguration) {
+    COMMENT("The configured directory names the sequence file; a load failure fails the step");
+    Svc::FaultProtection::SequenceResponderTester tester;
+    tester.testDirectoryConfiguration();
+}
