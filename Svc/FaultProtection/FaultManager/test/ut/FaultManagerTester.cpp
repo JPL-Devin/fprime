@@ -152,12 +152,9 @@ void FaultManagerTester ::testStepFailureFault() {
     // The failure latched FAULT_RESPONSE_FAILURE, whose report is handled on the thread
     ASSERT_EVENTS_FaultReported_SIZE(1);
     ASSERT_EVENTS_FaultReported(0, FAILURE);
-    this->clearHistory();
 
-    // Response to the failure fault follows
-    this->tick(TICKS_TO_RESPONSE);
-    ASSERT_EVENTS_ResponseStarted(0, REBOOT_RESPONSE, FAILURE);
-    this->assertDispatched(REBOOT_PORT, REBOOT_RESPONSE, REBOOT);
+    // Response to the failure fault follows (after the countdown, or at once when none is configured)
+    this->awaitPendingResponse(REBOOT_RESPONSE, FAILURE, REBOOT_PORT, REBOOT);
     this->complete(Fw::Success::SUCCESS, REBOOT_RESPONSE, REBOOT);
     ASSERT_EVENTS_ResponseCompleted(0, REBOOT_RESPONSE, FAILURE);
     this->clearHistory();
@@ -232,25 +229,18 @@ void FaultManagerTester ::testPreemption() {
     ASSERT_EVENTS_ResponsePreempted(0, SEQUENCE_RESPONSE, FATAL, FAILURE);
     ASSERT_EVENTS_ResponseCompleted_SIZE(0);
     ASSERT_EVENTS_ResponseFailed_SIZE(0);
-    this->clearHistory();
 
     // Late completion of the canceled step is unexpected
     this->complete(Fw::Success::SUCCESS, SEQUENCE_RESPONSE, RUN_SEQUENCE);
     ASSERT_EVENTS_UnexpectedStepCompleted_SIZE(1);
-    this->clearHistory();
 
-    // The preempting fault is responded to after a fresh countdown
-    this->tick(TICKS_TO_RESPONSE);
-    ASSERT_EVENTS_ResponseStarted(0, REBOOT_RESPONSE, FAILURE);
-    this->assertDispatched(REBOOT_PORT, REBOOT_RESPONSE, REBOOT);
+    // The preempting fault is responded to after a fresh countdown (at once when none is configured)
+    this->awaitPendingResponse(REBOOT_RESPONSE, FAILURE, REBOOT_PORT, REBOOT);
     this->complete(Fw::Success::SUCCESS, REBOOT_RESPONSE, REBOOT);
     ASSERT_EVENTS_ResponseCompleted(0, REBOOT_RESPONSE, FAILURE);
-    this->clearHistory();
 
     // The preempted fault stayed latched and is responded to next
-    this->tick(TICKS_TO_RESPONSE);
-    ASSERT_EVENTS_ResponseStarted(0, SEQUENCE_RESPONSE, FATAL);
-    this->assertDispatched(SEQUENCE_PORT, SEQUENCE_RESPONSE, RUN_SEQUENCE);
+    this->awaitPendingResponse(SEQUENCE_RESPONSE, FATAL, SEQUENCE_PORT, RUN_SEQUENCE);
     this->complete(Fw::Success::SUCCESS, SEQUENCE_RESPONSE, RUN_SEQUENCE);
     ASSERT_EVENTS_ResponseCompleted(0, SEQUENCE_RESPONSE, FATAL);
 }
@@ -267,11 +257,8 @@ void FaultManagerTester ::testNoPreemptionLowerPrecedence() {
 
     this->complete(Fw::Success::SUCCESS, REBOOT_RESPONSE, REBOOT);
     ASSERT_EVENTS_ResponseCompleted(0, REBOOT_RESPONSE, FAILURE);
-    this->clearHistory();
 
-    this->tick(TICKS_TO_RESPONSE);
-    ASSERT_EVENTS_ResponseStarted(0, SEQUENCE_RESPONSE, FATAL);
-    this->assertDispatched(SEQUENCE_PORT, SEQUENCE_RESPONSE, RUN_SEQUENCE);
+    this->awaitPendingResponse(SEQUENCE_RESPONSE, FATAL, SEQUENCE_PORT, RUN_SEQUENCE);
 }
 
 void FaultManagerTester ::testPrecedenceSelection() {
@@ -428,6 +415,19 @@ void FaultManagerTester ::assertDispatched(const FaultConfig::Port& port,
 
 void FaultManagerTester ::assertNotDispatched() {
     ASSERT_from_stepDispatchOut_SIZE(0);
+}
+
+void FaultManagerTester ::awaitPendingResponse(const FaultConfig::Response& response,
+                                               const FaultConfig::Fault& fault,
+                                               const FaultConfig::Port& port,
+                                               const FaultConfig::Step& step) {
+    if (FaultConfig::RESPONSE_COUNTDOWN_TICKS > 0) {
+        this->tick(FaultConfig::RESPONSE_COUNTDOWN_TICKS);
+    }
+    ASSERT_GT(this->eventHistory_ResponseStarted->size(), 0u) << "pending response did not start";
+    ASSERT_EVENTS_ResponseStarted(this->eventHistory_ResponseStarted->size() - 1, response, fault);
+    this->assertDispatched(port, response, step);
+    this->clearHistory();
 }
 
 void FaultManagerTester ::reportAndDispatch(const FaultConfig::Fault& fault,
@@ -626,8 +626,11 @@ void FaultManagerTester ::runFullLengthResponse(const FaultConfig::Fault& fault,
                 ASSERT_EVENTS_ResponseFailed(0, SEQUENCE_RESPONSE, fault);
                 ASSERT_EVENTS_FaultReported_SIZE(1);
                 ASSERT_EVENTS_FaultReported(0, FAILURE);
-                this->assertNotDispatched();
-                ASSERT_EVENTS_StepStarted_SIZE(0);
+                if (FaultConfig::RESPONSE_COUNTDOWN_TICKS > 0) {
+                    // The escalation waits out the countdown (with none configured it starts at once)
+                    this->assertNotDispatched();
+                    ASSERT_EVENTS_StepStarted_SIZE(0);
+                }
                 break;
             }
         } else {
@@ -647,13 +650,8 @@ void FaultManagerTester ::runFullLengthResponse(const FaultConfig::Fault& fault,
         ASSERT_EVENTS_ResponseCompleted_SIZE(0);
         ASSERT_EVENTS_FaultReported_SIZE(1);
         ASSERT_EVENTS_FaultReported(0, FAILURE);
-        this->clearHistory();
         // FAULT_RESPONSE_FAILURE is handled by the (default) reboot response
-        this->tick(FaultManagerTester::TICKS_TO_RESPONSE);
-        ASSERT_EVENTS_ResponseStarted_SIZE(1);
-        ASSERT_EVENTS_ResponseStarted(0, REBOOT_RESPONSE, FAILURE);
-        this->assertDispatched(REBOOT_PORT, REBOOT_RESPONSE, REBOOT);
-        this->clearHistory();
+        this->awaitPendingResponse(REBOOT_RESPONSE, FAILURE, REBOOT_PORT, REBOOT);
         this->complete(Fw::Success::SUCCESS, REBOOT_RESPONSE, REBOOT);
         ASSERT_EVENTS_ResponseCompleted_SIZE(1);
         ASSERT_EVENTS_ResponseCompleted(0, REBOOT_RESPONSE, FAILURE);
@@ -820,7 +818,8 @@ void FaultManagerTester ::testDeferThenFault() {
     ASSERT_EVENTS_FaultReported_SIZE(1);
     ASSERT_EVENTS_FaultReported(0, FAILURE);
     ASSERT_TLM_ResponsesFailed(this->tlmHistory_ResponsesFailed->size() - 1, 1);
-    this->assertNotDispatched();
+    // The response stopped at the FAULT step; the escalation is responded to next
+    this->awaitPendingResponse(REBOOT_RESPONSE, FAILURE, REBOOT_PORT, REBOOT);
 }
 
 void FaultManagerTester ::testDeferThenIgnore() {
@@ -862,11 +861,7 @@ void FaultManagerTester ::testEqualPrecedenceCountdown() {
     this->clearHistory();
     this->complete(Fw::Success::SUCCESS, SEQUENCE_RESPONSE, RUN_SEQUENCE);
     ASSERT_EVENTS_ResponseCompleted_SIZE(1);
-    this->clearHistory();
-    this->tick(FaultManagerTester::TICKS_TO_RESPONSE);
-    ASSERT_EVENTS_ResponseStarted_SIZE(1);
-    ASSERT_EVENTS_ResponseStarted(0, REBOOT_RESPONSE, FAILURE);
-    this->assertDispatched(REBOOT_PORT, REBOOT_RESPONSE, REBOOT);
+    this->awaitPendingResponse(REBOOT_RESPONSE, FAILURE, REBOOT_PORT, REBOOT);
 }
 
 void FaultManagerTester ::testEqualPrecedenceNoPreempt() {
@@ -881,8 +876,29 @@ void FaultManagerTester ::testEqualPrecedenceNoPreempt() {
     this->clearHistory();
     this->complete(Fw::Success::SUCCESS, SEQUENCE_RESPONSE, RUN_SEQUENCE);
     ASSERT_EVENTS_ResponseCompleted(0, SEQUENCE_RESPONSE, FATAL);
+    this->awaitPendingResponse(REBOOT_RESPONSE, FAILURE, REBOOT_PORT, REBOOT);
+}
+
+void FaultManagerTester ::testPendingReportAfterResponse() {
+    this->remapFault(FATAL, SEQUENCE_RESPONSE, 20);
+    this->reportAndDispatch(FATAL, SEQUENCE_PORT, SEQUENCE_RESPONSE, RUN_SEQUENCE);
+    // Equal precedence: latched for after the active response
+    this->report(FAILURE);
+    ASSERT_EVENTS_ResponsePreempted_SIZE(0);
     this->clearHistory();
-    this->tick(FaultManagerTester::TICKS_TO_RESPONSE);
+    this->complete(Fw::Success::SUCCESS, SEQUENCE_RESPONSE, RUN_SEQUENCE);
+    ASSERT_EVENTS_ResponseCompleted(0, SEQUENCE_RESPONSE, FATAL);
+    if (FaultConfig::RESPONSE_COUNTDOWN_TICKS == 0) {
+        // No countdown: the pending report's response starts on the completion itself, without another tick
+        ASSERT_EVENTS_ResponseStarted_SIZE(1);
+    } else {
+        // The countdown restarts at the completion; the response starts RESPONSE_COUNTDOWN_TICKS ticks later
+        ASSERT_EVENTS_ResponseStarted_SIZE(0);
+        this->tick(FaultConfig::RESPONSE_COUNTDOWN_TICKS - 1);
+        ASSERT_EVENTS_ResponseStarted_SIZE(0);
+        this->tick(1);
+        ASSERT_EVENTS_ResponseStarted_SIZE(1);
+    }
     ASSERT_EVENTS_ResponseStarted(0, REBOOT_RESPONSE, FAILURE);
     this->assertDispatched(REBOOT_PORT, REBOOT_RESPONSE, REBOOT);
 }
@@ -954,24 +970,19 @@ void FaultManagerTester ::testPreemptAtEachStep() {
         ASSERT_EVENTS_ResponsePreempted_SIZE(1);
         ASSERT_EVENTS_ResponsePreempted(0, SEQUENCE_RESPONSE, FATAL, FAILURE);
         ASSERT_EVENTS_ResponseCompleted_SIZE(0);
-        this->assertNotDispatched();
-        this->clearHistory();
+        if (FaultConfig::RESPONSE_COUNTDOWN_TICKS > 0) {
+            // The preempting response waits out the countdown (with none configured it starts at once)
+            this->assertNotDispatched();
+        }
         // Late completion of the cancelled step is ignored
         this->complete(Fw::Success::SUCCESS, SEQUENCE_RESPONSE, steps[preempt_at]);
         ASSERT_EVENTS_UnexpectedStepCompleted_SIZE(1);
-        this->clearHistory();
-        this->tick(FaultManagerTester::TICKS_TO_RESPONSE);
-        ASSERT_EVENTS_ResponseStarted_SIZE(1);
-        ASSERT_EVENTS_ResponseStarted(0, REBOOT_RESPONSE, FAILURE);
-        this->assertDispatched(REBOOT_PORT, REBOOT_RESPONSE, REBOOT);
-        this->clearHistory();
+        this->awaitPendingResponse(REBOOT_RESPONSE, FAILURE, REBOOT_PORT, REBOOT);
         this->complete(Fw::Success::SUCCESS, REBOOT_RESPONSE, REBOOT);
         ASSERT_EVENTS_ResponseCompleted(0, REBOOT_RESPONSE, FAILURE);
-        this->clearHistory();
-        // The preempted fault was kept latched: it is responded to afterwards
-        this->tick(FaultManagerTester::TICKS_TO_RESPONSE);
-        ASSERT_EVENTS_ResponseStarted_SIZE(1);
-        ASSERT_EVENTS_ResponseStarted(0, SEQUENCE_RESPONSE, FATAL);
+        // The preempted fault was kept latched: it is responded to afterwards, from its first step
+        this->awaitPendingResponse(SEQUENCE_RESPONSE, FATAL, portOf(steps[0]), steps[0]);
+        this->complete(Fw::Success::SUCCESS, SEQUENCE_RESPONSE, steps[0]);
         this->drainResponse();
         ASSERT_EVENTS_ResponseCompleted(0, SEQUENCE_RESPONSE, FATAL);
         if (::testing::Test::HasFailure()) {
@@ -1160,9 +1171,7 @@ void FaultManagerTester ::testQueueFullSignalAsserts() {
     this->clearHistory();
     this->complete(Fw::Success::SUCCESS, SEQUENCE_RESPONSE, RUN_SEQUENCE);
     ASSERT_EVENTS_ResponseCompleted(0, SEQUENCE_RESPONSE, FATAL);
-    this->clearHistory();
-    this->tick(FaultManagerTester::TICKS_TO_RESPONSE);
-    ASSERT_EVENTS_ResponseStarted(0, REBOOT_RESPONSE, FAILURE);
+    this->awaitPendingResponse(REBOOT_RESPONSE, FAILURE, REBOOT_PORT, REBOOT);
 }
 
 // ----------------------------------------------------------------------
@@ -1452,21 +1461,25 @@ void FaultManagerTester ::testStepPortNumPorts() {
     this->clearHistory();
     this->tick(FaultManagerTester::TICKS_TO_RESPONSE);
     ASSERT_EVENTS_ResponseStarted(0, REBOOT_RESPONSE, FATAL);
-    ASSERT_EVENTS_StepPortUnconnected_SIZE(1);
     ASSERT_EVENTS_StepPortUnconnected(0, REBOOT, FaultConfig::Port::NUM_PORTS);
-    ASSERT_EVENTS_StepFailed_SIZE(1);
     ASSERT_EVENTS_StepFailed(0, REBOOT, REBOOT_RESPONSE, FATAL, FaultConfig::FailureMode::FAULT);
-    ASSERT_EVENTS_ResponseFailed_SIZE(1);
     ASSERT_EVENTS_FaultReported_SIZE(1);
     ASSERT_EVENTS_FaultReported(0, FAILURE);
     this->assertNotDispatched();
-    this->clearHistory();
     // The failure response uses the same step: it fails too, without re-reporting
-    this->tick(FaultManagerTester::TICKS_TO_RESPONSE);
-    ASSERT_EVENTS_ResponseStarted(0, REBOOT_RESPONSE, FAILURE);
-    ASSERT_EVENTS_StepPortUnconnected_SIZE(1);
-    ASSERT_EVENTS_ResponseFailed_SIZE(1);
-    ASSERT_EVENTS_FaultReported_SIZE(0);
+    if (FaultConfig::RESPONSE_COUNTDOWN_TICKS > 0) {
+        // With a countdown, only the first response has run so far
+        ASSERT_EVENTS_ResponseStarted_SIZE(1);
+        ASSERT_EVENTS_StepPortUnconnected_SIZE(1);
+        ASSERT_EVENTS_StepFailed_SIZE(1);
+        ASSERT_EVENTS_ResponseFailed_SIZE(1);
+        this->tick(FaultConfig::RESPONSE_COUNTDOWN_TICKS);
+    }
+    ASSERT_EVENTS_ResponseStarted_SIZE(2);
+    ASSERT_EVENTS_ResponseStarted(1, REBOOT_RESPONSE, FAILURE);
+    ASSERT_EVENTS_StepPortUnconnected_SIZE(2);
+    ASSERT_EVENTS_ResponseFailed_SIZE(2);
+    ASSERT_EVENTS_FaultReported_SIZE(1);
     this->assertNotDispatched();
     this->clearHistory();
     this->tick(FaultManagerTester::TICKS_TO_RESPONSE);
@@ -1496,10 +1509,13 @@ void FaultManagerTester ::testUnconnectedDispatchPort() {
         }
     }
     ASSERT_EVENTS_ResponseStarted(0, REBOOT_RESPONSE, FATAL);
-    ASSERT_EVENTS_StepPortUnconnected_SIZE(1);
     ASSERT_EVENTS_StepPortUnconnected(0, REBOOT, REBOOT_PORT);
     ASSERT_EVENTS_StepFailed(0, REBOOT, REBOOT_RESPONSE, FATAL, FaultConfig::FailureMode::FAULT);
-    ASSERT_EVENTS_ResponseFailed_SIZE(1);
+    // With no countdown the FAULT_RESPONSE_FAILURE response (same step) has also run and failed by now
+    const FwSizeType responses = (FaultConfig::RESPONSE_COUNTDOWN_TICKS == 0) ? 2 : 1;
+    ASSERT_EVENTS_ResponseStarted_SIZE(responses);
+    ASSERT_EVENTS_StepPortUnconnected_SIZE(responses);
+    ASSERT_EVENTS_ResponseFailed_SIZE(responses);
     ASSERT_from_stepDispatchOut_SIZE(0);
     bare.deinit();
 }

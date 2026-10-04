@@ -121,6 +121,9 @@ class FaultManagerTester final : public FaultManagerGTestBase {
     //! An equal-precedence report during a response does not preempt
     void testEqualPrecedenceNoPreempt();
 
+    //! A report latched during a response starts its response at the completion (zero countdown) or after the countdown
+    void testPendingReportAfterResponse();
+
     //! A lower-precedence report during the countdown waits for the higher-precedence response
     void testLowerPrecedenceDuringCountdown();
 
@@ -226,6 +229,14 @@ class FaultManagerTester final : public FaultManagerGTestBase {
 
     //! Assert nothing has been dispatched
     void assertNotDispatched();
+
+    //! A completion, failure, or preemption that leaves a report latched starts that response after
+    //! RESPONSE_COUNTDOWN_TICKS ticks (on the completing dispatch itself when zero): wait for it, assert the most
+    //! recent ResponseStarted is the given one and that exactly its first step was dispatched, then clear the history
+    void awaitPendingResponse(const FaultConfig::Response& response,
+                              const FaultConfig::Fault& fault,
+                              const FaultConfig::Port& port,
+                              const FaultConfig::Step& step);
 
     //! Drive a report through countdown to its first dispatched step
     void reportAndDispatch(const FaultConfig::Fault& fault,

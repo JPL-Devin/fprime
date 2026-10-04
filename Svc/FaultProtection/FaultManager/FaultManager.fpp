@@ -69,15 +69,11 @@ module FaultProtection {
         @ When a report is detected, enter COUNTDOWN to allow for additional reports to be processed before executing
         @ response otherwise return to the IDLE state to await the next tick and check again.
         choice CHECK_REPORT {
-            if hasReport enter COUNTDOWN else enter IDLE
-        }
-
-        @ On an IDLE tick that finds a report, a zero countdown responds on that tick; otherwise wait out the countdown
-        choice CHECK_IDLE_REPORT {
             if hasReport enter CHECK_COUNTDOWN_CONFIGURED else enter IDLE
         }
 
-        @ Skip the COUNTDOWN state when no countdown is configured
+        @ Skip the COUNTDOWN state when no countdown is configured: the response starts on the tick (or step
+        @ completion) that found the report
         choice CHECK_COUNTDOWN_CONFIGURED {
             if countdownConfigured enter COUNTDOWN else enter RESPONSE
         }
@@ -87,7 +83,7 @@ module FaultProtection {
 
         @ IDLE state: wait for fault report, warning on other signals
         state IDLE {
-            on Tick enter CHECK_IDLE_REPORT
+            on Tick enter CHECK_REPORT
         }
 
         @ COUNTDOWN state: wait for the countdown to expire allowing reports to accumulate

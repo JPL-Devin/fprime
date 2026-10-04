@@ -145,6 +145,13 @@ TEST(FaultManagerVariants, EqualPrecedenceNoPreempt) {
     tester.testEqualPrecedenceNoPreempt();
 }
 
+TEST(FaultManagerVariants, PendingReportAfterResponse) {
+    COMMENT(
+        "A report latched during a response is responded to at the completion (zero countdown) or after the countdown");
+    Svc::FaultProtection::FaultManagerTester tester;
+    tester.testPendingReportAfterResponse();
+}
+
 TEST(FaultManagerVariants, LowerPrecedenceDuringCountdown) {
     Svc::FaultProtection::FaultManagerTester tester;
     tester.testLowerPrecedenceDuringCountdown();

@@ -42,8 +42,10 @@ stateDiagram-v2
     COUNTDOWN --> COUNTDOWN: Tick [!countdownExpired]
     COUNTDOWN --> RESPONSE: Tick [countdownExpired] / selectResponse, dispatchStep
     RESPONSE --> RESPONSE: StepSuccessful / StepDeferredFailure [!responseDone] / dispatchStep
-    RESPONSE --> IDLE: StepSuccessful [responseDone] / completeResponse
-    RESPONSE --> IDLE: StepFailed / completeResponse (FAULT_RESPONSE_FAILURE latched)
+    RESPONSE --> IDLE: StepSuccessful [responseDone] / completeResponse [!hasReport]
+    RESPONSE --> COUNTDOWN: StepSuccessful [responseDone] / completeResponse [hasReport && countdownConfigured]
+    RESPONSE --> RESPONSE: StepSuccessful [responseDone] / completeResponse [hasReport && !countdownConfigured]
+    RESPONSE --> IDLE/COUNTDOWN/RESPONSE: StepFailed / completeResponse (FAULT_RESPONSE_FAILURE latched), same checks
     RESPONSE --> IDLE: Preempt / cancel active step, completeResponse
     IDLE --> COUNTDOWN: (next Tick finds the latched report)
 ```
@@ -51,7 +53,8 @@ stateDiagram-v2
 1. **IDLE**: each tick checks for a latched report.
 2. **COUNTDOWN**: `FaultConfig.RESPONSE_COUNTDOWN_TICKS` ticks allow further reports to accumulate. The response
    starts `RESPONSE_COUNTDOWN_TICKS + 1` ticks after the report; a value of 0 skips this state and responds on the
-   tick that finds the latched report.
+   tick that finds the latched report. When a response completes or fails with another report already latched, the
+   countdown starts at that completion (a zero countdown starts the next response on the completion itself).
 3. **RESPONSE**: the enabled fault of highest precedence is selected; its latch is cleared; the response's steps are
    dispatched in order on `stepDispatchOut[<step port>]`. A completion on `stepCompletionIn` for the active step
    advances to the next step. `SKIP` steps and the steps of a disabled response are skipped with `StepSkipped`.
