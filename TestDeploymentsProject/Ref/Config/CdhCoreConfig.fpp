@@ -4,12 +4,12 @@ module CdhCoreConfig {
 
     module QueueSizes {
         constant cmdDisp     = 10
-        @ A two-step fault response completing within one tick bursts ~24 events; the default depth of 10 drops some
+        @ A fault response that completes within one tick bursts ~24 events (FaultManager, SequenceResponder,
+        @ fpSeq and CmdDispatcher) from several threads; the framework default of 10 dropped some of them
         constant events      = 50
         constant tlmSend     = 10
         constant $health     = 25
     }
-
 
     module StackSizes {
         constant cmdDisp     = 64 * 1024
@@ -22,7 +22,6 @@ module CdhCoreConfig {
         constant $health     = 24
         constant events      = 23
         constant tlmSend     = 22
-
     }
 
     module CpuAffinities {
