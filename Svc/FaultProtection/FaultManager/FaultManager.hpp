@@ -60,7 +60,6 @@ class FaultManager : public FaultManagerComponentBase, public Fw::ParamExternalD
     virtual void escalationExhausted(const FaultConfig::Response& response);
 
   private:
-    friend class FaultManagerTester;  //!< Unit tests redefine the construction-time tables
     // ----------------------------------------------------------------------
     // Handler implementations for typed input ports
     // ----------------------------------------------------------------------
@@ -273,10 +272,10 @@ class FaultManager : public FaultManagerComponentBase, public Fw::ParamExternalD
     //! Per-step failure modes; backs STEP_TABLE
     StepFailureModes m_step_parameter;
 
-    //! Response definitions (configuration, fixed after construction)
-    ResponseDefinitionTable m_response_definition_table;
-    //! Step definitions (configuration, fixed after construction)
-    StepDefinitionTable m_step_definition_table;
+    //! Response definitions (immutable configuration)
+    const ResponseDefinitionTable m_response_definition_table;
+    //! Step definitions (immutable configuration)
+    const StepDefinitionTable m_step_definition_table;
 
     //! State governed by the state machine
     GovernedState m_sm_state;

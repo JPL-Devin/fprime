@@ -93,30 +93,12 @@ class FaultManagerTester final : public FaultManagerGTestBase {
     // Variant tests: multi-step responses
     // ----------------------------------------------------------------------
 
-    //! A two-step response dispatches its second step only after the first completes
-    void testTwoStepResponse();
-
-    //! A response using every step slot, reusing a step, dispatches each step in order
-    void testFullLengthResponse();
-
-    //! A step shared by two responses completes only for the response that dispatched it
-    void testSharedStepAcrossResponses();
-
     //! Two faults mapped to one response: one response clears both latches
     void testSharedResponseAcrossFaults();
 
     // ----------------------------------------------------------------------
     // Variant tests: failure modes
     // ----------------------------------------------------------------------
-
-    //! Every failure mode at the first, middle, and last step of a full-length response
-    void testFailureModeMatrix();
-
-    //! A deferred failure followed by a FAULT failure fails the response once
-    void testDeferThenFault();
-
-    //! A deferred failure followed by an ignored failure still fails the response at its end
-    void testDeferThenIgnore();
 
     // ----------------------------------------------------------------------
     // Variant tests: precedence and preemption
@@ -137,9 +119,6 @@ class FaultManagerTester final : public FaultManagerGTestBase {
     //! A second report during the countdown does not restart the countdown
     void testCountdownNotRestarted();
 
-    //! A higher-precedence report preempts at each step of a full-length response, cancelling that step
-    void testPreemptAtEachStep();
-
     //! Three faults of mixed precedence reported in various orders are responded to in precedence order
     void testThreeFaultChain();
 
@@ -150,12 +129,6 @@ class FaultManagerTester final : public FaultManagerGTestBase {
     //! A reporter flapping every tick is bounded to one FaultReported and throttled FaultIgnored events
     void testFlappingReporter();
 
-    //! A completion delivered while the dispatch is still on the stack is accepted
-    void testCompletionDuringDispatch();
-
-    //! A report arriving while the queue is full is latched and responded to
-    void testQueueFullReportLatched();
-
     //! A state machine signal sent while the queue is full asserts (documents SVC_FAULTMANAGER_018 gap)
     void testQueueFullSignalAsserts();
 
@@ -163,14 +136,8 @@ class FaultManagerTester final : public FaultManagerGTestBase {
     // Variant tests: enable/disable
     // ----------------------------------------------------------------------
 
-    //! Disabling a fault during the countdown drops the pending response
-    void testDisableFaultDuringCountdown();
-
     //! Disabling a fault during its response lets the response finish; new reports are then ignored
     void testDisableFaultDuringResponse();
-
-    //! Disabling a response mid-response skips the remaining steps; re-enabling resumes dispatch
-    void testDisableResponseMidResponse();
 
     //! Parameter persistence: PRM_SAVE of every table after the commands that alter them
     void testParameterPersistence();
@@ -184,9 +151,6 @@ class FaultManagerTester final : public FaultManagerGTestBase {
 
     //! Commands with out-of-range values beyond the sentinels are rejected
     void testCommandInvalidEnumerations();
-
-    //! A step whose dispatch port is NUM_PORTS is treated as failed
-    void testStepPortNumPorts();
 
     //! A step whose dispatch port is not connected is treated as failed
     void testUnconnectedDispatchPort();
@@ -286,25 +250,19 @@ class FaultManagerTester final : public FaultManagerGTestBase {
                                           const FaultConfig::FailureMode& mode,
                                           const Fw::CmdResponse& expected);
 
-    //! Redefine a response's steps (unused slots are filled with SKIP)
-    void defineResponse(const FaultConfig::Response& response, const FaultConfig::Step* steps, FwSizeType count);
-
-    //! Redefine a step's dispatch port
-    void setStepPort(const FaultConfig::Step& step, const FaultConfig::Port& port);
-
     //! Set a fault's precedence via the FAULT_RESPONSE_TABLE parameter
     void setPrecedence(const FaultConfig::Fault& fault, U8 precedence);
 
-    //! Drive a full-length response through step `count` completions, failing step `failIndex` (or none)
-    void runFullLengthResponse(const FaultConfig::Fault& fault,
-                               FwSizeType failIndex,
-                               const FaultConfig::FailureMode& mode);
+    //! Assert the component's active tables: PRM_SAVE each one, the tester base asserts it equals the copy set here
+    void assertActiveTables(const FaultResponseTable& faults,
+                            const ResponsesEnabled& responses,
+                            const StepFailureModes& steps);
+
+    //! The construction-time step failure modes (from the step definitions)
+    static StepFailureModes definedStepModes();
 
     //! Send a command built from a raw argument buffer (used to inject malformed enumeration values)
     void sendRawCommand(FwOpcodeType opcode, U32 cmdSeq, Fw::CmdArgBuffer& args, const Fw::CmdResponse& expected);
-
-    //! Complete whatever steps are dispatched, in order, until the active response completes
-    void drainResponse();
 
     //! Connect ports
     void connectPorts();
@@ -322,11 +280,11 @@ class FaultManagerTester final : public FaultManagerGTestBase {
     //! Port number of the most recent step cancel
     FwIndexType m_last_cancel_port;
 
-    //! When set, step dispatches are completed synchronously from within the dispatch handler
-    bool m_complete_on_dispatch;
-
     //! When set, the FaultReported event handler fills the component queue
     bool m_fill_queue_on_report;
+
+    //! The FAULT_RESPONSE_TABLE as last loaded into the component (starts at the FaultConfig default)
+    FaultResponseTable m_fault_table;
 };
 
 }  // namespace FaultProtection

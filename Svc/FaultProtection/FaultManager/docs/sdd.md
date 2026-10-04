@@ -38,9 +38,8 @@ state. Each `run` tick advances the `FaultManagerStateMachine`:
 stateDiagram-v2
     [*] --> IDLE
     IDLE --> CHECK_REPORT: Tick
+    CHECK_REPORT --> COUNTDOWN: [hasReport]
     CHECK_REPORT --> IDLE: [!hasReport]
-    CHECK_REPORT --> COUNTDOWN: [hasReport && countdownConfigured]
-    CHECK_REPORT --> RESPONSE: [hasReport && !countdownConfigured] / selectResponse, dispatchStep
     COUNTDOWN --> COUNTDOWN: Tick [!countdownExpired]
     COUNTDOWN --> RESPONSE: Tick [countdownExpired] / selectResponse, dispatchStep
     RESPONSE --> RESPONSE: StepSuccessful / StepDeferredFailure [!responseDone] / dispatchStep
