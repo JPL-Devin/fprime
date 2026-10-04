@@ -81,6 +81,13 @@ class FaultManagerTester final : public FaultManagerGTestBase {
 
     //! A failed response to FAULT_RESPONSE_FAILURE does not escalate (no recursion)
     void testResponseFailureNoRecursion();
+    void testMultiStepResponse();
+    void testDeferThenContinue();
+    void testStepTimeout();
+    void testStepPortUnconnected();
+    void testIgnoredReportThrottle();
+    void testDisableClearsLatch();
+    void testTableParameters();
 
     // ----------------------------------------------------------------------
     // Variant tests: multi-step responses
@@ -211,7 +218,7 @@ class FaultManagerTester final : public FaultManagerGTestBase {
     // ----------------------------------------------------------------------
 
     //! Dispatch every message queued on the component (ports, commands, and state machine signals)
-    void dispatchAll();
+    void dispatchAll(FaultManager& target);
 
     //! Report a fault and dispatch the internal report handling
     void report(const FaultConfig::Fault& fault);
@@ -233,6 +240,9 @@ class FaultManagerTester final : public FaultManagerGTestBase {
     //! A completion, failure, or preemption that leaves a report latched starts that response after
     //! RESPONSE_COUNTDOWN_TICKS ticks (on the completing dispatch itself when zero): wait for it, assert the most
     //! recent ResponseStarted is the given one and that exactly its first step was dispatched, then clear the history
+    //! Tick enough for a full countdown while a step is active, staying short of the step's timeout
+    void tickWithinTimeout(const FaultConfig::Step& step);
+
     void awaitPendingResponse(const FaultConfig::Response& response,
                               const FaultConfig::Fault& fault,
                               const FaultConfig::Port& port,

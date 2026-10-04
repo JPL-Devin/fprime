@@ -15,6 +15,7 @@ const FaultConfig::Fault FATAL = FaultConfig::Fault::FATAL_OCCURRED;
 const FaultConfig::Fault FAILURE = FaultConfig::Fault::FAULT_RESPONSE_FAILURE;
 const FaultConfig::Response REBOOT_RESPONSE = FaultConfig::Response::REBOOT_RESPONSE;
 const FaultConfig::Response SEQUENCE_RESPONSE = FaultConfig::Response::SEQUENCE_RESPONSE;
+const FaultConfig::Response SEQUENCE_THEN_REBOOT = FaultConfig::Response::SEQUENCE_THEN_REBOOT_RESPONSE;
 const FaultConfig::Step REBOOT = FaultConfig::Step::REBOOT;
 const FaultConfig::Step RUN_SEQUENCE = FaultConfig::Step::RUN_SEQUENCE;
 const FaultConfig::Port REBOOT_PORT = FaultConfig::Port::REBOOT_RESPONDER_PORT;
@@ -225,6 +226,7 @@ void FaultManagerTester ::testPreemption() {
     ASSERT_EVENTS_StepCancel_SIZE(1);
     ASSERT_EVENTS_StepCancel(0, RUN_SEQUENCE);
     ASSERT_from_stepCancelOut_SIZE(1);
+    ASSERT_EQ(this->m_last_cancel_port, static_cast<FwIndexType>(SEQUENCE_PORT.e));
     ASSERT_EVENTS_ResponsePreempted_SIZE(1);
     ASSERT_EVENTS_ResponsePreempted(0, SEQUENCE_RESPONSE, FATAL, FAILURE);
     ASSERT_EVENTS_ResponseCompleted_SIZE(0);
@@ -301,17 +303,17 @@ void FaultManagerTester ::testCommandValidation() {
     const FaultConfig::Step badStep(static_cast<FaultConfig::Step::T>(FaultConfig::Step::SKIP));
 
     this->sendCommandSetFaultEnabled(badFault, Fw::Enabled::DISABLED, Fw::CmdResponse::VALIDATION_ERROR);
-    ASSERT_EVENTS_InvalidCommandArgument_SIZE(1);
-    ASSERT_EVENTS_InvalidCommandArgument(0, static_cast<U8>(FaultConfig::Fault::NUM_FAULTS));
+    ASSERT_EVENTS_InvalidFaultArgument_SIZE(1);
+    ASSERT_EVENTS_InvalidFaultArgument(0, static_cast<U8>(FaultConfig::Fault::NUM_FAULTS));
     ASSERT_EVENTS_FaultEnabledSet_SIZE(0);
     this->sendCommandSetResponseEnabled(badResponse, Fw::Enabled::DISABLED, Fw::CmdResponse::VALIDATION_ERROR);
-    ASSERT_EVENTS_InvalidCommandArgument_SIZE(1);
-    ASSERT_EVENTS_InvalidCommandArgument(0, static_cast<U8>(FaultConfig::Response::NUM_RESPONSES));
+    ASSERT_EVENTS_InvalidResponseArgument_SIZE(1);
+    ASSERT_EVENTS_InvalidResponseArgument(0, static_cast<U8>(FaultConfig::Response::NUM_RESPONSES));
     ASSERT_EVENTS_ResponseEnabledSet_SIZE(0);
     this->sendCommandUpdateStepFailureMode(badStep, FaultConfig::FailureMode::IGNORE,
                                            Fw::CmdResponse::VALIDATION_ERROR);
-    ASSERT_EVENTS_InvalidCommandArgument_SIZE(1);
-    ASSERT_EVENTS_InvalidCommandArgument(0, static_cast<U8>(FaultConfig::Step::SKIP));
+    ASSERT_EVENTS_InvalidStepArgument_SIZE(1);
+    ASSERT_EVENTS_InvalidStepArgument(0, static_cast<U8>(FaultConfig::Step::SKIP));
     ASSERT_EVENTS_StepFailureModeSet_SIZE(0);
     this->clearHistory();
 
@@ -330,6 +332,265 @@ void FaultManagerTester ::testResponseFailureNoRecursion() {
     this->tick(TICKS_TO_RESPONSE);
     this->assertNotDispatched();
     ASSERT_EVENTS_SIZE(0);
+}
+
+void FaultManagerTester ::testMultiStepResponse() {
+    if (FaultConfig::FAULT_RESPONSE_STEP_COUNT < 2) {
+        GTEST_SKIP() << "requires FAULT_RESPONSE_STEP_COUNT >= 2";
+    }
+    this->remapFault(FATAL, SEQUENCE_THEN_REBOOT, 10);
+    this->reportAndDispatch(FATAL, SEQUENCE_PORT, SEQUENCE_THEN_REBOOT, RUN_SEQUENCE);
+
+    // Completing the first step dispatches the second to its own port; the response is not yet complete
+    this->complete(Fw::Success::SUCCESS, SEQUENCE_THEN_REBOOT, RUN_SEQUENCE);
+    ASSERT_EVENTS_StepCompleted_SIZE(1);
+    ASSERT_EVENTS_StepCompleted(0, RUN_SEQUENCE, SEQUENCE_THEN_REBOOT, FATAL);
+    ASSERT_EVENTS_StepStarted_SIZE(1);
+    ASSERT_EVENTS_StepStarted(0, REBOOT, SEQUENCE_THEN_REBOOT, FATAL);
+    ASSERT_EVENTS_ResponseCompleted_SIZE(0);
+    this->assertDispatched(REBOOT_PORT, SEQUENCE_THEN_REBOOT, REBOOT);
+    this->clearHistory();
+
+    // A completion for the already finished step is unexpected while the second step is active
+    this->complete(Fw::Success::SUCCESS, SEQUENCE_THEN_REBOOT, RUN_SEQUENCE);
+    ASSERT_EVENTS_UnexpectedStepCompleted_SIZE(1);
+    ASSERT_EVENTS_ResponseCompleted_SIZE(0);
+    this->clearHistory();
+
+    // The trailing SKIP ends the response after the second step completes
+    this->complete(Fw::Success::SUCCESS, SEQUENCE_THEN_REBOOT, REBOOT);
+    ASSERT_EVENTS_StepCompleted(0, REBOOT, SEQUENCE_THEN_REBOOT, FATAL);
+    ASSERT_EVENTS_ResponseCompleted_SIZE(1);
+    ASSERT_EVENTS_ResponseCompleted(0, SEQUENCE_THEN_REBOOT, FATAL);
+    ASSERT_TLM_ResponsesCompleted(0, 1);
+    this->assertNotDispatched();
+}
+
+void FaultManagerTester ::testDeferThenContinue() {
+    if (FaultConfig::FAULT_RESPONSE_STEP_COUNT < 2) {
+        GTEST_SKIP() << "requires FAULT_RESPONSE_STEP_COUNT >= 2";
+    }
+    this->remapFault(FATAL, SEQUENCE_THEN_REBOOT, 10);
+    this->sendCommandUpdateStepFailureMode(RUN_SEQUENCE, FaultConfig::FailureMode::DEFER, Fw::CmdResponse::OK);
+    this->clearHistory();
+    this->reportAndDispatch(FATAL, SEQUENCE_PORT, SEQUENCE_THEN_REBOOT, RUN_SEQUENCE);
+
+    // DEFER: the failure is recorded, but the remaining steps still run
+    this->complete(Fw::Success::FAILURE, SEQUENCE_THEN_REBOOT, RUN_SEQUENCE);
+    ASSERT_EVENTS_StepFailed_SIZE(1);
+    ASSERT_EVENTS_StepFailed(0, RUN_SEQUENCE, SEQUENCE_THEN_REBOOT, FATAL, FaultConfig::FailureMode::DEFER);
+    ASSERT_EVENTS_ResponseFailed_SIZE(0);
+    ASSERT_EVENTS_FaultReported_SIZE(0);
+    ASSERT_EVENTS_StepStarted(0, REBOOT, SEQUENCE_THEN_REBOOT, FATAL);
+    this->assertDispatched(REBOOT_PORT, SEQUENCE_THEN_REBOOT, REBOOT);
+    this->clearHistory();
+
+    // A successful final step cannot rescue the deferred failure
+    this->complete(Fw::Success::SUCCESS, SEQUENCE_THEN_REBOOT, REBOOT);
+    ASSERT_EVENTS_StepCompleted_SIZE(1);
+    ASSERT_EVENTS_ResponseCompleted_SIZE(0);
+    ASSERT_EVENTS_ResponseFailed_SIZE(1);
+    ASSERT_EVENTS_ResponseFailed(0, SEQUENCE_THEN_REBOOT, FATAL);
+    ASSERT_TLM_ResponsesFailed(0, 1);
+    ASSERT_EVENTS_FaultReported_SIZE(1);
+    ASSERT_EVENTS_FaultReported(0, FAILURE);
+}
+
+void FaultManagerTester ::testStepTimeout() {
+    const StepDefinitionTable steps;
+    FwSizeType timeout = 0;
+    for (FwSizeType i = 0; i < StepDefinitionTable::SIZE; i++) {
+        if (steps[i].get_step() == REBOOT) {
+            timeout = steps[i].get_timeoutTicks();
+        }
+    }
+    ASSERT_GT(timeout, 0) << "test requires a REBOOT step timeout";
+
+    this->reportAndDispatch(FATAL, REBOOT_PORT, REBOOT_RESPONSE, REBOOT);
+
+    // The step is awaited for timeoutTicks - 1 ticks without consequence
+    this->tick(timeout - 1);
+    ASSERT_EVENTS_StepTimedOut_SIZE(0);
+    ASSERT_EVENTS_SIZE(0);
+
+    // The expiring tick cancels the step and fails it per its failure mode (FAULT)
+    this->tick();
+    ASSERT_EVENTS_StepTimedOut_SIZE(1);
+    ASSERT_EVENTS_StepTimedOut(0, REBOOT, REBOOT_RESPONSE, FATAL);
+    ASSERT_EVENTS_StepCancel_SIZE(1);
+    ASSERT_EVENTS_StepCancel(0, REBOOT);
+    ASSERT_from_stepCancelOut_SIZE(1);
+    ASSERT_EQ(this->m_last_cancel_port, static_cast<FwIndexType>(REBOOT_PORT.e));
+    ASSERT_EVENTS_StepFailed_SIZE(1);
+    ASSERT_EVENTS_StepFailed(0, REBOOT, REBOOT_RESPONSE, FATAL, FaultConfig::FailureMode::FAULT);
+    ASSERT_EVENTS_ResponseFailed_SIZE(1);
+    ASSERT_EVENTS_ResponseFailed(0, REBOOT_RESPONSE, FATAL);
+    ASSERT_EVENTS_FaultReported(0, FAILURE);
+    if (FaultConfig::RESPONSE_COUNTDOWN_TICKS == 0) {
+        // No countdown: the response to FAULT_RESPONSE_FAILURE starts on the expiring tick. It dispatches the same
+        // (response, step) pair, so a late completion of the timed-out step is indistinguishable from the new step's
+        ASSERT_EVENTS_ResponseStarted(0, REBOOT_RESPONSE, FAILURE);
+        this->assertDispatched(REBOOT_PORT, REBOOT_RESPONSE, REBOOT);
+        this->clearHistory();
+    } else {
+        this->clearHistory();
+
+        // A late completion of the timed-out step is unexpected
+        this->complete(Fw::Success::SUCCESS, REBOOT_RESPONSE, REBOOT);
+        ASSERT_EVENTS_UnexpectedStepCompleted_SIZE(1);
+        this->clearHistory();
+
+        // A fresh dispatch starts a fresh timeout. FAULT_RESPONSE_FAILURE was latched during the expiring tick, so
+        // that tick already counted toward its countdown.
+        this->tick(TICKS_TO_RESPONSE - 1);
+        this->assertDispatched(REBOOT_PORT, REBOOT_RESPONSE, REBOOT);
+        this->clearHistory();
+    }
+    this->tick(timeout - 1);
+    ASSERT_EVENTS_StepTimedOut_SIZE(0);
+    this->complete(Fw::Success::SUCCESS, REBOOT_RESPONSE, REBOOT);
+    ASSERT_EVENTS_ResponseCompleted(0, REBOOT_RESPONSE, FAILURE);
+}
+
+void FaultManagerTester ::testStepPortUnconnected() {
+    // A second instance with REBOOT_RESPONDER_PORT left unconnected; events and telemetry route to this tester
+    FaultManager bare("FaultManagerBare");
+    bare.init(FaultManagerTester::TEST_INSTANCE_QUEUE_DEPTH, FaultManagerTester::TEST_INSTANCE_ID + 1);
+    bare.set_logOut_OutputPort(0, this->get_from_logOut(0));
+#if FW_ENABLE_TEXT_LOGGING == 1
+    bare.set_logTextOut_OutputPort(0, this->get_from_logTextOut(0));
+#endif
+    bare.set_timeCaller_OutputPort(0, this->get_from_timeCaller(0));
+    bare.set_tlmOut_OutputPort(0, this->get_from_tlmOut(0));
+    bare.set_stepDispatchOut_OutputPort(static_cast<FwIndexType>(SEQUENCE_PORT.e),
+                                        this->get_from_stepDispatchOut(static_cast<FwIndexType>(SEQUENCE_PORT.e)));
+    bare.set_stepCancelOut_OutputPort(static_cast<FwIndexType>(SEQUENCE_PORT.e),
+                                      this->get_from_stepCancelOut(static_cast<FwIndexType>(SEQUENCE_PORT.e)));
+    ASSERT_FALSE(bare.isConnected_stepDispatchOut_OutputPort(static_cast<FwIndexType>(REBOOT_PORT.e)));
+    this->clearHistory();
+
+    bare.get_reportIn_InputPort(0)->invoke(FATAL);
+    this->dispatchAll(bare);
+    ASSERT_EVENTS_FaultReported_SIZE(1);
+    this->clearHistory();
+    for (FwSizeType i = 0; i < TICKS_TO_RESPONSE; i++) {
+        bare.get_run_InputPort(0)->invoke(0);
+        this->dispatchAll(bare);
+    }
+
+    // The step cannot be dispatched: it fails without a port call and the response fails per the step's mode.
+    // Without a countdown the response to FAULT_RESPONSE_FAILURE (the same unconnected step) starts and fails on the
+    // same tick, exhausting the escalation.
+    const FwSizeType failures = (FaultConfig::RESPONSE_COUNTDOWN_TICKS == 0) ? 2 : 1;
+    ASSERT_EVENTS_ResponseStarted(0, REBOOT_RESPONSE, FATAL);
+    ASSERT_EVENTS_StepStarted(0, REBOOT, REBOOT_RESPONSE, FATAL);
+    ASSERT_EVENTS_StepPortUnconnected_SIZE(failures);
+    ASSERT_EVENTS_StepPortUnconnected(0, REBOOT, REBOOT_PORT);
+    this->assertNotDispatched();
+    ASSERT_from_stepCancelOut_SIZE(0);
+    ASSERT_EVENTS_StepFailed_SIZE(failures);
+    ASSERT_EVENTS_StepFailed(0, REBOOT, REBOOT_RESPONSE, FATAL, FaultConfig::FailureMode::FAULT);
+    ASSERT_EVENTS_ResponseFailed_SIZE(failures);
+    ASSERT_EVENTS_FaultReported(0, FAILURE);
+    ASSERT_EVENTS_EscalationExhausted_SIZE(failures - 1);
+    bare.deinit();
+}
+
+void FaultManagerTester ::testIgnoredReportThrottle() {
+    this->report(FATAL);
+    this->clearHistory();
+
+    // Reports beyond the throttle are latched-and-ignored silently
+    const FwSizeType throttle = FaultManagerComponentBase::EVENTID_FAULTIGNORED_THROTTLE;
+    for (FwSizeType i = 0; i < throttle + 2; i++) {
+        this->report(FATAL);
+    }
+    ASSERT_EVENTS_FaultIgnored_SIZE(throttle);
+    this->clearHistory();
+
+    // Each run tick clears the throttle
+    this->tick();
+    this->report(FATAL);
+    ASSERT_EVENTS_FaultIgnored_SIZE(1);
+    ASSERT_EVENTS_FaultIgnored(0, FATAL);
+    this->clearHistory();
+
+    // FaultInvalid is throttled and cleared the same way
+    const FaultConfig::Fault badFault(static_cast<FaultConfig::Fault::T>(FaultConfig::Fault::NUM_FAULTS));
+    const FwSizeType invalidThrottle = FaultManagerComponentBase::EVENTID_FAULTINVALID_THROTTLE;
+    for (FwSizeType i = 0; i < invalidThrottle + 2; i++) {
+        this->report(badFault);
+    }
+    ASSERT_EVENTS_FaultInvalid_SIZE(invalidThrottle);
+    this->clearHistory();
+    this->tick();
+    this->report(badFault);
+    ASSERT_EVENTS_FaultInvalid_SIZE(1);
+}
+
+void FaultManagerTester ::testDisableClearsLatch() {
+    this->report(FATAL);
+    ASSERT_EVENTS_FaultReported_SIZE(1);
+    this->clearHistory();
+
+    // Disabling a latched fault discards its pending report
+    this->sendCommandSetFaultEnabled(FATAL, Fw::Enabled::DISABLED, Fw::CmdResponse::OK);
+    this->clearHistory();
+    this->tick(TICKS_TO_RESPONSE);
+    this->assertNotDispatched();
+    ASSERT_EVENTS_ResponseStarted_SIZE(0);
+
+    // Re-enabling does not resurrect the discarded report
+    this->sendCommandSetFaultEnabled(FATAL, Fw::Enabled::ENABLED, Fw::CmdResponse::OK);
+    this->clearHistory();
+    this->tick(TICKS_TO_RESPONSE);
+    this->assertNotDispatched();
+    ASSERT_EVENTS_SIZE(0);
+
+    // A fresh report is accepted (the latch was cleared) and responded to
+    this->reportAndDispatch(FATAL, REBOOT_PORT, REBOOT_RESPONSE, REBOOT);
+}
+
+void FaultManagerTester ::testTableParameters() {
+    // Valid RESPONSE_TABLE and STEP_TABLE parameters override the FaultConfig defaults
+    ResponsesEnabled responses;
+    responses[REBOOT_RESPONSE.e] = Fw::Enabled::DISABLED;
+    StepFailureModes steps;
+    steps[RUN_SEQUENCE.e] = FaultConfig::FailureMode::IGNORE;
+    steps[REBOOT.e] = FaultConfig::FailureMode::IGNORE;
+    this->paramSet_RESPONSE_TABLE(responses, Fw::ParamValid::VALID);
+    this->paramSet_STEP_TABLE(steps, Fw::ParamValid::VALID);
+    this->component.loadParameters();
+    this->clearHistory();
+
+    // REBOOT_RESPONSE disabled by parameter: its step is skipped
+    this->report(FATAL);
+    this->clearHistory();
+    this->tick(TICKS_TO_RESPONSE);
+    this->assertNotDispatched();
+    ASSERT_EVENTS_StepSkipped_SIZE(1);
+    ASSERT_EVENTS_ResponseCompleted_SIZE(1);
+    this->clearHistory();
+
+    // REBOOT failure mode IGNORE by parameter: a failed step completes the response
+    this->sendCommandSetResponseEnabled(REBOOT_RESPONSE, Fw::Enabled::ENABLED, Fw::CmdResponse::OK);
+    this->clearHistory();
+    this->reportAndDispatch(FATAL, REBOOT_PORT, REBOOT_RESPONSE, REBOOT);
+    this->complete(Fw::Success::FAILURE, REBOOT_RESPONSE, REBOOT);
+    ASSERT_EVENTS_StepFailed(0, REBOOT, REBOOT_RESPONSE, FATAL, FaultConfig::FailureMode::IGNORE);
+    ASSERT_EVENTS_ResponseCompleted_SIZE(1);
+    ASSERT_EVENTS_FaultReported_SIZE(0);
+    this->clearHistory();
+
+    // Invalid parameters leave the cached tables untouched
+    this->paramSet_RESPONSE_TABLE(responses, Fw::ParamValid::INVALID);
+    this->paramSet_STEP_TABLE(steps, Fw::ParamValid::INVALID);
+    this->component.loadParameters();
+    this->clearHistory();
+    this->reportAndDispatch(FATAL, REBOOT_PORT, REBOOT_RESPONSE, REBOOT);
+    this->complete(Fw::Success::FAILURE, REBOOT_RESPONSE, REBOOT);
+    ASSERT_EVENTS_StepFailed(0, REBOOT, REBOOT_RESPONSE, FATAL, FaultConfig::FailureMode::IGNORE);
+    ASSERT_EVENTS_ResponseCompleted_SIZE(1);
 }
 
 // ----------------------------------------------------------------------
@@ -373,26 +634,26 @@ void FaultManagerTester ::textLogIn(FwEventIdType id,
 // Helpers
 // ----------------------------------------------------------------------
 
-void FaultManagerTester ::dispatchAll() {
+void FaultManagerTester ::dispatchAll(FaultManager& target) {
     // Bounded: each dispatched message queues at most one further message and a response has finitely many steps
     for (FwSizeType i = 0; i < TEST_INSTANCE_QUEUE_DEPTH; i++) {
-        if (this->component.m_queue.getMessagesAvailable() == 0) {
+        if (target.m_queue.getMessagesAvailable() == 0) {
             return;
         }
-        ASSERT_EQ(this->component.doDispatch(), Fw::QueuedComponentBase::MSG_DISPATCH_OK);
+        ASSERT_EQ(target.doDispatch(), Fw::QueuedComponentBase::MSG_DISPATCH_OK);
     }
-    ASSERT_EQ(this->component.m_queue.getMessagesAvailable(), 0);
+    ASSERT_EQ(target.m_queue.getMessagesAvailable(), 0);
 }
 
 void FaultManagerTester ::report(const FaultConfig::Fault& fault) {
     this->invoke_to_reportIn(0, fault);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
 }
 
 void FaultManagerTester ::tick(FwSizeType count) {
     for (FwSizeType i = 0; i < count; i++) {
         this->invoke_to_run(0, 0);
-        this->dispatchAll();
+        this->dispatchAll(this->component);
     }
 }
 
@@ -400,7 +661,7 @@ void FaultManagerTester ::complete(const Fw::Success& status,
                                    const FaultConfig::Response& response,
                                    const FaultConfig::Step& step) {
     this->invoke_to_stepCompletionIn(0, status, response, step);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
 }
 
 void FaultManagerTester ::assertDispatched(const FaultConfig::Port& port,
@@ -415,6 +676,19 @@ void FaultManagerTester ::assertDispatched(const FaultConfig::Port& port,
 
 void FaultManagerTester ::assertNotDispatched() {
     ASSERT_from_stepDispatchOut_SIZE(0);
+}
+
+void FaultManagerTester ::tickWithinTimeout(const FaultConfig::Step& step) {
+    // Enough ticks to cover a full countdown, bounded so the active step does not time out
+    FwSizeType ticks = FaultManagerTester::TICKS_TO_RESPONSE;
+    const StepDefinitionTable steps;
+    for (FwSizeType i = 0; i < StepDefinitionTable::SIZE; i++) {
+        const U32 timeout = steps[i].get_timeoutTicks();
+        if ((steps[i].get_step() == step) && (timeout > 0) && (static_cast<FwSizeType>(timeout) <= ticks)) {
+            ticks = static_cast<FwSizeType>(timeout) - 1;
+        }
+    }
+    this->tick(ticks);
 }
 
 void FaultManagerTester ::awaitPendingResponse(const FaultConfig::Response& response,
@@ -464,7 +738,7 @@ void FaultManagerTester ::sendCommandSetFaultEnabled(const FaultConfig::Fault& f
                                                      const Fw::CmdResponse& expected) {
     this->clearHistory();
     this->sendCmd_SET_FAULT_ENABLED(0, 1, fault, enabled);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
     ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, FaultManager::OPCODE_SET_FAULT_ENABLED, 1, expected);
 }
@@ -474,7 +748,7 @@ void FaultManagerTester ::sendCommandSetResponseEnabled(const FaultConfig::Respo
                                                         const Fw::CmdResponse& expected) {
     this->clearHistory();
     this->sendCmd_SET_RESPONSE_ENABLED(0, 2, response, enabled);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
     ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, FaultManager::OPCODE_SET_RESPONSE_ENABLED, 2, expected);
 }
@@ -484,7 +758,7 @@ void FaultManagerTester ::sendCommandUpdateStepFailureMode(const FaultConfig::St
                                                            const Fw::CmdResponse& expected) {
     this->clearHistory();
     this->sendCmd_UPDATE_STEP_FAILURE_MODE(0, 3, step, mode);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
     ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, FaultManager::OPCODE_UPDATE_STEP_FAILURE_MODE, 3, expected);
 }
@@ -680,8 +954,8 @@ void FaultManagerTester ::testTwoStepResponse() {
     this->defineResponse(SEQUENCE_RESPONSE, steps, 2);
     this->remapFault(FATAL, SEQUENCE_RESPONSE, 10);
     this->reportAndDispatch(FATAL, SEQUENCE_PORT, SEQUENCE_RESPONSE, RUN_SEQUENCE);
-    // Second step waits for the first to complete, regardless of ticks
-    this->tick(FaultManagerTester::TICKS_TO_RESPONSE);
+    // Second step waits for the first to complete, regardless of ticks (short of the step's timeout)
+    this->tickWithinTimeout(RUN_SEQUENCE);
     this->assertNotDispatched();
     ASSERT_EVENTS_StepStarted_SIZE(0);
     this->complete(Fw::Success::SUCCESS, SEQUENCE_RESPONSE, RUN_SEQUENCE);
@@ -871,7 +1145,7 @@ void FaultManagerTester ::testEqualPrecedenceNoPreempt() {
     ASSERT_EVENTS_FaultReported_SIZE(1);
     ASSERT_EVENTS_ResponsePreempted_SIZE(0);
     ASSERT_from_stepCancelOut_SIZE(0);
-    this->tick(FaultManagerTester::TICKS_TO_RESPONSE);
+    this->tickWithinTimeout(RUN_SEQUENCE);
     ASSERT_EVENTS_ResponsePreempted_SIZE(0);
     this->clearHistory();
     this->complete(Fw::Success::SUCCESS, SEQUENCE_RESPONSE, RUN_SEQUENCE);
@@ -1229,7 +1503,7 @@ void FaultManagerTester ::testDisableResponseMidResponse() {
     this->clearHistory();
     // The active step is not cancelled
     ASSERT_from_stepCancelOut_SIZE(0);
-    this->tick(FaultManagerTester::TICKS_TO_RESPONSE);
+    this->tickWithinTimeout(RUN_SEQUENCE);
     ASSERT_EVENTS_SIZE(0);
     this->complete(Fw::Success::SUCCESS, SEQUENCE_RESPONSE, RUN_SEQUENCE);
     ASSERT_EVENTS_StepCompleted_SIZE(1);
@@ -1256,7 +1530,7 @@ void FaultManagerTester ::sendRawCommand(FwOpcodeType opcode,
     Fw::InputCmdPort* const port = this->component.get_cmdIn_InputPort(0);
     ASSERT_NE(port, nullptr);
     port->invoke(static_cast<FwOpcodeType>(this->component.getIdBase() + opcode), cmdSeq, args);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
     ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, opcode, cmdSeq, expected);
 }
@@ -1275,7 +1549,7 @@ void FaultManagerTester ::testParameterPersistence() {
     this->paramSet_FAULT_RESPONSE_TABLE(expected_faults, Fw::ParamValid::VALID);
     this->clearHistory();
     this->paramSave_FAULT_RESPONSE_TABLE(0, 10);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
     ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, FaultManager::OPCODE_FAULT_RESPONSE_TABLE_SAVE, 10, Fw::CmdResponse::OK);
     ASSERT_EQ(this->paramTesterDelegate.m_param_FAULT_RESPONSE_TABLE_valid, Fw::ParamValid::VALID);
@@ -1286,7 +1560,7 @@ void FaultManagerTester ::testParameterPersistence() {
     this->paramSet_RESPONSE_TABLE(expected_responses, Fw::ParamValid::VALID);
     this->clearHistory();
     this->paramSave_RESPONSE_TABLE(0, 11);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
     ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, FaultManager::OPCODE_RESPONSE_TABLE_SAVE, 11, Fw::CmdResponse::OK);
     ASSERT_EQ(this->paramTesterDelegate.m_param_RESPONSE_TABLE_valid, Fw::ParamValid::VALID);
@@ -1298,7 +1572,7 @@ void FaultManagerTester ::testParameterPersistence() {
     this->paramSet_STEP_TABLE(expected_steps, Fw::ParamValid::VALID);
     this->clearHistory();
     this->paramSave_STEP_TABLE(0, 12);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
     ASSERT_CMD_RESPONSE_SIZE(1);
     ASSERT_CMD_RESPONSE(0, FaultManager::OPCODE_STEP_TABLE_SAVE, 12, Fw::CmdResponse::OK);
     ASSERT_EQ(this->paramTesterDelegate.m_param_STEP_TABLE_valid, Fw::ParamValid::VALID);
@@ -1309,13 +1583,13 @@ void FaultManagerTester ::testParameterPersistence() {
     this->paramSet_RESPONSE_TABLE(responses, Fw::ParamValid::VALID);
     this->clearHistory();
     this->paramSend_RESPONSE_TABLE(0, 13);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
     ASSERT_CMD_RESPONSE(0, FaultManager::OPCODE_RESPONSE_TABLE_SET, 13, Fw::CmdResponse::OK);
     StepFailureModes modes(FaultConfig::FailureMode(FaultConfig::FailureMode::DEFER));
     this->paramSet_STEP_TABLE(modes, Fw::ParamValid::VALID);
     this->clearHistory();
     this->paramSend_STEP_TABLE(0, 14);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
     ASSERT_CMD_RESPONSE(0, FaultManager::OPCODE_STEP_TABLE_SET, 14, Fw::CmdResponse::OK);
     FaultResponseTable faults = this->component.m_fault_parameter;
     faults[0].set_enabled(Fw::Enabled::ENABLED);
@@ -1323,7 +1597,7 @@ void FaultManagerTester ::testParameterPersistence() {
     this->paramSet_FAULT_RESPONSE_TABLE(faults, Fw::ParamValid::VALID);
     this->clearHistory();
     this->paramSend_FAULT_RESPONSE_TABLE(0, 15);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
     ASSERT_CMD_RESPONSE(0, FaultManager::OPCODE_FAULT_RESPONSE_TABLE_SET, 15, Fw::CmdResponse::OK);
     this->clearHistory();
     // Effect: FATAL re-enabled and mapped to the (re-enabled) sequence response, whose step failure now defers
@@ -1342,7 +1616,7 @@ void FaultManagerTester ::testParameterValidation() {
     this->paramSet_FAULT_RESPONSE_TABLE(table, Fw::ParamValid::VALID);
     this->clearHistory();
     this->paramSend_FAULT_RESPONSE_TABLE(0, seq);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
     ASSERT_CMD_RESPONSE(0, FaultManager::OPCODE_FAULT_RESPONSE_TABLE_SET, seq++, Fw::CmdResponse::VALIDATION_ERROR);
     ASSERT_EQ(this->component.m_fault_parameter, original);
 
@@ -1352,7 +1626,7 @@ void FaultManagerTester ::testParameterValidation() {
     this->paramSet_FAULT_RESPONSE_TABLE(table, Fw::ParamValid::VALID);
     this->clearHistory();
     this->paramSend_FAULT_RESPONSE_TABLE(0, seq);
-    this->dispatchAll();
+    this->dispatchAll(this->component);
     ASSERT_CMD_RESPONSE(0, FaultManager::OPCODE_FAULT_RESPONSE_TABLE_SET, seq++, Fw::CmdResponse::VALIDATION_ERROR);
     ASSERT_EQ(this->component.m_fault_parameter, original);
 
@@ -1433,19 +1707,19 @@ void FaultManagerTester ::testCommandInvalidEnumerations() {
     // NUM_* sentinels (and SKIP) are enumerators but not configured items: validated by the handlers
     this->sendCommandSetFaultEnabled(FaultConfig::Fault(FaultConfig::Fault::NUM_FAULTS), Fw::Enabled::DISABLED,
                                      Fw::CmdResponse::VALIDATION_ERROR);
-    ASSERT_EVENTS_InvalidCommandArgument_SIZE(1);
-    ASSERT_EVENTS_InvalidCommandArgument(0, static_cast<U8>(FaultConfig::Fault::NUM_FAULTS));
+    ASSERT_EVENTS_InvalidFaultArgument_SIZE(1);
+    ASSERT_EVENTS_InvalidFaultArgument(0, static_cast<U8>(FaultConfig::Fault::NUM_FAULTS));
     this->sendCommandSetResponseEnabled(FaultConfig::Response(FaultConfig::Response::NUM_RESPONSES),
                                         Fw::Enabled::DISABLED, Fw::CmdResponse::VALIDATION_ERROR);
-    ASSERT_EVENTS_InvalidCommandArgument_SIZE(1);
-    ASSERT_EVENTS_InvalidCommandArgument(0, static_cast<U8>(FaultConfig::Response::NUM_RESPONSES));
+    ASSERT_EVENTS_InvalidResponseArgument_SIZE(1);
+    ASSERT_EVENTS_InvalidResponseArgument(0, static_cast<U8>(FaultConfig::Response::NUM_RESPONSES));
     this->sendCommandUpdateStepFailureMode(FaultConfig::Step(FaultConfig::Step::NUM_STEPS),
                                            FaultConfig::FailureMode::IGNORE, Fw::CmdResponse::VALIDATION_ERROR);
-    ASSERT_EVENTS_InvalidCommandArgument_SIZE(1);
-    ASSERT_EVENTS_InvalidCommandArgument(0, static_cast<U8>(FaultConfig::Step::NUM_STEPS));
+    ASSERT_EVENTS_InvalidStepArgument_SIZE(1);
+    ASSERT_EVENTS_InvalidStepArgument(0, static_cast<U8>(FaultConfig::Step::NUM_STEPS));
     this->sendCommandUpdateStepFailureMode(SKIP, FaultConfig::FailureMode::IGNORE, Fw::CmdResponse::VALIDATION_ERROR);
-    ASSERT_EVENTS_InvalidCommandArgument_SIZE(1);
-    ASSERT_EVENTS_InvalidCommandArgument(0, static_cast<U8>(FaultConfig::Step::SKIP));
+    ASSERT_EVENTS_InvalidStepArgument_SIZE(1);
+    ASSERT_EVENTS_InvalidStepArgument(0, static_cast<U8>(FaultConfig::Step::SKIP));
 
     // Nothing changed
     ASSERT_EQ(this->component.m_fault_parameter[0].get_enabled(), Fw::Enabled::ENABLED);

@@ -24,6 +24,8 @@ from pathlib import Path
 
 import pytest
 
+from fprime_gds.common.testing_fw import predicates
+
 from test_fault_protection import SEQUENCE_DIRECTORY, SEQUENCE_SOURCES, STEPS, EXCURSION_TIMEOUT, compile_sequence
 
 SCENARIO = os.environ.get("FP_FATAL_SCENARIO", "reboot")
@@ -33,6 +35,10 @@ PING_WARN, PING_FATAL = 1, 2
 FATAL_TIMEOUT = 60
 # FatalToFault fallback: 5 ticks of the 1/4 Hz rate group after the FATAL
 FALLBACK_TIMEOUT = 45
+# RebootResponder::doReboot ends the process with _Exit() in the tick that dispatches the REBOOT step, so the events of
+# that tick (ResponseStarted, StepStarted, RebootRequested) are still queued in the ActiveLogger and may never downlink.
+# The process exit is the deterministic evidence of the REBOOT_RESPONSE; its events are checked when they arrive.
+REBOOT_EXIT_TIMEOUT = 10
 
 
 def process_running():
@@ -46,6 +52,20 @@ def await_process_exit(timeout):
             return True
         time.sleep(1)
     return False
+
+
+def assert_reboot_response_exits(fprime_test_api, after):
+    """The process ends within REBOOT_EXIT_TIMEOUT; FaultManager events downlinked after `after` are REBOOT_RESPONSE's"""
+    FAULT_MANAGER, SEQUENCE_RESPONDER, REBOOT_RESPONDER, HEALTH, PING_RECEIVER, COUNTER = names(fprime_test_api)
+    assert await_process_exit(REBOOT_EXIT_TIMEOUT), "RebootResponder did not end the Ref process"
+    later = predicates.greater_than(after.get_time())
+    started = fprime_test_api.get_event_pred(f"{FAULT_MANAGER}.ResponseStarted", time_pred=later)
+    step_started = fprime_test_api.get_event_pred(f"{FAULT_MANAGER}.StepStarted", time_pred=later)
+    for event in fprime_test_api.get_event_test_history().retrieve():
+        if started(event):
+            assert [arg.val for arg in event.get_args()] == ["REBOOT_RESPONSE", "FATAL_OCCURRED"]
+        if step_started(event):
+            assert event.get_args()[0].val == "REBOOT"
 
 
 def names(fprime_test_api):
@@ -94,16 +114,11 @@ def test_fatal_reboots(fprime_test_api):
             f"{HEALTH}.HLTH_PING_WARN",
             f"{HEALTH}.HLTH_PING_LATE",
             f"{FAULT_MANAGER}.FaultReported",
-            f"{FAULT_MANAGER}.ResponseStarted",
-            f"{FAULT_MANAGER}.StepStarted",
-            f"{REBOOT_RESPONDER}.RebootRequested",
         ],
         timeout=FATAL_TIMEOUT,
     )
     assert results[2].get_args()[0].val == "FATAL_OCCURRED"
-    assert [arg.val for arg in results[3].get_args()] == ["REBOOT_RESPONSE", "FATAL_OCCURRED"]
-    assert results[4].get_args()[0].val == "REBOOT"
-    assert await_process_exit(15), "RebootResponder did not end the Ref process"
+    assert_reboot_response_exits(fprime_test_api, after=results[2])
 
 
 @pytest.mark.skipif(SCENARIO != "preempt", reason="FP_FATAL_SCENARIO selects another scenario")
@@ -116,6 +131,8 @@ def test_fatal_preempts_active_response(fprime_test_api):
     target = SEQUENCE_DIRECTORY / "RESET_COUNT_SEQUENCE.seq"
     target.rename(SEQUENCE_DIRECTORY / "RESET_COUNT_SEQUENCE.seq.bak")
     compile_sequence(fprime_test_api, Path(__file__).parent / "wait_sequence.seq", target)
+    # The counter monitor starts disabled: enable it so that COUNTER_HIGH is reported
+    fprime_test_api.send_and_assert_command(f"{COUNTER}.SET_MONITORING", ["ENABLED"], max_delay=5)
     fprime_test_api.clear_histories()
     fprime_test_api.assert_event_sequence(
         [f"{COUNTER}.CountHighFault", f"{FAULT_MANAGER}.ResponseStarted", f"{SEQUENCE_RESPONDER}.SequenceStarted"],
@@ -131,19 +148,15 @@ def test_fatal_preempts_active_response(fprime_test_api):
             f"{SEQUENCE_RESPONDER}.SequenceCanceled",
             f"{FAULT_MANAGER}.ResponsePreempted",
             f"{FAULT_SEQUENCER}.CS_SequenceCanceled",
-            f"{FAULT_MANAGER}.ResponseStarted",
-            f"{FAULT_MANAGER}.StepStarted",
-            f"{REBOOT_RESPONDER}.RebootRequested",
         ],
         timeout=FATAL_TIMEOUT,
     )
     assert results[1].get_args()[0].val == "FATAL_OCCURRED"
     assert results[2].get_args()[0].val == "RESET_COUNT_SEQUENCE"
     assert [arg.val for arg in results[4].get_args()] == ["RESET_COUNTER_RESPONSE", "COUNTER_HIGH", "FATAL_OCCURRED"]
-    assert [arg.val for arg in results[6].get_args()] == ["REBOOT_RESPONSE", "FATAL_OCCURRED"]
+    assert_reboot_response_exits(fprime_test_api, after=results[4])
     # The cancelled sequence's completion is not a step completion
     fprime_test_api.assert_event_count(0, events=f"{FAULT_MANAGER}.StepCompleted")
-    assert await_process_exit(15), "RebootResponder did not end the Ref process"
 
 
 @pytest.mark.skipif(SCENARIO != "fallback", reason="FP_FATAL_SCENARIO selects another scenario")
@@ -160,7 +173,8 @@ def test_fatal_fallback_when_fault_disabled(fprime_test_api):
     )
     assert results[1].get_args()[0].val == "FATAL_OCCURRED"
     fatal_time = time.time()
-    fprime_test_api.assert_event_count(0, events=f"{FAULT_MANAGER}.ResponseStarted")
+    reboot_started = fprime_test_api.get_event_pred(f"{FAULT_MANAGER}.ResponseStarted", args=["REBOOT_RESPONSE", None])
+    fprime_test_api.assert_event_count(0, events=reboot_started)
     assert await_process_exit(FALLBACK_TIMEOUT), "FatalToFault fallback did not end the Ref process"
     # The fallback waited for its countdown rather than aborting immediately
     assert time.time() - fatal_time > 5
