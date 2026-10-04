@@ -45,7 +45,7 @@ module FaultProtection {
         @ Check if countdown has expired
         guard countdownExpired
 
-        @ Check if a countdown is configured (RESPONSE_COUNTDOWN_TICKS > 0)
+        @ Check if a countdown is configured (FaultConfig.RESPONSE_COUNTDOWN_TICKS > 0)
         guard countdownConfigured
 
         @ Check if response is done executing each step
@@ -69,14 +69,17 @@ module FaultProtection {
         @ Action to count a tick against the active step's timeout, failing the step when it expires
         action tickStep
 
+        @ Re-evaluates the latches each tick: clears the latch of a disabled fault and preempts the active response when
+        @ a latched enabled fault outranks it (independent of the droppable handleReport message)
+        action auditLatches
+
         @ When a report is detected, enter COUNTDOWN to allow for additional reports to be processed before executing
         @ response otherwise return to the IDLE state to await the next tick and check again.
         choice CHECK_REPORT {
             if hasReport enter CHECK_COUNTDOWN_CONFIGURED else enter IDLE
         }
 
-        @ Skip the COUNTDOWN state when no countdown is configured: the response starts on the tick (or step
-        @ completion) that found the report
+        @ Without a configured countdown the response starts on the tick that detects the report
         choice CHECK_COUNTDOWN_CONFIGURED {
             if countdownConfigured enter COUNTDOWN else enter RESPONSE
         }
@@ -86,7 +89,7 @@ module FaultProtection {
 
         @ IDLE state: wait for a tick that finds a latched fault report; other signals are ignored
         state IDLE {
-            on Tick enter CHECK_REPORT
+            on Tick do { auditLatches } enter CHECK_REPORT
         }
 
         @ COUNTDOWN state: wait for the countdown to expire allowing reports to accumulate
@@ -104,7 +107,7 @@ module FaultProtection {
             @ COUNTDOWN_ACTIVE state: wait for countdown to expire without resetting countdown
             state COUNTDOWN_ACTIVE {
                 @ Decrement then check the countdown
-                on Tick do { decrementCountdown } enter CHECK_COUNTDOWN
+                on Tick do { auditLatches, decrementCountdown } enter CHECK_COUNTDOWN
             }
         }
 
@@ -127,8 +130,8 @@ module FaultProtection {
             state DISPATCH_STEP {
                 entry do { dispatchStep }
 
-                @ Each tick counts against the active step's timeout
-                on Tick do { tickStep }
+                @ Each tick re-evaluates the latches (preemption) and counts against the active step's timeout
+                on Tick do { auditLatches, tickStep }
 
                 @ When a step succeeds, check if the response is done
                 on StepSuccessful enter CHECK_RESPONSE
@@ -189,11 +192,13 @@ module FaultProtection {
         @* dropped completion is recovered by the step's timeout.
         async input port stepCompletionIn: FaultResponseComplete drop
 
-        @ Internal port for processing a fault report on the component's thread: events, telemetry, the disabled-fault
-        @ latch clear, and the preemption check. The latch itself is set synchronously in reportIn, so a dropped
-        @ message delays preemption/diagnostics to the next tick, where hasReport finds the latched report; the report
-        @ is never lost.
+        @ Announces a fault report on the component's thread (events, telemetry, immediate preemption check). The latch
+        @ is set synchronously in reportIn and audited every tick, so a dropped message never loses the report.
         internal port handleReport(fault: FaultConfig.Fault, latched: bool) drop
+
+        @ Internal port reporting an out-of-range fault id on the component's thread: the FaultInvalid event and its
+        @ per-tick throttle clear are then never touched from a reporter's thread
+        internal port handleInvalidReport(rawId: U8) drop
 
         @ Event indicating a fault was reported and latched. Latching bounds this event to one per fault per response.
         event FaultReported(fault: FaultConfig.Fault) severity activity high format "Fault {} reported"
@@ -305,13 +310,12 @@ module FaultProtection {
         @ Fault response setting table
         external param FAULT_RESPONSE_TABLE: FaultResponseTable default FaultConfig.FaultResponseTable
 
-        @ Response enabled table (all responses enabled by default; the default also allows PRM_SAVE before PRM_SET)
+        @* Response enabled table. The default (all enabled) equals the construction-time table and makes the
+        @* parameter valid, so RESPONSE_TABLE_PRM_SAVE is accepted before any RESPONSE_TABLE_PRM_SET
         external param RESPONSE_TABLE: ResponsesEnabled default Fw.Enabled.ENABLED
 
-        @* Step failure mode table
-        @*
-        @* The default marks the parameter valid so that PRM_SAVE is accepted before any PRM_SET; the active failure
-        @* modes come from the FaultConfig step definitions until a VALID table is loaded or set.
+        @* Step failure mode table. The default only makes the parameter valid (STEP_TABLE_PRM_SAVE before any
+        @* STEP_TABLE_PRM_SET); the FaultConfig step definitions stay active until a VALID table is loaded or set
         external param STEP_TABLE: StepFailureModes default FaultConfig.FailureMode.FAULT
 
         ###############################################################################

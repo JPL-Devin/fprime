@@ -191,6 +191,18 @@ class FaultManagerTester final : public FaultManagerGTestBase {
     //! A step whose dispatch port is not connected is treated as failed
     void testUnconnectedDispatchPort();
 
+    //! A report whose handleReport message is dropped from a full queue is still responded to on the next ticks
+    void testReportDroppedFromQueue();
+
+    //! PRM_SAVE of the never-set RESPONSE_TABLE and STEP_TABLE persists the active tables
+    void testParameterSave();
+
+    //! A higher-precedence report whose handleReport message is dropped still preempts on the next tick
+    void testPreemptionAfterDroppedReport();
+
+    //! A disabled fault's report whose handleReport message is dropped is discarded on the next tick
+    void testDisabledReportDroppedFromQueue();
+
   private:
     // ----------------------------------------------------------------------
     // Handlers for typed from ports
@@ -225,6 +237,12 @@ class FaultManagerTester final : public FaultManagerGTestBase {
 
     //! Tick the manager `count` times
     void tick(FwSizeType count = 1);
+
+    //! Fill the component queue with run ticks (without dispatching) so that further messages are dropped
+    void fillQueue();
+
+    //! Dispatch the filled queue to empty, bounded
+    void drainQueue();
 
     //! Complete the active step with the given status and dispatch
     void complete(const Fw::Success& status, const FaultConfig::Response& response, const FaultConfig::Step& step);
@@ -282,14 +300,10 @@ class FaultManagerTester final : public FaultManagerGTestBase {
                                FwSizeType failIndex,
                                const FaultConfig::FailureMode& mode);
 
-    //! Fill the component queue with (dropped) ticks
     //! Send a command built from a raw argument buffer (used to inject malformed enumeration values)
     void sendRawCommand(FwOpcodeType opcode, U32 cmdSeq, Fw::CmdArgBuffer& args, const Fw::CmdResponse& expected);
 
-    void fillQueue();
-
     //! Complete whatever steps are dispatched, in order, until the active response completes
-    void drainQueue();
     void drainResponse();
 
     //! Connect ports
