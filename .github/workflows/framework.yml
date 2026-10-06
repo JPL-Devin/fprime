@@ -39,10 +39,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # macOS runs only on the nightly schedule
-        include: ${{ github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"},{"runner":"macos-latest","jobs":"2"}]') || fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"}]') }}
+        # A manual dispatch with a runner label builds a single-entry matrix from the
+        # runner so the job name, artifacts, and default -j count all follow it.
+        # Otherwise macOS runs only on the nightly schedule.
+        include: ${{ github.event.inputs.runner && fromJSON(format('[{{"runner":"{0}","jobs":"{1}"}}]', github.event.inputs.runner, contains(github.event.inputs.runner, 'macos') && '2' || 'random')) || github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"},{"runner":"macos-latest","jobs":"2"}]') || fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"}]') }}
     timeout-minutes: 30
-    runs-on: ${{ github.event.inputs.runner || matrix.runner }}
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: "Checkout F' Repository"
         uses: actions/checkout@v4
@@ -65,10 +67,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # macOS runs only on the nightly schedule
-        include: ${{ github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"},{"runner":"macos-latest","jobs":"2"}]') || fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"}]') }}
+        # A manual dispatch with a runner label builds a single-entry matrix from the
+        # runner so the job name, artifacts, and default -j count all follow it.
+        # Otherwise macOS runs only on the nightly schedule.
+        include: ${{ github.event.inputs.runner && fromJSON(format('[{{"runner":"{0}","jobs":"{1}"}}]', github.event.inputs.runner, contains(github.event.inputs.runner, 'macos') && '2' || 'random')) || github.event_name == 'schedule' && fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"},{"runner":"macos-latest","jobs":"2"}]') || fromJSON('[{"runner":"ubuntu-22.04","jobs":"random"}]') }}
     timeout-minutes: 30
-    runs-on: ${{ github.event.inputs.runner || matrix.runner }}
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: "Checkout F' Repository"
         uses: actions/checkout@v4
