@@ -19,7 +19,7 @@ set(FPRIME__INTERNAL_UTILITY_ALL_LOCATIONS_FILE "fprime-locations.${FPRIME__INTE
 # Function `fprime_util_metadata_clear`:
 #
 # Clears all metadata files written to a subdirectory. This is expected to be called when the subdirectory is added and
-# removes all files written to this directory.
+# removes all files written to this directory. The directory is recorded as cleared for this configure run.
 #
 # **Parameters:**
 # - `CHILD_DIRECTORY`: directory to clear metadata from
@@ -29,6 +29,25 @@ function(fprime_util_metadata_clear CHILD_DIRECTORY)
     file(WRITE "${CHILD_DIRECTORY}/${FPRIME__INTERNAL_UTILITY_SUBDIRECTORY_FILE}" "")
     file(WRITE "${CHILD_DIRECTORY}/${FPRIME__INTERNAL_UTILITY_TESTS_FILE}" "")
     file(REMOVE "${CHILD_DIRECTORY}/${FPRIME__INTERNAL_UTILITY_TEST_DIR_FILE}")
+    set_property(GLOBAL APPEND PROPERTY FPRIME__INTERNAL_UTILITY_CLEARED_DIRECTORIES "${CHILD_DIRECTORY}")
+endfunction()
+
+####
+# Function `fprime__internal_util_metadata_prepare`:
+#
+# Clears the metadata files of a directory the first time it is written to during this configure run. Metadata is
+# appended to, so a directory that is not entered through `add_fprime_subdirectory` (e.g. the project root, which has
+# no parent to clear it) would otherwise accumulate a duplicate set of entries on every re-configure, and `fprime-util`
+# would run each enumerated target once per duplicate.
+#
+# **Parameters:**
+# - `DIRECTORY`: directory about to receive metadata
+####
+function(fprime__internal_util_metadata_prepare DIRECTORY)
+    get_property(CLEARED_DIRECTORIES GLOBAL PROPERTY FPRIME__INTERNAL_UTILITY_CLEARED_DIRECTORIES)
+    if (NOT "${DIRECTORY}" IN_LIST CLEARED_DIRECTORIES)
+        fprime_util_metadata_clear("${DIRECTORY}")
+    endif()
 endfunction()
 
 ####
@@ -43,6 +62,7 @@ endfunction()
 # - `CHILD_BINARY_DIRECTORY`: binary directory of the subdirectory
 ####
 function(fprime_util_metadata_add_subdirectory CHILD_SOURCE_DIRECTORY CHILD_BINARY_DIRECTORY)
+    fprime__internal_util_metadata_prepare("${CMAKE_CURRENT_BINARY_DIR}")
     fprime_util_metadata_clear("${CHILD_BINARY_DIRECTORY}")
     file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${FPRIME__INTERNAL_UTILITY_SUBDIRECTORY_FILE}" "${CHILD_SOURCE_DIRECTORY}\n")
 endfunction()
@@ -56,6 +76,7 @@ endfunction()
 # - `BUILD_TARGET`: name of the build target to add
 ####
 function(fprime_util_metadata_add_build_target BUILD_TARGET)
+    fprime__internal_util_metadata_prepare("${CMAKE_CURRENT_BINARY_DIR}")
     file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${FPRIME__INTERNAL_UTILITY_BUILD_TARGETS_FILE}" "${BUILD_TARGET}\n")
 endfunction()
 
@@ -68,6 +89,7 @@ endfunction()
 # - `TEST_NAME`: name of the test to add
 ####
 function(fprime_util_metadata_add_test TEST_NAME)
+    fprime__internal_util_metadata_prepare("${CMAKE_CURRENT_BINARY_DIR}")
     file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${FPRIME__INTERNAL_UTILITY_TESTS_FILE}" "${TEST_NAME}\n")
 endfunction()
 
@@ -82,5 +104,6 @@ endfunction()
 # - `TEST_DIR`: absolute path to use as the CTest --test-dir
 ####
 function(fprime_util_metadata_set_test_dir TEST_DIR)
+    fprime__internal_util_metadata_prepare("${CMAKE_CURRENT_BINARY_DIR}")
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${FPRIME__INTERNAL_UTILITY_TEST_DIR_FILE}" "${TEST_DIR}")
 endfunction()
