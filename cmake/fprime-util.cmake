@@ -34,10 +34,8 @@ endfunction()
 ####
 # Function `fprime_util_metadata_remove`:
 #
-# Removes the metadata files of a directory that has no parent to clear it: the project root and the directory calling
-# `fprime_setup_included_code`. Called once per configure before anything is appended so that re-configures do not
-# accumulate entries. Files are removed rather than truncated so that a directory registering nothing stays without
-# files, as a fresh generate leaves it (fprime-util treats a missing file and an empty file differently).
+# Removes the metadata files of a directory with no parent to clear it (project root, directory including fprime) so
+# re-configures do not accumulate entries. Removed, not truncated: fprime-util treats missing and empty files differently.
 #
 # **Parameters:**
 # - `DIRECTORY`: binary directory to remove metadata from
