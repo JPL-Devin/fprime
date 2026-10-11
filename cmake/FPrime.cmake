@@ -32,10 +32,12 @@ if (IS_DIRECTORY "${FPRIME_PROJECT_ROOT}/_fprime_packages")
     endif()
 endif()
 
-# Clear the locations metadata files at the start of the generate
+# Clear the locations metadata files and the project root fprime-util metadata at the start of the generate. The root
+# has no parent to clear it (see fprime_util_metadata_remove) and nothing has written to it yet in this configure.
 file(WRITE "${CMAKE_BINARY_DIR}/${FPRIME__INTERNAL_UTILITY_SOURCE_LOCATIONS_FILE}" "")
 file(WRITE "${CMAKE_BINARY_DIR}/${FPRIME__INTERNAL_UTILITY_BINARY_LOCATIONS_FILE}" "")
 file(WRITE "${CMAKE_BINARY_DIR}/${FPRIME__INTERNAL_UTILITY_ALL_LOCATIONS_FILE}" "")
+fprime_util_metadata_remove("${CMAKE_BINARY_DIR}")
 
 # Adds the historical locations to the global interface target.
 fprime_add_historical_locations()
@@ -175,9 +177,16 @@ endmacro(fprime_initialize_build_system)
 # Function `fprime_setup_included_code`:
 #
 # Sets up the code/build for fprime and libraries. Call after all project specific targets and autocoders are set up and
-# registered.
+# registered. This function resets the fprime-util metadata of the calling directory (unless it is the project root,
+# reset when FPrime.cmake was included), so no `register_fprime_*` / `add_fprime_subdirectory` may run in this directory
+# before this call.
 ####
 function(fprime_setup_included_code)
+    # The calling directory (e.g. "F-Prime") is entered with plain add_subdirectory, so no parent reset its metadata.
+    # Must precede fprime_setup_platform(), the first writer into this directory.
+    if (NOT "${CMAKE_CURRENT_BINARY_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
+        fprime_util_metadata_remove("${CMAKE_CURRENT_BINARY_DIR}")
+    endif()
     # Must be done before code is registered but after custom target registration
     setup_global_targets()
     # For BUILD_TESTING builds then set up libraries that support testing

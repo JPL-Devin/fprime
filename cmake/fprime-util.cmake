@@ -32,6 +32,26 @@ function(fprime_util_metadata_clear CHILD_DIRECTORY)
 endfunction()
 
 ####
+# Function `fprime_util_metadata_remove`:
+#
+# Removes the metadata files of a directory that has no parent to clear it: the project root and the directory calling
+# `fprime_setup_included_code`. Called once per configure before anything is appended so that re-configures do not
+# accumulate entries. Files are removed rather than truncated so that a directory registering nothing stays without
+# files, as a fresh generate leaves it (fprime-util treats a missing file and an empty file differently).
+#
+# **Parameters:**
+# - `DIRECTORY`: binary directory to remove metadata from
+####
+function(fprime_util_metadata_remove DIRECTORY)
+    file(REMOVE
+        "${DIRECTORY}/${FPRIME__INTERNAL_UTILITY_BUILD_TARGETS_FILE}"
+        "${DIRECTORY}/${FPRIME__INTERNAL_UTILITY_SUBDIRECTORY_FILE}"
+        "${DIRECTORY}/${FPRIME__INTERNAL_UTILITY_TESTS_FILE}"
+        "${DIRECTORY}/${FPRIME__INTERNAL_UTILITY_TEST_DIR_FILE}"
+    )
+endfunction()
+
+####
 # Function `fprime_util_metadata_add_subdirectory`:
 #
 # This adds a new subdirectory from a metadata perspective by performing several steps:
