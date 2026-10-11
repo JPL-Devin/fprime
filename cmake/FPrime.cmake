@@ -36,6 +36,9 @@ endif()
 file(WRITE "${CMAKE_BINARY_DIR}/${FPRIME__INTERNAL_UTILITY_SOURCE_LOCATIONS_FILE}" "")
 file(WRITE "${CMAKE_BINARY_DIR}/${FPRIME__INTERNAL_UTILITY_BINARY_LOCATIONS_FILE}" "")
 file(WRITE "${CMAKE_BINARY_DIR}/${FPRIME__INTERNAL_UTILITY_ALL_LOCATIONS_FILE}" "")
+# Clear the project root fprime-util metadata. Child directories are cleared by add_fprime_subdirectory,
+# but the root has no parent so its metadata would otherwise accumulate entries on every re-configure.
+fprime_util_metadata_clear("${CMAKE_BINARY_DIR}")
 
 # Adds the historical locations to the global interface target.
 fprime_add_historical_locations()
@@ -178,6 +181,8 @@ endmacro(fprime_initialize_build_system)
 # registered.
 ####
 function(fprime_setup_included_code)
+    # The directory including FPrime-Code.cmake has no parent clearing its fprime-util metadata
+    fprime_util_metadata_clear("${CMAKE_CURRENT_BINARY_DIR}")
     # Must be done before code is registered but after custom target registration
     setup_global_targets()
     # For BUILD_TESTING builds then set up libraries that support testing
