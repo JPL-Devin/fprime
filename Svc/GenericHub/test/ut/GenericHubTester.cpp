@@ -12,6 +12,7 @@
 
 #include "GenericHubTester.hpp"
 #include <STest/Pick/Pick.hpp>
+#include "Fw/Cmd/CmdPacket.hpp"
 #include "Fw/Com/ComPacket.hpp"
 
 #define INSTANCE 0
@@ -420,10 +421,14 @@ void GenericHubTester ::test_command_dispatch_allocation_failure() {
         ASSERT_EQ(Fw::FW_SERIALIZE_OK, buffer.serializeFrom(static_cast<U8>(STest::Pick::any())));
     }
 
+    // As CmdSplitter does before forwarding, consume the buffer so its deserialization cursor is at the end
+    Fw::CmdPacket splitterPkt;
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK, splitterPkt.deserializeFrom(buffer));
+
     m_allocation_mode = ALLOCATE_EMPTY;
     invoke_to_cmdDispIn(port, buffer, context);
 
-    // Dropped command is failed back to the caller on the same port index
+    // Dropped command is failed back to the caller on the same port index, with the right opcode
     ASSERT_from_cmdDispOut_SIZE(0);
     ASSERT_from_cmdRespOut_SIZE(1);
     ASSERT_from_cmdRespOut(0, opCode, context, Fw::CmdResponse::EXECUTION_ERROR);

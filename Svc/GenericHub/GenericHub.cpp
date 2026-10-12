@@ -89,8 +89,11 @@ void GenericHub ::cmdDispIn_handler(FwIndexType portNum, Fw::ComBuffer& data, U3
 
     if (this->send_data(HUB_TYPE_CMD_DISP, portNum, buffer, size) != Fw::Success::SUCCESS) {
         // The command was dropped: fail it back to the caller so it is not left waiting for a response
+        // Read the opcode with a fresh cursor: an upstream CmdSplitter may already have consumed `data`
+        Fw::ExternalSerializeBuffer reader(data.getBuffAddr(), data.getSize());
+        (void)reader.setBuffLen(data.getSize());
         Fw::CmdPacket cmdPkt;
-        (void)cmdPkt.deserializeFrom(data);  // opcode is 0 if the packet is malformed, as in CmdDispatcher
+        (void)cmdPkt.deserializeFrom(reader);  // opcode is 0 if the packet is malformed, as in CmdDispatcher
         if (this->isConnected_cmdRespOut_OutputPort(portNum)) {
             this->cmdRespOut_out(portNum, cmdPkt.getOpCode(), context, Fw::CmdResponse::EXECUTION_ERROR);
         }
