@@ -69,8 +69,11 @@ port.
   buffer-driver interface expected by GenericHub.
 - Wire command ports with the same indices on both hubs; the index is how a
   command response finds its originator.
-- Size the hub's buffer pool for the worst case. GenericHub asserts when
-  allocation fails.
+- Size the hub's buffer pool for the worst case. When allocation fails,
+  GenericHub drops the message, emits `BufferAllocationFailed`, and counts it
+  in `NumAllocationFailures`; drive `schedIn` from a rate group so the counter
+  is reported. A dropped `cmdDispIn` command is failed back to its caller with
+  `EXECUTION_ERROR`.
 - Monitor the link outside the hub. GenericHub reports no transport errors and
   silently drops invalid received messages.
 

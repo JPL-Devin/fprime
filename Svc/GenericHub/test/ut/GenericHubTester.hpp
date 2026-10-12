@@ -80,6 +80,14 @@ class GenericHubTester : public GenericHubGTestBase {
     //!
     void test_invalid_deserialization_paths();
 
+    //! Test that outgoing messages are dropped, reported, and counted when allocation fails
+    //!
+    void test_allocation_failure();
+
+    //! Test that a command dropped on allocation failure is failed back to its caller
+    //!
+    void test_command_dispatch_allocation_failure();
+
   private:
     // ----------------------------------------------------------------------
     // Handlers for typed from ports
@@ -142,6 +150,11 @@ class GenericHubTester : public GenericHubGTestBase {
     void from_fromBufferDriverReturn_handler(const FwIndexType portNum, /*!< The port number*/
                                              Fw::Buffer& fwBuffer);
 
+    //! Handler for from_deallocate
+    //!
+    void from_deallocate_handler(const FwIndexType portNum, /*!< The port number*/
+                                 Fw::Buffer& fwBuffer);
+
   private:
     // ----------------------------------------------------------------------
     // Handlers for serial from ports
@@ -154,6 +167,16 @@ class GenericHubTester : public GenericHubGTestBase {
     );
 
   private:
+    //! How from_allocate_handler responds to the hub
+    enum AllocationMode {
+        ALLOCATE_OK,         //!< Return a buffer of the requested size
+        ALLOCATE_EMPTY,      //!< Return an empty (null) buffer
+        ALLOCATE_UNDERSIZED  //!< Return a valid buffer one byte short of the request
+    };
+
+    //! Assert that the last send was dropped with a single BufferAllocationFailed event for the given payload
+    void assert_dropped(GenericHub::HubType type, FwIndexType port, FwSizeType payloadSize);
+
     void send_random_comm(U32 port);
 
     void send_random_buffer(U32 port);
@@ -207,6 +230,8 @@ class GenericHubTester : public GenericHubGTestBase {
     U32 m_current_port;
     FwIndexType m_cmdDispOutPort;
     FwIndexType m_cmdRespOutPort;
+    AllocationMode m_allocation_mode;
+    U32 m_allocation_failures;  //!< Drops injected so far, mirrors the hub's counter
     U8 m_data_store[DATA_SIZE];
     U8 m_data_for_allocation[DATA_SIZE];
 };

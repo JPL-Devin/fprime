@@ -13,6 +13,7 @@
 #ifndef Svc_GenericHub_HPP
 #define Svc_GenericHub_HPP
 
+#include <atomic>
 #include "Svc/GenericHub/GenericHubComponentAc.hpp"
 
 namespace Svc {
@@ -86,6 +87,13 @@ class GenericHub final : public GenericHubComponentBase {
     void fromBufferDriver_handler(const FwIndexType portNum, /*!< The port number*/
                                   Fw::Buffer& fwBuffer) override;
 
+    //! Handler implementation for schedIn
+    //!
+    //! Schedule input port, used to emit telemetry
+    void schedIn_handler(FwIndexType portNum,  //!< The port number
+                         U32 context           //!< The call order
+                         ) override;
+
     //! Handler implementation for toBufferDriverReturn
     //!
     //! Port for receiving buffers sent on toBufferDriver and then returned
@@ -121,7 +129,12 @@ class GenericHub final : public GenericHubComponentBase {
                           ) override;
 
     // Helpers and members
-    void send_data(const HubType type, const FwIndexType port, const U8* data, const FwSizeType size);
+
+    //! Frame and send data on toBufferDriver. Returns false if the message was dropped because no
+    //! sufficiently sized buffer could be allocated.
+    bool send_data(const HubType type, const FwIndexType port, const U8* data, const FwSizeType size);
+
+    std::atomic<U32> m_numAllocationFailures;  //!< Count of dropped messages; incremented from any caller thread
 };
 
 }  // end namespace Svc
