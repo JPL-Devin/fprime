@@ -29,7 +29,7 @@ GenericHub::GenericHub(const char* const compName) : GenericHubComponentBase(com
 
 GenericHub::~GenericHub() {}
 
-bool GenericHub::send_data(const HubType type, const FwIndexType port, const U8* data, const FwSizeType size) {
+Fw::Success GenericHub::send_data(const HubType type, const FwIndexType port, const U8* data, const FwSizeType size) {
     FW_ASSERT(data != nullptr);
     Fw::SerializeStatus status;
     const FwSizeType needed = size + sizeof(U32) + sizeof(U32) + sizeof(FwBuffSizeType);
@@ -42,7 +42,7 @@ bool GenericHub::send_data(const HubType type, const FwIndexType port, const U8*
         }
         this->m_numAllocationFailures++;
         this->log_WARNING_HI_BufferAllocationFailed(static_cast<U32>(type), port, needed);
-        return false;
+        return Fw::Success::FAILURE;
     }
     auto serialize = outgoing.getSerializer();
     // Write data to our buffer
@@ -54,7 +54,7 @@ bool GenericHub::send_data(const HubType type, const FwIndexType port, const U8*
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
     outgoing.setSize(serialize.getSize());
     toBufferDriver_out(0, outgoing);
-    return true;
+    return Fw::Success::SUCCESS;
 }
 
 // ----------------------------------------------------------------------
@@ -62,6 +62,7 @@ bool GenericHub::send_data(const HubType type, const FwIndexType port, const U8*
 // ----------------------------------------------------------------------
 
 void GenericHub::bufferIn_handler(const FwIndexType portNum, Fw::Buffer& fwBuffer) {
+    // A drop is counted and evented in send_data; this port has no status to return
     (void)this->send_data(HUB_TYPE_BUFFER, portNum, fwBuffer.getData(), fwBuffer.getSize());
     bufferInReturn_out(portNum, fwBuffer);
 }
@@ -86,7 +87,7 @@ void GenericHub ::cmdDispIn_handler(FwIndexType portNum, Fw::ComBuffer& data, U3
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
     FwSizeType size = serializer.getSize();
 
-    if (!this->send_data(HUB_TYPE_CMD_DISP, portNum, buffer, size)) {
+    if (this->send_data(HUB_TYPE_CMD_DISP, portNum, buffer, size) != Fw::Success::SUCCESS) {
         // The command was dropped: fail it back to the caller so it is not left waiting for a response
         Fw::CmdPacket cmdPkt;
         (void)cmdPkt.deserializeFrom(data);  // opcode is 0 if the packet is malformed, as in CmdDispatcher
@@ -113,6 +114,7 @@ void GenericHub ::cmdRespIn_handler(FwIndexType portNum,
     FW_ASSERT(status == Fw::SerializeStatus::FW_SERIALIZE_OK);
     FwSizeType size = serializer.getSize();
 
+    // A dropped response cannot be reported to the far side (see SDD, "Allocation failure")
     (void)this->send_data(HUB_TYPE_CMD_RESP, portNum, buffer, size);
 }
 
@@ -299,6 +301,7 @@ void GenericHub::eventIn_handler(const FwIndexType portNum,
     status = serializer.serializeFrom(args);
     FW_ASSERT(status == Fw::SerializeStatus::FW_SERIALIZE_OK);
     FwSizeType size = serializer.getSize();
+    // A drop is counted and evented in send_data; this port has no status to return
     (void)this->send_data(HubType::HUB_TYPE_EVENT, portNum, buffer, size);
 }
 
@@ -314,6 +317,7 @@ void GenericHub::tlmIn_handler(const FwIndexType portNum, FwChanIdType id, Fw::T
     status = serializer.serializeFrom(val);
     FW_ASSERT(status == Fw::SerializeStatus::FW_SERIALIZE_OK);
     FwSizeType size = serializer.getSize();
+    // A drop is counted and evented in send_data; this port has no status to return
     (void)this->send_data(HubType::HUB_TYPE_CHANNEL, portNum, buffer, size);
 }
 
@@ -324,6 +328,7 @@ void GenericHub::tlmIn_handler(const FwIndexType portNum, FwChanIdType id, Fw::T
 void GenericHub::serialIn_handler(FwIndexType portNum,         /*!< The port number*/
                                   Fw::LinearBufferBase& Buffer /*!< The serialization buffer*/
 ) {
+    // A drop is counted and evented in send_data; this port has no status to return
     (void)send_data(HUB_TYPE_PORT, portNum, Buffer.getBuffAddr(), Buffer.getSize());
 }
 

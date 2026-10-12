@@ -106,7 +106,7 @@ module Svc {
     @ for sending remote commands 
     sync input port cmdDispIn: [CmdDispatcherSequencePorts] Fw.Com
 
-    @ Command response back from remote hub
+    @ Command response back from remote hub, or EXECUTION_ERROR for a command dropped on allocation failure
     output port cmdRespOut: [CmdDispatcherSequencePorts] Fw.CmdResponse
 
     # ----------------------------------------------------------------------

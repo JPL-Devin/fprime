@@ -67,7 +67,7 @@ remote hub.
 | `bufferIn` | `[GenericHubCfg.NumBufferInputPorts] Fw.BufferSend` | Sends buffer data to the remote deployment. The hub copies the data and returns the incoming buffer. |
 | `bufferInReturn` | `[GenericHubCfg.NumBufferInputPorts] Fw.BufferSend` | Returns buffers received on `bufferIn` to their senders. It must match `bufferIn`. |
 | `cmdDispIn` | `[CmdDispatcherSequencePorts] Fw.Com` | Accepts a command forwarded by a command splitter. |
-| `cmdRespOut` | `[CmdDispatcherSequencePorts] Fw.CmdResponse` | Emits a command response received from the remote hub. |
+| `cmdRespOut` | `[CmdDispatcherSequencePorts] Fw.CmdResponse` | Emits a command response received from the remote hub, or `EXECUTION_ERROR` for a `cmdDispIn` command the hub dropped on allocation failure. |
 
 Typical connections include:
 
@@ -114,9 +114,9 @@ genericHub.deallocate        -> bufferManager.bufferSendIn
 | `Log`, `LogText`, `Time`, `Tlm` | special ports | The hub's own events, text events, time, and telemetry. |
 
 These ports report the hub's health; they are distinct from the pass-through
-`eventIn`/`eventOut` and `tlmIn`/`tlmOut` ports. `schedIn` should be driven
-from a rate group whenever the hub's event and telemetry ports are wired
-through the hub itself (see [Allocation failure](#allocation-failure)).
+`eventIn`/`eventOut` and `tlmIn`/`tlmOut` ports. `NumAllocationFailures` is
+written only from `schedIn`, so drive `schedIn` from a rate group in every
+deployment that wants the counter (see [Allocation failure](#allocation-failure)).
 
 ### 3. Buffer driver to hub: receive interface
 
@@ -174,14 +174,17 @@ the buffer on `toBufferDriver`. On receipt, the hub validates the type,
 deserializes the port and payload size, checks that the payload size matches
 the received buffer, and dispatches according to the message type.
 
-| Message type | Payload and behavior |
-|---|---|
-| Serial (`HUB_TYPE_PORT`) | The payload is the serialized by-value argument list for `serialIn`. The receiver wraps the payload in an `Fw::ExternalSerializeBuffer` and invokes the matching `serialOut` port. |
-| Buffer (`HUB_TYPE_BUFFER`) | The sender copies the incoming buffer data into a newly allocated transport buffer. The receiver adjusts the received buffer metadata to the payload and emits it on the matching `bufferOut` port. |
-| Event (`HUB_TYPE_EVENT`) | The payload contains the event ID, time tag, severity, and `Fw::LogBuffer` arguments. The receiver deserializes these values and invokes `eventOut`. |
-| Telemetry (`HUB_TYPE_CHANNEL`) | The payload contains the channel ID, time tag, and `Fw::TlmBuffer` value. The receiver deserializes these values and invokes `tlmOut`. |
-| Command dispatch (`HUB_TYPE_CMD_DISP`) | The payload contains the serialized `Fw::ComBuffer` command data followed by its `U32` context. The receiver invokes the matching `cmdDispOut` port. |
-| Command response (`HUB_TYPE_CMD_RESP`) | The payload contains the opcode, command sequence, and `Fw::CmdResponse`. The receiver invokes the matching `cmdRespOut` port. |
+| Message type | `msgType` | Payload and behavior |
+|---|---|---|
+| Serial (`HUB_TYPE_PORT`) | 0 | The payload is the serialized by-value argument list for `serialIn`. The receiver wraps the payload in an `Fw::ExternalSerializeBuffer` and invokes the matching `serialOut` port. |
+| Buffer (`HUB_TYPE_BUFFER`) | 1 | The sender copies the incoming buffer data into a newly allocated transport buffer. The receiver adjusts the received buffer metadata to the payload and emits it on the matching `bufferOut` port. |
+| Event (`HUB_TYPE_EVENT`) | 2 | The payload contains the event ID, time tag, severity, and `Fw::LogBuffer` arguments. The receiver deserializes these values and invokes `eventOut`. |
+| Telemetry (`HUB_TYPE_CHANNEL`) | 3 | The payload contains the channel ID, time tag, and `Fw::TlmBuffer` value. The receiver deserializes these values and invokes `tlmOut`. |
+| Command dispatch (`HUB_TYPE_CMD_DISP`) | 4 | The payload contains the serialized `Fw::ComBuffer` command data followed by its `U32` context. The receiver invokes the matching `cmdDispOut` port. |
+| Command response (`HUB_TYPE_CMD_RESP`) | 5 | The payload contains the opcode, command sequence, and `Fw::CmdResponse`. The receiver invokes the matching `cmdRespOut` port. |
+
+The `msgType` column is the value reported by the `BufferAllocationFailed`
+event.
 
 Malformed or invalid messages are not dispatched, and the received transport
 buffer is returned to the driver. A message whose destination port is invalid
@@ -256,10 +259,11 @@ index, and requested size. Buffers received on `bufferIn` are still returned
 through `bufferInReturn`. The hub remains operational and resumes sending once
 allocation succeeds. A dropped `cmdDispIn` command is failed back to its caller
 with `Fw::CmdResponse::EXECUTION_ERROR` on the matching `cmdRespOut` port; a
-dropped `cmdRespIn` response cannot be reported to the far side and is lost;
-the originating `Svc::CmdDispatcher` has no response timeout, so each loss
-permanently occupies one of its sequence-tracker slots. Size the pool so that
-`cmdRespIn` never drops.
+dropped `cmdRespIn` response cannot be reported to the far side and is lost,
+so the originating sequencer or splitter never receives a response for that
+command. Size the pool so that `cmdRespIn` never drops. The event throttle is
+not synchronized, so its count is approximate when several threads drop
+concurrently.
 
 The counter is read from any caller thread (`std::atomic`) and written to
 telemetry only from `schedIn`. Emitting telemetry on the failure path would
@@ -353,7 +357,7 @@ telemetry database, respectively.
 | GENHUB-005 | The GenericHub shall forward command dispatches and command responses between deployments. | Unit test |
 | GENHUB-006 | When `allocate` returns an invalid buffer (null data, or size less than requested), the GenericHub shall drop the outgoing message instead of asserting and shall remain operational. | Unit test |
 | GENHUB-007 | On such a drop, the GenericHub shall emit a `WARNING_HI` event (throttled to 5) identifying the message type, port index, and requested size. | Unit test |
-| GENHUB-008 | The GenericHub shall count allocation failures and report the count as a telemetry channel from `schedIn`. | Unit test, integration test (fprime-generic-hub-reference) |
+| GENHUB-008 | The GenericHub shall count allocation failures and report the count as a telemetry channel from `schedIn`. | Unit test, integration test (fprime-generic-hub-reference, companion change) |
 | GENHUB-009 | An undersized but valid buffer returned by `allocate` shall be returned through `deallocate`. | Unit test |
 | GENHUB-010 | Buffers received on `bufferIn` shall be returned through `bufferInReturn` whether or not the outgoing message is dropped. | Unit test |
 | GENHUB-011 | A `cmdDispIn` command dropped on allocation failure shall be failed back to its caller with `EXECUTION_ERROR` on the matching `cmdRespOut` port. | Unit test |
