@@ -239,7 +239,7 @@ module Svc {
       throttle 5
 
     @ The number of failed buffer allocations
-    telemetry NumAllocationFailures: U32 update on change
+    telemetry NumAllocationFailures: U32
 
   }
 

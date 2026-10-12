@@ -377,12 +377,10 @@ void GenericHubTester ::test_allocation_failure() {
     ASSERT_EQ(m_allocate.getData(), nullptr) << "Undersized buffer was not deallocated";
     assert_dropped(GenericHub::HUB_TYPE_PORT, 0, comm.getSize());
 
-    // Counter is reported on schedIn, and only when it changes
+    // Counter is reported on schedIn
     invoke_to_schedIn(0, 0);
     ASSERT_TLM_NumAllocationFailures_SIZE(1);
     ASSERT_TLM_NumAllocationFailures(0, m_allocation_failures);
-    invoke_to_schedIn(0, 0);
-    ASSERT_TLM_NumAllocationFailures_SIZE(1);
     this->clearHistory();
 
     // Counter keeps counting while the event is throttled
