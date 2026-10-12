@@ -62,7 +62,7 @@ bool GenericHub::send_data(const HubType type, const FwIndexType port, const U8*
 // ----------------------------------------------------------------------
 
 void GenericHub::bufferIn_handler(const FwIndexType portNum, Fw::Buffer& fwBuffer) {
-    this->send_data(HUB_TYPE_BUFFER, portNum, fwBuffer.getData(), fwBuffer.getSize());
+    (void)this->send_data(HUB_TYPE_BUFFER, portNum, fwBuffer.getData(), fwBuffer.getSize());
     bufferInReturn_out(portNum, fwBuffer);
 }
 
@@ -113,7 +113,7 @@ void GenericHub ::cmdRespIn_handler(FwIndexType portNum,
     FW_ASSERT(status == Fw::SerializeStatus::FW_SERIALIZE_OK);
     FwSizeType size = serializer.getSize();
 
-    this->send_data(HUB_TYPE_CMD_RESP, portNum, buffer, size);
+    (void)this->send_data(HUB_TYPE_CMD_RESP, portNum, buffer, size);
 }
 
 void GenericHub::fromBufferDriver_handler(const FwIndexType portNum, Fw::Buffer& fwBuffer) {
@@ -299,7 +299,7 @@ void GenericHub::eventIn_handler(const FwIndexType portNum,
     status = serializer.serializeFrom(args);
     FW_ASSERT(status == Fw::SerializeStatus::FW_SERIALIZE_OK);
     FwSizeType size = serializer.getSize();
-    this->send_data(HubType::HUB_TYPE_EVENT, portNum, buffer, size);
+    (void)this->send_data(HubType::HUB_TYPE_EVENT, portNum, buffer, size);
 }
 
 void GenericHub::tlmIn_handler(const FwIndexType portNum, FwChanIdType id, Fw::Time& timeTag, Fw::TlmBuffer& val) {
@@ -314,7 +314,7 @@ void GenericHub::tlmIn_handler(const FwIndexType portNum, FwChanIdType id, Fw::T
     status = serializer.serializeFrom(val);
     FW_ASSERT(status == Fw::SerializeStatus::FW_SERIALIZE_OK);
     FwSizeType size = serializer.getSize();
-    this->send_data(HubType::HUB_TYPE_CHANNEL, portNum, buffer, size);
+    (void)this->send_data(HubType::HUB_TYPE_CHANNEL, portNum, buffer, size);
 }
 
 // ----------------------------------------------------------------------
@@ -324,7 +324,7 @@ void GenericHub::tlmIn_handler(const FwIndexType portNum, FwChanIdType id, Fw::T
 void GenericHub::serialIn_handler(FwIndexType portNum,         /*!< The port number*/
                                   Fw::LinearBufferBase& Buffer /*!< The serialization buffer*/
 ) {
-    send_data(HUB_TYPE_PORT, portNum, Buffer.getBuffAddr(), Buffer.getSize());
+    (void)send_data(HUB_TYPE_PORT, portNum, Buffer.getBuffAddr(), Buffer.getSize());
 }
 
 }  // end namespace Svc

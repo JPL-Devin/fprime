@@ -51,7 +51,7 @@ module Svc {
     # 1. Invoke allocate to allocate a buffer B.
     # 2. Serialize the hub message type (event, telemetry, serial, buffer),
     #    the port number, and the data into B.
-    # 3. Emit B on toBufferDriver.
+    # 3. Emit B on toBufferDriver (or drop the message if the allocation failed).
     #
     # Sample connections:
     #
@@ -235,7 +235,7 @@ module Svc {
                                   $size: FwSizeType @< The requested allocation size
                                 ) \
       severity warning high \
-      format "Failed to allocate {} byte buffer for message type {} on port {}" \
+      format "Buffer allocation failed for message type {} on port {}: requested {} bytes" \
       throttle 5
 
     @ The number of failed buffer allocations

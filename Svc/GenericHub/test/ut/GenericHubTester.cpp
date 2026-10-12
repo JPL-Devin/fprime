@@ -320,6 +320,15 @@ void GenericHubTester ::test_invalid_deserialization_paths() {
 void GenericHubTester ::assert_dropped(GenericHub::HubType type, FwIndexType port, FwSizeType payloadSize) {
     const FwSizeType needed = payloadSize + sizeof(U32) + sizeof(U32) + sizeof(FwBuffSizeType);
     ASSERT_from_toBufferDriver_SIZE(0);
+    // Only a non-null (undersized) buffer is handed back to the allocator; telemetry is only written from schedIn
+    if (m_allocation_mode == ALLOCATE_UNDERSIZED) {
+        ASSERT_from_deallocate_SIZE(1);
+        ASSERT_EQ(this->fromPortHistory_deallocate->at(0).fwBuffer.getData(), m_data_for_allocation);
+        ASSERT_EQ(this->fromPortHistory_deallocate->at(0).fwBuffer.getSize(), needed - 1);
+    } else {
+        ASSERT_from_deallocate_SIZE(0);
+    }
+    ASSERT_TLM_NumAllocationFailures_SIZE(0);
     // The event is throttled after EVENTID_BUFFERALLOCATIONFAILED_THROTTLE drops; the counter is not
     if (m_allocation_failures < GenericHubComponentBase::EVENTID_BUFFERALLOCATIONFAILED_THROTTLE) {
         ASSERT_EVENTS_BufferAllocationFailed_SIZE(1);
@@ -368,13 +377,10 @@ void GenericHubTester ::test_allocation_failure() {
     invoke_to_cmdRespIn(1, 0x3A56BF8C, 825, Fw::CmdResponse::OK);
     assert_dropped(GenericHub::HUB_TYPE_CMD_RESP, 1,
                    sizeof(FwOpcodeType) + sizeof(U32) + Fw::CmdResponse::SERIALIZED_SIZE);
-    ASSERT_from_deallocate_SIZE(0);
 
     // An undersized buffer is dropped and returned to the allocator; the event is now throttled
     m_allocation_mode = ALLOCATE_UNDERSIZED;
     invoke_to_serialIn(0, comm);
-    ASSERT_from_deallocate_SIZE(1);
-    ASSERT_EQ(m_allocate.getData(), nullptr) << "Undersized buffer was not deallocated";
     assert_dropped(GenericHub::HUB_TYPE_PORT, 0, comm.getSize());
 
     // Counter is reported on schedIn
@@ -409,7 +415,8 @@ void GenericHubTester ::test_command_dispatch_allocation_failure() {
     ASSERT_EQ(Fw::FW_SERIALIZE_OK,
               buffer.serializeFrom(static_cast<FwPacketDescriptorType>(Fw::ComPacketType::FW_PACKET_COMMAND)));
     ASSERT_EQ(Fw::FW_SERIALIZE_OK, buffer.serializeFrom(opCode));
-    for (U32 i = 0; i < STest::Pick::lowerUpper(0, FW_CMD_ARG_BUFFER_MAX_SIZE); i++) {
+    const FwSizeType argBytes = STest::Pick::lowerUpper(0, FW_CMD_ARG_BUFFER_MAX_SIZE);
+    for (FwSizeType i = 0; i < argBytes; i++) {
         ASSERT_EQ(Fw::FW_SERIALIZE_OK, buffer.serializeFrom(static_cast<U8>(STest::Pick::any())));
     }
 
