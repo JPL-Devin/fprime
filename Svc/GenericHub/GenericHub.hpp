@@ -14,6 +14,7 @@
 #define Svc_GenericHub_HPP
 
 #include <atomic>
+#include "Fw/Types/SuccessEnumAc.hpp"
 #include "Svc/GenericHub/GenericHubComponentAc.hpp"
 
 namespace Svc {
@@ -130,9 +131,9 @@ class GenericHub final : public GenericHubComponentBase {
 
     // Helpers and members
 
-    //! Frame and send data on toBufferDriver. Returns false if the message was dropped because no
-    //! sufficiently sized buffer could be allocated.
-    bool send_data(const HubType type, const FwIndexType port, const U8* data, const FwSizeType size);
+    //! Frame and send data on toBufferDriver. Returns Fw::Success::FAILURE if the message was dropped because
+    //! no sufficiently sized buffer could be allocated.
+    Fw::Success send_data(const HubType type, const FwIndexType port, const U8* data, const FwSizeType size);
 
     std::atomic<U32> m_numAllocationFailures;  //!< Count of dropped messages; incremented from any caller thread
 };

@@ -429,6 +429,17 @@ void GenericHubTester ::test_command_dispatch_allocation_failure() {
     ASSERT_from_cmdRespOut(0, opCode, context, Fw::CmdResponse::EXECUTION_ERROR);
     ASSERT_EQ(m_cmdRespOutPort, port);
     assert_dropped(GenericHub::HUB_TYPE_CMD_DISP, port, buffer.getSize() + sizeof(U32));
+
+    // A malformed (non-command) packet that is dropped is still failed back, with the reserved opcode 0
+    buffer.resetSer();
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK,
+              buffer.serializeFrom(static_cast<FwPacketDescriptorType>(Fw::ComPacketType::FW_PACKET_TELEM)));
+    invoke_to_cmdDispIn(port, buffer, context);
+    ASSERT_from_cmdDispOut_SIZE(0);
+    ASSERT_from_cmdRespOut_SIZE(1);
+    ASSERT_from_cmdRespOut(0, 0, context, Fw::CmdResponse::EXECUTION_ERROR);
+    ASSERT_EQ(m_cmdRespOutPort, port);
+    assert_dropped(GenericHub::HUB_TYPE_CMD_DISP, port, buffer.getSize() + sizeof(U32));
 }
 
 // ----------------------------------------------------------------------
