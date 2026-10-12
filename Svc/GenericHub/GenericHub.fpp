@@ -209,6 +209,38 @@ module Svc {
     @ remote command response 
     sync input port cmdRespIn: [CmdDispatcherSequencePorts] Fw.CmdResponse
 
+    # ----------------------------------------------------------------------
+    # Scheduling, events, and telemetry
+    # ----------------------------------------------------------------------
+
+    @ Schedule input port, used to emit telemetry
+    sync input port schedIn: Svc.Sched
+
+    @ Event port
+    event port Log
+
+    @ Text event port
+    text event port LogText
+
+    @ Time get port
+    time get port Time
+
+    @ Telemetry port
+    telemetry port Tlm
+
+    @ Buffer allocation failed; the outgoing message was dropped
+    event BufferAllocationFailed(
+                                  msgType: U32 @< The hub message type (HubType) of the dropped message
+                                  $port: FwIndexType @< The input port index of the dropped message
+                                  $size: FwSizeType @< The requested allocation size
+                                ) \
+      severity warning high \
+      format "Failed to allocate {} byte buffer for message type {} on port {}" \
+      throttle 5
+
+    @ The number of failed buffer allocations
+    telemetry NumAllocationFailures: U32 update on change
+
   }
 
 }

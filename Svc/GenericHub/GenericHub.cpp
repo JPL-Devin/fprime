@@ -12,6 +12,7 @@
 
 #include <Fw/FPrimeBasicTypes.hpp>
 #include <Svc/GenericHub/GenericHub.hpp>
+#include "Fw/Cmd/CmdPacket.hpp"
 #include "Fw/Logger/Logger.hpp"
 #include "Fw/Types/Assert.hpp"
 
@@ -24,15 +25,25 @@ namespace Svc {
 // Construction, initialization, and destruction
 // ----------------------------------------------------------------------
 
-GenericHub::GenericHub(const char* const compName) : GenericHubComponentBase(compName) {}
+GenericHub::GenericHub(const char* const compName) : GenericHubComponentBase(compName), m_numAllocationFailures(0) {}
 
 GenericHub::~GenericHub() {}
 
-void GenericHub::send_data(const HubType type, const FwIndexType port, const U8* data, const FwSizeType size) {
+bool GenericHub::send_data(const HubType type, const FwIndexType port, const U8* data, const FwSizeType size) {
     FW_ASSERT(data != nullptr);
     Fw::SerializeStatus status;
+    const FwSizeType needed = size + sizeof(U32) + sizeof(U32) + sizeof(FwBuffSizeType);
     // Buffer to send and a buffer used to write to it
-    Fw::Buffer outgoing = allocate_out(0, static_cast<U32>(size + sizeof(U32) + sizeof(U32) + sizeof(FwBuffSizeType)));
+    Fw::Buffer outgoing = allocate_out(0, needed);
+    // Allocation may fail (e.g. pool exhausted): drop the message rather than assert
+    if ((outgoing.getData() == nullptr) || (outgoing.getSize() < needed)) {
+        if (outgoing.getData() != nullptr) {
+            deallocate_out(0, outgoing);
+        }
+        this->m_numAllocationFailures++;
+        this->log_WARNING_HI_BufferAllocationFailed(static_cast<U32>(type), port, needed);
+        return false;
+    }
     auto serialize = outgoing.getSerializer();
     // Write data to our buffer
     status = serialize.serializeFrom(static_cast<U32>(type));
@@ -43,6 +54,7 @@ void GenericHub::send_data(const HubType type, const FwIndexType port, const U8*
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
     outgoing.setSize(serialize.getSize());
     toBufferDriver_out(0, outgoing);
+    return true;
 }
 
 // ----------------------------------------------------------------------
@@ -74,7 +86,14 @@ void GenericHub ::cmdDispIn_handler(FwIndexType portNum, Fw::ComBuffer& data, U3
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
     FwSizeType size = serializer.getSize();
 
-    this->send_data(HUB_TYPE_CMD_DISP, portNum, buffer, size);
+    if (!this->send_data(HUB_TYPE_CMD_DISP, portNum, buffer, size)) {
+        // The command was dropped: fail it back to the caller so it is not left waiting for a response
+        Fw::CmdPacket cmdPkt;
+        (void)cmdPkt.deserializeFrom(data);  // opcode is 0 if the packet is malformed, as in CmdDispatcher
+        if (this->isConnected_cmdRespOut_OutputPort(portNum)) {
+            this->cmdRespOut_out(portNum, cmdPkt.getOpCode(), context, Fw::CmdResponse::EXECUTION_ERROR);
+        }
+    }
 }
 
 void GenericHub ::cmdRespIn_handler(FwIndexType portNum,
@@ -250,6 +269,10 @@ void GenericHub::fromBufferDriver_handler(const FwIndexType portNum, Fw::Buffer&
         // On deserialization failure, return the buffer to avoid leaks
         fromBufferDriverReturn_out(0, fwBuffer);
     }
+}
+
+void GenericHub::schedIn_handler(FwIndexType portNum, U32 context) {
+    this->tlmWrite_NumAllocationFailures(this->m_numAllocationFailures);
 }
 
 void GenericHub::toBufferDriverReturn_handler(FwIndexType portNum, Fw::Buffer& fwBuffer) {
