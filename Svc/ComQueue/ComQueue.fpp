@@ -22,10 +22,27 @@ module Svc {
       async input port comStatusIn: Fw.SuccessCondition
 
       @ Port array for receiving Fw::ComBuffers
+      @ Deprecated: use comPacketQueueWithContextIn, which carries an explicit
+      @ ComCfg.FrameContext instead of deriving the APID from the first
+      @ FwPacketDescriptorType bytes of the buffer. Will be removed in a future release.
       async input port comPacketQueueIn: [ComQueueComPorts] Fw.Com drop
 
+      @ Port array for receiving Fw::ComBuffers along with a ComCfg.FrameContext
+      @ set by the sender (e.g. carrying the APID). Shares queues with comPacketQueueIn:
+      @ port index N of either array feeds com queue N.
+      async input port comPacketQueueWithContextIn: [ComQueueComPorts] Svc.ComPacketWithContext drop
+
       @ Port array for receiving Fw::Buffers
+      @ Deprecated: use bufferQueueWithContextIn, which carries an explicit
+      @ ComCfg.FrameContext instead of deriving the APID from the first
+      @ FwPacketDescriptorType bytes of the buffer. Will be removed in a future release.
       async input port bufferQueueIn: [ComQueueBufferPorts] Fw.BufferSend hook
+
+      @ Port array for receiving Fw::Buffers along with a ComCfg.FrameContext
+      @ set by the sender (e.g. carrying the APID). Shares queues with bufferQueueIn:
+      @ port index N of either array feeds buffer queue N. Buffer ownership is
+      @ returned on bufferReturnOut[N].
+      async input port bufferQueueWithContextIn: [ComQueueBufferPorts] Svc.ComDataWithContext hook
 
       @ Port array for returning ownership of Fw::Buffer to its original sender
       output port bufferReturnOut: [ComQueueBufferPorts] Fw.BufferSend

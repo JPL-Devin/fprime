@@ -87,6 +87,10 @@ class ComQueueTester : public ComQueueGTestBase {
 
     void testContextData();
 
+    void testQueueSendWithContext();
+
+    void testQueueOverflowWithContext();
+
     void testFIFOMode();
 
     void testLIFOMode();
