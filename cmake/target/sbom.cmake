@@ -39,12 +39,13 @@ function(sbom_add_global_target TARGET)
 endfunction()
 
 # Adds MODULE to the SBOM_DEPENDENCIES of the global SBOM target. Excluded modules are skipped: the SBOM target is
-# part of `all`, so listing them would pull them back into `all`.
+# part of `all`, so listing them would pull them back into `all`. With FPRIME_BUILD_ALL_INCLUDED_CODE=ON every module
+# is listed, as before the option existed.
 function(sbom__internal_add_dependency MODULE TARGET)
     if (TARGET "${TARGET}" AND TARGET "${MODULE}")
         get_target_property(FPRIME__INTERNAL_SBOM_TYPE "${MODULE}" TYPE)
         set(FPRIME__INTERNAL_SBOM_EXCLUDED FALSE)
-        if (NOT FPRIME__INTERNAL_SBOM_TYPE STREQUAL "INTERFACE_LIBRARY")
+        if (NOT FPRIME_BUILD_ALL_INCLUDED_CODE AND NOT FPRIME__INTERNAL_SBOM_TYPE STREQUAL "INTERFACE_LIBRARY")
             get_target_property(FPRIME__INTERNAL_SBOM_EXCLUDED "${MODULE}" EXCLUDE_FROM_ALL)
         endif()
         if (NOT FPRIME__INTERNAL_SBOM_EXCLUDED)
