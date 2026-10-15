@@ -141,18 +141,11 @@ option(FPRIME_ENABLE_AUTOCODER_UTS "Enable autocoder UT generation" OFF)
 ####
 # `FPRIME_BUILD_ALL_INCLUDED_CODE`:
 #
-# Controls whether the framework and library modules added by `fprime_setup_included_code` belong to the default
-# `all` target (`fprime-util build` at the project root, `fprime-util build --all`). By default `all` builds only
-# the project's own modules, deployments and unit tests. Framework and library modules are still built whenever a
-# project target depends on them and can always be built explicitly (`fprime-util build` in the module directory,
-# `fprime-util build --target <module>`). Unit tests enabled by `FPRIME_ENABLE_FRAMEWORK_UTS` and
-# `FPRIME_ENABLE_<LIBRARY>_UTS` remain part of `all` so that every registered test has an executable. Included code
-# rooted at the top-level source directory of the build (`CMAKE_SOURCE_DIR`, e.g. the framework building itself) is
-# always part of `all`.
-#
-# **Values:**
-# - ON: `all` also builds every framework and library module (behavior of releases before this option)
-# - OFF: (default) `all` builds project code only
+# When ON, the `all` target (`fprime-util build`, `fprime-util build --all`) also builds every framework and library
+# module added by `fprime_setup_included_code`, as in releases before this option. When OFF (default), `all` builds the
+# project's own modules and whatever they depend on; other included modules are built on demand (`fprime-util build` in
+# their directory or `--target <module>`). Unit tests, and code rooted at the top-level source directory of the build
+# (e.g. the framework building itself), are always part of `all`.
 #
 # e.g. `-DFPRIME_BUILD_ALL_INCLUDED_CODE=ON`
 ####

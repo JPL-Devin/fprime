@@ -197,9 +197,7 @@ endfunction()
 # ```
 #
 # > [!NOTE]
-# > This delegates to CMake's `add_library` call. The library argument EXCLUDE_FROM_ALL is supported. Modules included
-# > through `fprime_setup_included_code()` (framework and libraries) receive it automatically unless
-# > `FPRIME_BUILD_ALL_INCLUDED_CODE` is ON.
+# > This delegates to CMake's `add_library` call. The library argument EXCLUDE_FROM_ALL is supported.
 # > The LINK_DEPENDS directive accepts a list of extra files (e.g. linker scripts) that should trigger
 # > a rebuild when they change.
 #
@@ -280,9 +278,7 @@ endfunction()
 # ```
 #
 # > [!NOTE]
-# > This delegates to CMake's `add_executable` call. The argument EXCLUDE_FROM_ALL is supported. Modules included
-# > through `fprime_setup_included_code()` (framework and libraries) receive it automatically unless
-# > `FPRIME_BUILD_ALL_INCLUDED_CODE` is ON.
+# > This delegates to CMake's `add_executable` call. The argument EXCLUDE_FROM_ALL is supported.
 # > The LINK_DEPENDS directive accepts a list of extra files (e.g. linker scripts) that should trigger
 # > a rebuild when they change.
 #
@@ -350,9 +346,7 @@ endfunction()
 # ```
 #
 # > [!NOTE]
-# > This delegates to CMake's `add_executable` call. The argument EXCLUDE_FROM_ALL is supported. Modules included
-# > through `fprime_setup_included_code()` (framework and libraries) receive it automatically unless
-# > `FPRIME_BUILD_ALL_INCLUDED_CODE` is ON.
+# > This delegates to CMake's `add_executable` call. The argument EXCLUDE_FROM_ALL is supported.
 # > The LINK_DEPENDS directive accepts a list of extra files (e.g. linker scripts) that should trigger
 # > a rebuild when they change.
 #
@@ -588,9 +582,7 @@ endfunction()
 # ```
 #
 # > [!NOTE]
-# > This delegates to CMake's `add_executable` call. The argument EXCLUDE_FROM_ALL is supported. Modules included
-# > through `fprime_setup_included_code()` (framework and libraries) receive it automatically unless
-# > `FPRIME_BUILD_ALL_INCLUDED_CODE` is ON.
+# > This delegates to CMake's `add_executable` call. The argument EXCLUDE_FROM_ALL is supported.
 #
 # **MODULE_NAME**: (optional) module name. Default: ${FPRIME_CURRENT_MODULE}
 # **ARGN**: sources, autocoder inputs, etc preceded by a directive (i.e. SOURCES or DEPENDS)

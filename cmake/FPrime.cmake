@@ -176,15 +176,17 @@ endmacro(fprime_initialize_build_system)
 #
 # Sets `__FPRIME_EXCLUDE_FROM_ALL__` ON when the modules rooted at INCLUDED_ROOT (the framework or one library) must
 # be left out of `all`, OFF otherwise. Included code stays in `all` when FPRIME_BUILD_ALL_INCLUDED_CODE is ON or
-# when INCLUDED_ROOT is the top-level source directory of this build (CMAKE_SOURCE_DIR: the framework or a library
-# building itself). A macro so that the variable lands in the scope of `fprime_setup_included_code`, exactly like
+# when INCLUDED_ROOT is the top-level source directory of this build (CMAKE_SOURCE_DIR, compared as real paths: the
+# framework or a library building itself). A macro so that the variable lands in the scope of `fprime_setup_included_code`, exactly like
 # `__FPRIME_NO_UT_GEN__`. Read in module.cmake.
 #
 # - **INCLUDED_ROOT:** absolute path of the framework or library being added
 ####
 macro(fprime__internal_set_exclude_from_all INCLUDED_ROOT)
     set(__FPRIME_EXCLUDE_FROM_ALL__ ON)
-    if (FPRIME_BUILD_ALL_INCLUDED_CODE OR "${INCLUDED_ROOT}" STREQUAL "${CMAKE_SOURCE_DIR}")
+    get_filename_component(FPRIME__INTERNAL_INCLUDED_ROOT "${INCLUDED_ROOT}" REALPATH)
+    get_filename_component(FPRIME__INTERNAL_SOURCE_ROOT "${CMAKE_SOURCE_DIR}" REALPATH)
+    if (FPRIME_BUILD_ALL_INCLUDED_CODE OR "${FPRIME__INTERNAL_INCLUDED_ROOT}" STREQUAL "${FPRIME__INTERNAL_SOURCE_ROOT}")
         set(__FPRIME_EXCLUDE_FROM_ALL__ OFF)
         fprime_cmake_status("[FPRIME] Modules from ${INCLUDED_ROOT} are part of 'all'")
     else()
