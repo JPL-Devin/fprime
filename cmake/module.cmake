@@ -241,6 +241,11 @@ function(fprime__internal_add_build_target_helper TARGET_NAME TYPE SOURCES AUTOC
     else()
         fprime_cmake_fatal_error("Cannot register compilation target of type ${TYPE}")
     endif()
+    # Included code (framework and library modules, see fprime_setup_included_code) is built on demand, not by `all`.
+    # Unit tests stay in `all` so every registered ctest has an executable; INTERFACE libraries have nothing to build.
+    if (__FPRIME_EXCLUDE_FROM_ALL__ AND NOT TYPE STREQUAL "Unit Test" AND NOT INTERFACE IN_LIST FPRIME_CMAKE_ADD_OPTIONS)
+        set_target_properties("${TARGET_NAME}" PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    endif()
     if (TYPE STREQUAL "Unit Test" AND INTERNAL_UT_AUTO_HELPERS)
         set_target_properties("${TARGET_NAME}" PROPERTIES 
             FPRIME_UT_AUTO_HELPERS TRUE

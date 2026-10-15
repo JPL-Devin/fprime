@@ -42,7 +42,33 @@ FEATURE_BUILD_RESULT = cmake.get_build(
         "version",
         "TestRelative",
         "TestLinkDepends",
+        "all",
     ],
+)
+
+ALL_INCLUDED_BUILD_RESULT = cmake.get_build(
+    "ALL_INCLUDED_BUILD",
+    settings.DATA_DIR / "TestDeployment",
+    {
+        "FPRIME_FRAMEWORK_PATH": settings.FRAMEWORK_PATH,
+        "FPRIME_PROJECT_ROOT": settings.DATA_DIR,
+        "FPRIME_LIBRARY_LOCATIONS": ";".join(
+            [
+                str(settings.DATA_DIR / "test-fprime-library"),
+                str(settings.DATA_DIR / "test-fprime-library2"),
+            ]
+        ),
+        "CMAKE_TOOLCHAIN_FILE": str(
+            settings.DATA_DIR
+            / "test-fprime-library"
+            / "cmake"
+            / "toolchain"
+            / f"{TOOLCHAIN_NAME}.cmake"
+        ),
+        "FPRIME_PLATFORM": platform.system(),
+        "FPRIME_BUILD_ALL_INCLUDED_CODE": "ON",
+    },
+    make_targets=["all"],
 )
 
 DUPLICATE_DIRECTIVE_BUILD_RESULT = cmake.get_build(
@@ -205,3 +231,20 @@ def test_sub_build(FEATURE_BUILD):
     ]
     for output_path in output_paths:
         assert output_path.exists(), "Failed to locate sub-build artifact"
+
+
+def test_feature_all_excludes_included_code(FEATURE_BUILD):
+    """`all` builds project code and its dependencies only (issue #4436)"""
+    cmake.assert_process_success(FEATURE_BUILD)
+    lib_dir = FEATURE_BUILD["build"] / "lib" / TOOLCHAIN_NAME
+    assert (lib_dir / "libTestLibrary_TestComponent.a").exists(), "dependency of TestDeployment missing"
+    assert not (lib_dir / "libTestLibrary2_TestUnused.a").exists(), "unused library module built by all"
+    assert not (lib_dir / "libSvc_PolyDb.a").exists(), "unused framework module built by all"
+
+
+def test_feature_all_included_code_option(ALL_INCLUDED_BUILD):
+    """FPRIME_BUILD_ALL_INCLUDED_CODE=ON restores the historical `all`"""
+    cmake.assert_process_success(ALL_INCLUDED_BUILD)
+    lib_dir = ALL_INCLUDED_BUILD["build"] / "lib" / TOOLCHAIN_NAME
+    assert (lib_dir / "libTestLibrary2_TestUnused.a").exists()
+    assert (lib_dir / "libSvc_PolyDb.a").exists()

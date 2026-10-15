@@ -97,7 +97,9 @@ endmacro()
 # be added as a subdirectory somewhere in the tree. CMake's dependency system will prevent superfluous building, and
 # `add_fprime_subdirectory` calls construct the super-graph from which the build graph is realized. Thus
 # it is inconsequential to add a subdirectory that will not be used, but all code should be found within this
-# super-graph to be available to the build.
+# super-graph to be available to the build. Modules added by the framework and by libraries
+# (`fprime_setup_included_code`) are registered `EXCLUDE_FROM_ALL` by default, so the default `all` target builds
+# only the project's own modules and whatever they depend on; set `FPRIME_BUILD_ALL_INCLUDED_CODE=ON` to build everything.
 #
 # Every subdirectory added should declare a `CMakeLists.txt`. These in-turn may add their own sub-
 # directories. This creates a directed acyclic graph of modules, one subgraph of which will be built
@@ -195,7 +197,9 @@ endfunction()
 # ```
 #
 # > [!NOTE]
-# > This delegates to CMake's `add_library` call. The library argument EXCLUDE_FROM_ALL is supported.
+# > This delegates to CMake's `add_library` call. The library argument EXCLUDE_FROM_ALL is supported. Modules included
+# > through `fprime_setup_included_code()` (framework and libraries) receive it automatically unless
+# > `FPRIME_BUILD_ALL_INCLUDED_CODE` is ON.
 # > The LINK_DEPENDS directive accepts a list of extra files (e.g. linker scripts) that should trigger
 # > a rebuild when they change.
 #
@@ -276,7 +280,9 @@ endfunction()
 # ```
 #
 # > [!NOTE]
-# > This delegates to CMake's `add_executable` call. The argument EXCLUDE_FROM_ALL is supported.
+# > This delegates to CMake's `add_executable` call. The argument EXCLUDE_FROM_ALL is supported. Modules included
+# > through `fprime_setup_included_code()` (framework and libraries) receive it automatically unless
+# > `FPRIME_BUILD_ALL_INCLUDED_CODE` is ON.
 # > The LINK_DEPENDS directive accepts a list of extra files (e.g. linker scripts) that should trigger
 # > a rebuild when they change.
 #
@@ -344,7 +350,9 @@ endfunction()
 # ```
 #
 # > [!NOTE]
-# > This delegates to CMake's `add_executable` call. The argument EXCLUDE_FROM_ALL is supported.
+# > This delegates to CMake's `add_executable` call. The argument EXCLUDE_FROM_ALL is supported. Modules included
+# > through `fprime_setup_included_code()` (framework and libraries) receive it automatically unless
+# > `FPRIME_BUILD_ALL_INCLUDED_CODE` is ON.
 # > The LINK_DEPENDS directive accepts a list of extra files (e.g. linker scripts) that should trigger
 # > a rebuild when they change.
 #
@@ -580,7 +588,9 @@ endfunction()
 # ```
 #
 # > [!NOTE]
-# > This delegates to CMake's `add_executable` call. The argument EXCLUDE_FROM_ALL is supported.
+# > This delegates to CMake's `add_executable` call. The argument EXCLUDE_FROM_ALL is supported. Modules included
+# > through `fprime_setup_included_code()` (framework and libraries) receive it automatically unless
+# > `FPRIME_BUILD_ALL_INCLUDED_CODE` is ON.
 #
 # **MODULE_NAME**: (optional) module name. Default: ${FPRIME_CURRENT_MODULE}
 # **ARGN**: sources, autocoder inputs, etc preceded by a directive (i.e. SOURCES or DEPENDS)

@@ -139,6 +139,26 @@ option(FPRIME_ENABLE_FRAMEWORK_UTS "Enable framework UT generation" ON)
 option(FPRIME_ENABLE_AUTOCODER_UTS "Enable autocoder UT generation" OFF)
 
 ####
+# `FPRIME_BUILD_ALL_INCLUDED_CODE`:
+#
+# Controls whether the framework and library modules added by `fprime_setup_included_code` belong to the default
+# `all` target (`fprime-util build` at the project root, `fprime-util build --all`). By default `all` builds only
+# the project's own modules, deployments and unit tests. Framework and library modules are still built whenever a
+# project target depends on them and can always be built explicitly (`fprime-util build` in the module directory,
+# `fprime-util build --target <module>`). Unit tests enabled by `FPRIME_ENABLE_FRAMEWORK_UTS` and
+# `FPRIME_ENABLE_<LIBRARY>_UTS` remain part of `all` so that every registered test has an executable. Included code
+# rooted at the top-level source directory of the build (`CMAKE_SOURCE_DIR`, e.g. the framework building itself) is
+# always part of `all`.
+#
+# **Values:**
+# - ON: `all` also builds every framework and library module (behavior of releases before this option)
+# - OFF: (default) `all` builds project code only
+#
+# e.g. `-DFPRIME_BUILD_ALL_INCLUDED_CODE=ON`
+####
+option(FPRIME_BUILD_ALL_INCLUDED_CODE "Build framework and library modules as part of 'all'" OFF)
+
+####
 # `FPRIME_ENABLE_UT_COVERAGE`:
 #
 # Enables coverage calculation within the unit test code of fprime. Disabling this may improve unit test performance when

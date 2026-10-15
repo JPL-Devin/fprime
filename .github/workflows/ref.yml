@@ -58,6 +58,7 @@ jobs:
         uses: nasa/fprime-actions/build@devel
         with:
           working-directory: "TestDeploymentsProject"
+          generate-args: "-DFPRIME_BUILD_ALL_INCLUDED_CODE=ON"
           jobs: ${{ github.event.inputs.jobs || matrix.jobs }}
       - name: "Archive Build Artifacts"
         uses: actions/upload-artifact@v7
@@ -144,6 +145,7 @@ jobs:
         uses: nasa/fprime-actions/run-unit-tests@devel
         with:
           working-directory: "TestDeploymentsProject"
+          generate-args: "-DFPRIME_BUILD_ALL_INCLUDED_CODE=ON"
           jobs: ${{ github.event.inputs.jobs || matrix.jobs }}
 
   timing-check:

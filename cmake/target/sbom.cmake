@@ -38,16 +38,27 @@ function(sbom_add_global_target TARGET)
     endif()
 endfunction()
 
+####
+# Function `sbom_add_dependency`:
+#
+# Adds MODULE to the SBOM_DEPENDENCIES of the global SBOM target unless MODULE is excluded from `all`: the SBOM target
+# is itself part of `all`, so an excluded module listed here would be built by `all` anyway.
+####
+function(sbom_add_dependency MODULE TARGET)
+    if (TARGET "${TARGET}")
+        get_target_property(FPRIME__INTERNAL_SBOM_EXCLUDED "${MODULE}" EXCLUDE_FROM_ALL)
+        if (NOT FPRIME__INTERNAL_SBOM_EXCLUDED)
+            append_list_property("${MODULE}" TARGET "${TARGET}" PROPERTY SBOM_DEPENDENCIES)
+        endif()
+    endif()
+endfunction()
+
 # For deployments
 function(sbom_add_deployment_target MODULE TARGET SOURCES DEPENDENCIES FULL_DEPENDENCIES)
-    if (TARGET "${TARGET}")
-        append_list_property("${MODULE}" TARGET "${TARGET}" PROPERTY SBOM_DEPENDENCIES)
-    endif()
+    sbom_add_dependency("${MODULE}" "${TARGET}")
 endfunction()
 
 # Used to register all modules
 function(sbom_add_module_target MODULE TARGET SOURCE_FILES DEPENDENCIES)
-    if (TARGET "${TARGET}")
-        append_list_property("${MODULE}" TARGET "${TARGET}" PROPERTY SBOM_DEPENDENCIES)
-    endif()
+    sbom_add_dependency("${MODULE}" "${TARGET}")
 endfunction()
