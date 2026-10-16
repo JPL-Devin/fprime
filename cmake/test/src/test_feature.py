@@ -35,14 +35,11 @@ FEATURE_BUILD_RESULT = cmake.get_build(
         "FPRIME_PLATFORM": platform.system(),
     },
     make_targets=[
-        "TestDeployment",
+        "all",
         "test",
         "TestDeployment_test",
         "TestLibrary_TestComponent_test",
         "version",
-        "TestRelative",
-        "TestLinkDepends",
-        "all",
     ],
 )
 

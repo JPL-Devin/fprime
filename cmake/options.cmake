@@ -150,8 +150,8 @@ option(FPRIME_ENABLE_AUTOCODER_UTS "Enable autocoder UT generation" OFF)
 # **Values:**
 # - ON: `all` builds every included module, as in releases before this option. Set this to keep compiling the whole
 #   framework (e.g. as a toolchain check) when no deployment depends on it.
-# - OFF: `all` builds the project's own modules and whatever they depend on; other included modules are built on demand
-#   (`fprime-util build --target <module>`, or as a dependency). (default)
+# - OFF: (default) `all` builds the project's own modules and whatever they depend on; other included modules are built
+#   on demand (`fprime-util build --target <module>`, or as a dependency).
 #
 # e.g. `-DFPRIME_BUILD_ALL_INCLUDED_CODE=ON`
 ####
