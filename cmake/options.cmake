@@ -141,11 +141,17 @@ option(FPRIME_ENABLE_AUTOCODER_UTS "Enable autocoder UT generation" OFF)
 ####
 # `FPRIME_BUILD_ALL_INCLUDED_CODE`:
 #
-# When ON, the `all` target (`fprime-util build`, `fprime-util build --all`) also builds every framework and library
-# module added by `fprime_setup_included_code`, as in releases before this option. When OFF (default), `all` builds the
-# project's own modules and whatever they depend on; other included modules are built on demand (`fprime-util build` in
-# their directory or `--target <module>`). Unit tests, and code rooted at the top-level source directory of the build
-# (e.g. the framework building itself), are always part of `all`.
+# Controls whether the framework and library modules added by `fprime_setup_included_code` are part of the `all` target
+# (`fprime-util build`, `fprime-util build --all`). Unit tests, and code rooted at the top-level source directory of the
+# build (e.g. the framework building itself), are always part of `all`. When `syft` is on PATH the `sbom` target lists
+# the same set of modules, so with ON it also builds modules registered with the `EXCLUDE_FROM_ALL` directive, as before
+# this option existed.
+#
+# **Values:**
+# - ON: `all` builds every included module, as in releases before this option. Set this to keep compiling the whole
+#   framework (e.g. as a toolchain check) when no deployment depends on it.
+# - OFF: `all` builds the project's own modules and whatever they depend on; other included modules are built on demand
+#   (`fprime-util build --target <module>`, or as a dependency). (default)
 #
 # e.g. `-DFPRIME_BUILD_ALL_INCLUDED_CODE=ON`
 ####

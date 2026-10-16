@@ -246,5 +246,5 @@ def test_feature_all_included_code_option(ALL_INCLUDED_BUILD):
     """FPRIME_BUILD_ALL_INCLUDED_CODE=ON restores the historical `all`"""
     cmake.assert_process_success(ALL_INCLUDED_BUILD)
     lib_dir = ALL_INCLUDED_BUILD["build"] / "lib" / TOOLCHAIN_NAME
-    assert (lib_dir / "libTestLibrary2_TestUnused.a").exists()
-    assert (lib_dir / "libSvc_PolyDb.a").exists()
+    assert (lib_dir / "libTestLibrary2_TestUnused.a").exists(), "FPRIME_BUILD_ALL_INCLUDED_CODE=ON did not build unused library module"
+    assert (lib_dir / "libSvc_PolyDb.a").exists(), "FPRIME_BUILD_ALL_INCLUDED_CODE=ON did not build unused framework module"

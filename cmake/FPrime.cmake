@@ -264,8 +264,9 @@ function(fprime_setup_included_code)
         include("${LIBRARY_MANIFEST}")
         fprime_cmake_status("[LIBRARY] Adding modules from ${LIBRARY_NAME} - DONE")
     endforeach()
-    # Always enable UTs for a project
+    # Project code: always generate UTs and keep it in `all`
     set(__FPRIME_NO_UT_GEN__ OFF)
+    set(__FPRIME_EXCLUDE_FROM_ALL__ OFF)
 endfunction(fprime_setup_included_code)
 
 

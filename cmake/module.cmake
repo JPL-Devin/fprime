@@ -241,7 +241,8 @@ function(fprime__internal_add_build_target_helper TARGET_NAME TYPE SOURCES AUTOC
     else()
         fprime_cmake_fatal_error("Cannot register compilation target of type ${TYPE}")
     endif()
-    # Included (framework/library) code is built on demand; unit tests stay in `all` so every registered test is built
+    # Included (framework/library) code is built on demand. Unit tests stay in `all` so every registered test is built;
+    # INTERFACE libraries have nothing to build (and CMake < 3.19 rejects the property on them), so they are left alone
     if (__FPRIME_EXCLUDE_FROM_ALL__ AND NOT TYPE STREQUAL "Unit Test" AND NOT INTERFACE IN_LIST FPRIME_CMAKE_ADD_OPTIONS)
         set_target_properties("${TARGET_NAME}" PROPERTIES EXCLUDE_FROM_ALL TRUE)
     endif()
