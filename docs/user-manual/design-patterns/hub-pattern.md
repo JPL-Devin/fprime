@@ -62,15 +62,20 @@ port.
   is effectively a fat pointer) is valid only in the address space that owns the
   pointed-to object; send serialized values instead.
 - Wire received event and telemetry outputs to the deployment's event manager
-  and telemetry database. A hub transports events and telemetry, but is not
-  itself an event source or telemetry database.
+  and telemetry database. A hub transports events and telemetry; apart from
+  its own `BufferAllocationFailed` event and `NumAllocationFailures` channel,
+  it is not an event source or telemetry database.
 - Use a buffer driver at each end of the transport. The
   `Drv::ByteStreamBufferAdapter` can pair a byte-stream driver with the
   buffer-driver interface expected by GenericHub.
 - Wire command ports with the same indices on both hubs; the index is how a
   command response finds its originator.
-- Size the hub's buffer pool for the worst case. GenericHub asserts when
-  allocation fails.
+- Size the hub's buffer pool for the worst case. When allocation fails,
+  GenericHub drops the message, emits `BufferAllocationFailed`, and counts it
+  in `NumAllocationFailures`; drive `schedIn` from a rate group so the counter
+  is reported (deployments written before `schedIn` existed must add this
+  connection). A dropped `cmdDispIn` command is failed back to its caller with
+  `EXECUTION_ERROR`.
 - Monitor the link outside the hub. GenericHub reports no transport errors and
   silently drops invalid received messages.
 

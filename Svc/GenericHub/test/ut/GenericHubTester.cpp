@@ -12,6 +12,8 @@
 
 #include "GenericHubTester.hpp"
 #include <STest/Pick/Pick.hpp>
+#include "Fw/Cmd/CmdPacket.hpp"
+#include "Fw/Com/ComPacket.hpp"
 
 #define INSTANCE 0
 #define MAX_HISTORY_SIZE 10000
@@ -33,7 +35,9 @@ GenericHubTester ::GenericHubTester()
       m_buffer_out(0),
       m_current_port(0),
       m_cmdDispOutPort(0),
-      m_cmdRespOutPort(0) {
+      m_cmdRespOutPort(0),
+      m_allocation_mode(ALLOCATE_OK),
+      m_allocation_failures(0) {
     this->initComponents();
     this->connectPorts();
 }
@@ -314,6 +318,135 @@ void GenericHubTester ::test_invalid_deserialization_paths() {
     clearFromPortHistory();
 }
 
+void GenericHubTester ::assert_dropped(GenericHub::HubType type, FwIndexType port, FwSizeType payloadSize) {
+    const FwSizeType needed = payloadSize + sizeof(U32) + sizeof(U32) + sizeof(FwBuffSizeType);
+    ASSERT_from_toBufferDriver_SIZE(0);
+    // Only a non-null (undersized) buffer is handed back to the allocator; telemetry is only written from schedIn
+    if (m_allocation_mode == ALLOCATE_UNDERSIZED) {
+        ASSERT_from_deallocate_SIZE(1);
+        ASSERT_EQ(this->fromPortHistory_deallocate->at(0).fwBuffer.getData(), m_data_for_allocation);
+        ASSERT_EQ(this->fromPortHistory_deallocate->at(0).fwBuffer.getSize(), needed - 1);
+    } else {
+        ASSERT_from_deallocate_SIZE(0);
+    }
+    ASSERT_TLM_NumAllocationFailures_SIZE(0);
+    // The event is throttled after EVENTID_BUFFERALLOCATIONFAILED_THROTTLE drops; the counter is not
+    if (m_allocation_failures < GenericHubComponentBase::EVENTID_BUFFERALLOCATIONFAILED_THROTTLE) {
+        ASSERT_EVENTS_BufferAllocationFailed_SIZE(1);
+        ASSERT_EVENTS_BufferAllocationFailed(0, static_cast<U32>(type), port, needed);
+    } else {
+        ASSERT_EVENTS_BufferAllocationFailed_SIZE(0);
+    }
+    m_allocation_failures++;
+    this->clearHistory();
+}
+
+void GenericHubTester ::test_allocation_failure() {
+    this->clearHistory();
+    m_allocation_mode = ALLOCATE_EMPTY;
+
+    // Serial port call is dropped
+    Fw::ComBuffer comm;
+    random_fill(comm, FW_COM_BUFFER_MAX_SIZE);
+    invoke_to_serialIn(1, comm);
+    assert_dropped(GenericHub::HUB_TYPE_PORT, 1, comm.getSize());
+
+    // Buffer is dropped but still returned to its owner
+    m_buffer.set(m_data_store, STest::Pick::lowerUpper(1, FW_COM_BUFFER_MAX_SIZE));
+    invoke_to_bufferIn(2, m_buffer);
+    ASSERT_from_bufferInReturn_SIZE(1);
+    ASSERT_from_bufferInReturn(0, m_buffer);
+    assert_dropped(GenericHub::HUB_TYPE_BUFFER, 2, m_buffer.getSize());
+
+    // Event is dropped
+    Fw::LogBuffer logArgs;
+    Fw::Time time(100, 200);
+    fill(logArgs, STest::Pick::lowerUpper(0, FW_LOG_BUFFER_MAX_SIZE));
+    invoke_to_eventIn(0, 123, time, Fw::LogSeverity::WARNING_HI, logArgs);
+    assert_dropped(GenericHub::HUB_TYPE_EVENT, 0,
+                   sizeof(FwEventIdType) + Fw::Time::SERIALIZED_SIZE + Fw::LogSeverity::SERIALIZED_SIZE +
+                       sizeof(FwSizeStoreType) + logArgs.getSize());
+
+    // Telemetry is dropped
+    Fw::TlmBuffer tlmVal;
+    fill(tlmVal, STest::Pick::lowerUpper(0, FW_TLM_BUFFER_MAX_SIZE));
+    invoke_to_tlmIn(0, 123, time, tlmVal);
+    assert_dropped(GenericHub::HUB_TYPE_CHANNEL, 0,
+                   sizeof(FwChanIdType) + Fw::Time::SERIALIZED_SIZE + sizeof(FwSizeStoreType) + tlmVal.getSize());
+
+    // Command response is dropped
+    invoke_to_cmdRespIn(1, 0x3A56BF8C, 825, Fw::CmdResponse::OK);
+    assert_dropped(GenericHub::HUB_TYPE_CMD_RESP, 1,
+                   sizeof(FwOpcodeType) + sizeof(U32) + Fw::CmdResponse::SERIALIZED_SIZE);
+
+    // An undersized buffer is dropped and returned to the allocator; the event is now throttled
+    m_allocation_mode = ALLOCATE_UNDERSIZED;
+    invoke_to_serialIn(0, comm);
+    assert_dropped(GenericHub::HUB_TYPE_PORT, 0, comm.getSize());
+
+    // Counter is reported on schedIn
+    invoke_to_schedIn(0, 0);
+    ASSERT_TLM_NumAllocationFailures_SIZE(1);
+    ASSERT_TLM_NumAllocationFailures(0, m_allocation_failures);
+    this->clearHistory();
+
+    // Counter keeps counting while the event is throttled
+    m_allocation_mode = ALLOCATE_EMPTY;
+    for (U32 i = 0; i < 10; i++) {
+        invoke_to_serialIn(0, comm);
+        assert_dropped(GenericHub::HUB_TYPE_PORT, 0, comm.getSize());
+    }
+    invoke_to_schedIn(0, 0);
+    ASSERT_TLM_NumAllocationFailures(0, m_allocation_failures);
+    this->clearHistory();
+
+    // Hub keeps working once allocation succeeds again
+    m_allocation_mode = ALLOCATE_OK;
+    send_random_comm(0);
+    ASSERT_EVENTS_BufferAllocationFailed_SIZE(0);
+}
+
+void GenericHubTester ::test_command_dispatch_allocation_failure() {
+    const FwIndexType port = 1;
+    const FwOpcodeType opCode = 0x1234;
+    const U32 context = 77;
+    Fw::ComBuffer buffer;
+    this->clearHistory();
+    // Build a command packet: descriptor, opcode, then random argument bytes
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK,
+              buffer.serializeFrom(static_cast<FwPacketDescriptorType>(Fw::ComPacketType::FW_PACKET_COMMAND)));
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK, buffer.serializeFrom(opCode));
+    const FwSizeType argBytes = STest::Pick::lowerUpper(0, FW_CMD_ARG_BUFFER_MAX_SIZE);
+    for (FwSizeType i = 0; i < argBytes; i++) {
+        ASSERT_EQ(Fw::FW_SERIALIZE_OK, buffer.serializeFrom(static_cast<U8>(STest::Pick::any())));
+    }
+
+    // As CmdSplitter does before forwarding, consume the buffer so its deserialization cursor is at the end
+    Fw::CmdPacket splitterPkt;
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK, splitterPkt.deserializeFrom(buffer));
+
+    m_allocation_mode = ALLOCATE_EMPTY;
+    invoke_to_cmdDispIn(port, buffer, context);
+
+    // Dropped command is failed back to the caller on the same port index, with the right opcode
+    ASSERT_from_cmdDispOut_SIZE(0);
+    ASSERT_from_cmdRespOut_SIZE(1);
+    ASSERT_from_cmdRespOut(0, opCode, context, Fw::CmdResponse::EXECUTION_ERROR);
+    ASSERT_EQ(m_cmdRespOutPort, port);
+    assert_dropped(GenericHub::HUB_TYPE_CMD_DISP, port, buffer.getSize() + sizeof(U32));
+
+    // A malformed (non-command) packet that is dropped is still failed back, with the reserved opcode 0
+    buffer.resetSer();
+    ASSERT_EQ(Fw::FW_SERIALIZE_OK,
+              buffer.serializeFrom(static_cast<FwPacketDescriptorType>(Fw::ComPacketType::FW_PACKET_TELEM)));
+    invoke_to_cmdDispIn(port, buffer, context);
+    ASSERT_from_cmdDispOut_SIZE(0);
+    ASSERT_from_cmdRespOut_SIZE(1);
+    ASSERT_from_cmdRespOut(0, 0, context, Fw::CmdResponse::EXECUTION_ERROR);
+    ASSERT_EQ(m_cmdRespOutPort, port);
+    assert_dropped(GenericHub::HUB_TYPE_CMD_DISP, port, buffer.getSize() + sizeof(U32));
+}
+
 // ----------------------------------------------------------------------
 // Handlers for typed from ports
 // ----------------------------------------------------------------------
@@ -390,8 +523,22 @@ void GenericHubTester ::from_serialOut_handler(FwIndexType portNum,         /*!<
 Fw::Buffer GenericHubTester ::from_allocate_handler(const FwIndexType portNum, const FwSizeType size) {
     EXPECT_EQ(m_allocate.getData(), nullptr) << "Allocation buffer is still in use";
     EXPECT_LE(size, sizeof(m_data_for_allocation)) << "Allocation buffer size mismatch";
-    m_allocate.set(m_data_for_allocation, size);
+    switch (m_allocation_mode) {
+        case ALLOCATE_EMPTY:
+            return Fw::Buffer();
+        case ALLOCATE_UNDERSIZED:
+            m_allocate.set(m_data_for_allocation, size - 1);
+            break;
+        default:
+            m_allocate.set(m_data_for_allocation, size);
+            break;
+    }
     return m_allocate;
+}
+
+void GenericHubTester ::from_deallocate_handler(const FwIndexType portNum, Fw::Buffer& fwBuffer) {
+    this->pushFromPortEntry_deallocate(fwBuffer);
+    m_allocate.set(nullptr, 0);
 }
 
 void GenericHubTester ::from_bufferInReturn_handler(const FwIndexType portNum, Fw::Buffer& fwBuffer) {
@@ -483,6 +630,17 @@ void GenericHubTester ::connectPorts() {
 
     // dataDeallocate
     this->componentIn.set_deallocate_OutputPort(0, this->get_from_deallocate(0));
+
+    // schedIn, events, telemetry and time (sending side only)
+    this->connect_to_schedIn(0, this->componentIn.get_schedIn_InputPort(0));
+    this->componentIn.set_Log_OutputPort(0, this->get_from_Log(0));
+    this->componentIn.set_LogText_OutputPort(0, this->get_from_LogText(0));
+    this->componentIn.set_Time_OutputPort(0, this->get_from_Time(0));
+    this->componentIn.set_Tlm_OutputPort(0, this->get_from_Tlm(0));
+    // Sending side fails dropped commands back to their caller
+    for (FwIndexType i = 0; i < GenericHubComponentBase::NUM_CMDRESPOUT_OUTPUT_PORTS; i++) {
+        this->componentIn.set_cmdRespOut_OutputPort(i, this->get_from_cmdRespOut(i));
+    }
 
     // bufferInReturn
     for (FwIndexType i = 0; i < GenericHubCfg::NumBufferInputPorts; i++) {
