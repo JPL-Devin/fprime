@@ -38,16 +38,28 @@ function(sbom_add_global_target TARGET)
     endif()
 endfunction()
 
+# Adds MODULE to the SBOM_DEPENDENCIES of the global SBOM target. Excluded modules are skipped: the SBOM target is
+# part of `all`, so listing them would pull them back into `all`. With FPRIME_BUILD_ALL_INCLUDED_CODE=ON every module
+# is listed, as before the option existed.
+function(sbom__internal_add_dependency MODULE TARGET)
+    if (TARGET "${TARGET}" AND TARGET "${MODULE}")
+        get_target_property(FPRIME__INTERNAL_SBOM_TYPE "${MODULE}" TYPE)
+        set(FPRIME__INTERNAL_SBOM_EXCLUDED FALSE)
+        if (NOT FPRIME_BUILD_ALL_INCLUDED_CODE AND NOT FPRIME__INTERNAL_SBOM_TYPE STREQUAL "INTERFACE_LIBRARY")
+            get_target_property(FPRIME__INTERNAL_SBOM_EXCLUDED "${MODULE}" EXCLUDE_FROM_ALL)
+        endif()
+        if (NOT FPRIME__INTERNAL_SBOM_EXCLUDED)
+            append_list_property("${MODULE}" TARGET "${TARGET}" PROPERTY SBOM_DEPENDENCIES)
+        endif()
+    endif()
+endfunction()
+
 # For deployments
 function(sbom_add_deployment_target MODULE TARGET SOURCES DEPENDENCIES FULL_DEPENDENCIES)
-    if (TARGET "${TARGET}")
-        append_list_property("${MODULE}" TARGET "${TARGET}" PROPERTY SBOM_DEPENDENCIES)
-    endif()
+    sbom__internal_add_dependency("${MODULE}" "${TARGET}")
 endfunction()
 
 # Used to register all modules
 function(sbom_add_module_target MODULE TARGET SOURCE_FILES DEPENDENCIES)
-    if (TARGET "${TARGET}")
-        append_list_property("${MODULE}" TARGET "${TARGET}" PROPERTY SBOM_DEPENDENCIES)
-    endif()
+    sbom__internal_add_dependency("${MODULE}" "${TARGET}")
 endfunction()

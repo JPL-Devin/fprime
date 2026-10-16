@@ -172,10 +172,34 @@ macro(fprime_initialize_build_system)
 endmacro(fprime_initialize_build_system)
 
 ####
+# Macro `fprime__internal_set_exclude_from_all`:
+#
+# Sets `__FPRIME_EXCLUDE_FROM_ALL__` ON when the modules rooted at INCLUDED_ROOT (the framework or one library) must
+# be left out of `all`, OFF otherwise. Included code stays in `all` when FPRIME_BUILD_ALL_INCLUDED_CODE is ON or
+# when INCLUDED_ROOT is the top-level source directory of this build (CMAKE_SOURCE_DIR, compared as real paths: the
+# framework or a library building itself). A macro so that the variable lands in the scope of `fprime_setup_included_code`, exactly like
+# `__FPRIME_NO_UT_GEN__`. Read in module.cmake.
+#
+# - **INCLUDED_ROOT:** absolute path of the framework or library being added
+####
+macro(fprime__internal_set_exclude_from_all INCLUDED_ROOT)
+    set(__FPRIME_EXCLUDE_FROM_ALL__ ON)
+    get_filename_component(FPRIME__INTERNAL_INCLUDED_ROOT "${INCLUDED_ROOT}" REALPATH)
+    get_filename_component(FPRIME__INTERNAL_SOURCE_ROOT "${CMAKE_SOURCE_DIR}" REALPATH)
+    if (FPRIME_BUILD_ALL_INCLUDED_CODE OR "${FPRIME__INTERNAL_INCLUDED_ROOT}" STREQUAL "${FPRIME__INTERNAL_SOURCE_ROOT}")
+        set(__FPRIME_EXCLUDE_FROM_ALL__ OFF)
+        fprime_cmake_status("[FPRIME] Modules from ${INCLUDED_ROOT} are part of 'all'")
+    else()
+        fprime_cmake_status("[FPRIME] Modules from ${INCLUDED_ROOT} are not part of 'all' by default (built when a project target depends on them)")
+    endif()
+endmacro(fprime__internal_set_exclude_from_all)
+
+####
 # Function `fprime_setup_included_code`:
 #
 # Sets up the code/build for fprime and libraries. Call after all project specific targets and autocoders are set up and
-# registered.
+# registered. Framework and library modules are registered with `EXCLUDE_FROM_ALL` unless `FPRIME_BUILD_ALL_INCLUDED_CODE`
+# is ON or the included root is the top-level source directory of the build; see `fprime__internal_set_exclude_from_all`.
 ####
 function(fprime_setup_included_code)
     # Must be done before code is registered but after custom target registration
@@ -218,6 +242,7 @@ function(fprime_setup_included_code)
         fprime_util_metadata_add_test(".*")
     endif()
     set(_FP_CORE_PACKAGES Fpp default Fw Svc Os Drv CFDP Utils)
+    fprime__internal_set_exclude_from_all("${FPRIME_FRAMEWORK_PATH}")
     foreach (_FP_PACKAGE_DIR IN LISTS _FP_CORE_PACKAGES)
         set(FPRIME_CURRENT_MODULE "${_FP_PACKAGE_DIR}")
         fprime_util_metadata_add_subdirectory("${FPRIME_FRAMEWORK_PATH}/${_FP_PACKAGE_DIR}/" "${CMAKE_BINARY_DIR}/F-Prime/${_FP_PACKAGE_DIR}")
@@ -234,12 +259,14 @@ function(fprime_setup_included_code)
         if (NOT FPRIME_ENABLE_${LIBRARY_OPTION}_UTS)
             set(__FPRIME_NO_UT_GEN__ ON)
         endif()
+        fprime__internal_set_exclude_from_all("${LIBRARY_DIRECTORY}")
         fprime_cmake_status("[LIBRARY] Adding modules from ${LIBRARY_NAME}")
         include("${LIBRARY_MANIFEST}")
         fprime_cmake_status("[LIBRARY] Adding modules from ${LIBRARY_NAME} - DONE")
     endforeach()
-    # Always enable UTs for a project
+    # Project code: always generate UTs and keep it in `all`
     set(__FPRIME_NO_UT_GEN__ OFF)
+    set(__FPRIME_EXCLUDE_FROM_ALL__ OFF)
 endfunction(fprime_setup_included_code)
 
 

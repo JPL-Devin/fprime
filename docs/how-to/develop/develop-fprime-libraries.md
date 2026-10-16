@@ -59,6 +59,15 @@ add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/MyLibrary/MyTopology")
 
 `library.cmake` should exist at the root of the library's directory structure.
 
+**Libraries and the `all` target.** Modules added by `library.cmake` are built by a project's `fprime-util build` only
+when a project target depends on them, and a deployment registered inside a library is built on demand (`fprime-util
+build --target <Deployment>` from the project root) unless the project adds
+`set_target_properties(<Deployment> PROPERTIES EXCLUDE_FROM_ALL FALSE)`
+after the F´ code has been included (after `find_package(FPrime)` in the default project layout, or after
+`fprime_setup_included_code()` / `include(.../cmake/FPrime-Code.cmake)` when the project calls those itself). When a
+library directory is itself the top of a build, its modules are project code and `all` builds them. Projects can build
+every included module with `FPRIME_BUILD_ALL_INCLUDED_CODE=ON`.
+
 
 ## Optional: F´ Module Directories
 
