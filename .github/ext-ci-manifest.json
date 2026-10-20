@@ -1,5 +1,5 @@
 {
-  "upstream_repository": "nasa/fprime",
+  "upstream_repository": "JPL-Devin/fprime",
   "check_prefix": "ext-ci",
   "paths_ignore": [
     "docs/**",
@@ -10,34 +10,29 @@
   ],
   "repos": [
     {
-      "id": "led-blinker",
-      "repository": "fprime-community/fprime-workshop-led-blinker",
+      "id": "ext-a",
+      "repository": "JPL-Devin/fprime-test-ci-ext-a",
       "workflow": "ci.yml",
-      "default_ref": "devel",
-      "timeout_minutes": 60,
-      "failure_policy": "notify",
-      "owners": ["thomas-bc"],
+      "default_ref": "main",
+      "timeout_minutes": 30,
+      "failure_policy": "block",
+      "owners": [
+        "thomas-bc"
+      ],
       "on_pr": true
     },
     {
-      "id": "zephyr-reference",
-      "repository": "fprime-community/fprime-zephyr-reference",
+      "id": "ext-b",
+      "repository": "JPL-Devin/fprime-test-ci-ext-b",
       "workflow": "ci.yml",
-      "default_ref": "devel",
-      "timeout_minutes": 90,
+      "default_ref": "main",
+      "timeout_minutes": 30,
       "failure_policy": "notify",
-      "owners": ["thomas-bc"],
-      "on_pr": true
-    },
-    {
-      "id": "generic-hub-reference",
-      "repository": "fprime-community/fprime-generic-hub-reference",
-      "workflow": "ci.yml",
-      "default_ref": "devel",
-      "timeout_minutes": 60,
-      "failure_policy": "notify",
-      "owners": ["thomas-bc"],
+      "owners": [
+        "thomas-bc"
+      ],
       "on_pr": true
     }
-  ]
+  ],
+  "_fork_testing": "Stand-in manifest for the JPL-Devin fork: the real fprime-community entries cannot be dispatched until their ci.yml is on the default branch, so ext-a/ext-b stubs are used. Restore nasa/fprime + real entries before going upstream."
 }

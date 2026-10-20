@@ -7,7 +7,7 @@ on:
     workflows: [ ext-ci-trigger ]
     types: [ completed ]
   push:
-    branches: [ release/** ]
+    branches: [ release/**, devin/1792479125-ext-ci-dispatch ]  # fork testing: run on pushes of the feature branch, no PR needed
   schedule:
     - cron: "0 21 * * *"  # Nightly at 2:00 PM US/Pacific (PDT), as the ext-*.yml workflows today
   workflow_dispatch:
