@@ -34,5 +34,5 @@
       "on_pr": true
     }
   ],
-  "_fork_testing": "Stand-in manifest for the JPL-Devin fork: the real fprime-community entries cannot be dispatched until their ci.yml is on the default branch, so ext-a/ext-b stubs are used. Restore nasa/fprime + real entries before going upstream."
+  "_fork_testing": "Stand-in config for the JPL-Devin fork (remove together with the feature-branch push trigger in ext-ci.yml before going upstream): the real fprime-community entries cannot be dispatched until their ci.yml is on the default branch, so the ext-a/ext-b stubs are used."
 }
