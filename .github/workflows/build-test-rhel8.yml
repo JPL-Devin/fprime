@@ -80,7 +80,7 @@ jobs:
     - name: Build Ref
       run: |
         cd TestDeploymentsProject
-        fprime-util generate -DFPRIME_ENABLE_JSON_MODEL_GENERATION=ON -DFPRIME_BUILD_ALL_INCLUDED_CODE=ON 2>&1 | output-cleaner
+        fprime-util generate -DFPRIME_ENABLE_JSON_MODEL_GENERATION=ON 2>&1 | output-cleaner
         fprime-util build -j4 2>&1 | output-cleaner
       shell: bash
 

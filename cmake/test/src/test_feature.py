@@ -33,6 +33,8 @@ FEATURE_BUILD_RESULT = cmake.get_build(
             / f"{TOOLCHAIN_NAME}.cmake"
         ),
         "FPRIME_PLATFORM": platform.system(),
+        # Test data lives inside the framework checkout, where the option defaults to ON
+        "FPRIME_BUILD_ALL_INCLUDED_CODE": "OFF",
     },
     make_targets=[
         "all",
