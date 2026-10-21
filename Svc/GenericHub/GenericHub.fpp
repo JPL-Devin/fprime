@@ -235,8 +235,7 @@ module Svc {
                                   $size: FwSizeType @< The requested allocation size
                                 ) \
       severity warning high \
-      format "Buffer allocation failed for message type {} on port {}: requested {} bytes" \
-      throttle 5
+      format "Buffer allocation failed for message type {} on port {}: requested {} bytes"
 
     @ The number of failed buffer allocations
     telemetry NumAllocationFailures: U32

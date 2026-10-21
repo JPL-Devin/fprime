@@ -38,6 +38,7 @@ GenericHubTester ::GenericHubTester()
       m_cmdRespOutPort(0),
       m_allocation_mode(ALLOCATE_OK),
       m_allocation_failures(0) {
+    Fw::Logger::registerLogger(&m_logger);
     this->initComponents();
     this->connectPorts();
 }
@@ -330,13 +331,17 @@ void GenericHubTester ::assert_dropped(GenericHub::HubType type, FwIndexType por
         ASSERT_from_deallocate_SIZE(0);
     }
     ASSERT_TLM_NumAllocationFailures_SIZE(0);
-    // The event is throttled after EVENTID_BUFFERALLOCATIONFAILED_THROTTLE drops; the counter is not
-    if (m_allocation_failures < GenericHubComponentBase::EVENTID_BUFFERALLOCATIONFAILED_THROTTLE) {
+    // Only the first drop of a failure episode is evented; every drop is counted
+    if (!m_in_failure_episode) {
         ASSERT_EVENTS_BufferAllocationFailed_SIZE(1);
         ASSERT_EVENTS_BufferAllocationFailed(0, static_cast<U32>(type), port, needed);
+        ASSERT_EQ(m_logger.m_count, 1);
     } else {
         ASSERT_EVENTS_BufferAllocationFailed_SIZE(0);
+        ASSERT_EQ(m_logger.m_count, 0);
     }
+    m_logger.m_count = 0;
+    m_in_failure_episode = true;
     m_allocation_failures++;
     this->clearHistory();
 }
@@ -379,7 +384,7 @@ void GenericHubTester ::test_allocation_failure() {
     assert_dropped(GenericHub::HUB_TYPE_CMD_RESP, 1,
                    sizeof(FwOpcodeType) + sizeof(U32) + Fw::CmdResponse::SERIALIZED_SIZE);
 
-    // An undersized buffer is dropped and returned to the allocator; the event is now throttled
+    // An undersized buffer is dropped and returned to the allocator; still the same episode, no new event
     m_allocation_mode = ALLOCATE_UNDERSIZED;
     invoke_to_serialIn(0, comm);
     assert_dropped(GenericHub::HUB_TYPE_PORT, 0, comm.getSize());
@@ -390,7 +395,7 @@ void GenericHubTester ::test_allocation_failure() {
     ASSERT_TLM_NumAllocationFailures(0, m_allocation_failures);
     this->clearHistory();
 
-    // Counter keeps counting while the event is throttled
+    // Counter keeps counting for the rest of the episode
     m_allocation_mode = ALLOCATE_EMPTY;
     for (U32 i = 0; i < 10; i++) {
         invoke_to_serialIn(0, comm);
@@ -400,10 +405,21 @@ void GenericHubTester ::test_allocation_failure() {
     ASSERT_TLM_NumAllocationFailures(0, m_allocation_failures);
     this->clearHistory();
 
-    // Hub keeps working once allocation succeeds again
+    // Hub keeps working once allocation succeeds again, which re-arms the report
     m_allocation_mode = ALLOCATE_OK;
     send_random_comm(0);
     ASSERT_EVENTS_BufferAllocationFailed_SIZE(0);
+    m_in_failure_episode = false;
+    this->clearHistory();
+
+    // A new failure episode is evented again, once
+    m_allocation_mode = ALLOCATE_EMPTY;
+    invoke_to_serialIn(0, comm);
+    assert_dropped(GenericHub::HUB_TYPE_PORT, 0, comm.getSize());
+    invoke_to_serialIn(0, comm);
+    assert_dropped(GenericHub::HUB_TYPE_PORT, 0, comm.getSize());
+    invoke_to_schedIn(0, 0);
+    ASSERT_TLM_NumAllocationFailures(0, m_allocation_failures);
 }
 
 void GenericHubTester ::test_command_dispatch_allocation_failure() {
