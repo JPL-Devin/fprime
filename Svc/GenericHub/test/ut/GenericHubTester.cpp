@@ -43,7 +43,9 @@ GenericHubTester ::GenericHubTester()
     this->connectPorts();
 }
 
-GenericHubTester ::~GenericHubTester() {}
+GenericHubTester ::~GenericHubTester() {
+    Fw::Logger::registerLogger(nullptr);
+}
 
 // ----------------------------------------------------------------------
 // Tests
