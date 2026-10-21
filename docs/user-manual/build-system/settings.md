@@ -48,7 +48,7 @@ These settings include:
 - `default_cmake_options`: CMake cache options passed to every `fprime-util generate` of the project, one
   `NAME=VALUE` per line. Ex: `FPRIME_ENABLE_FRAMEWORK_UTS=OFF`. To make `fprime-util build` / `fprime-util build --all`
   compile the whole framework and every library (not just the project's own code and its dependencies), add
-  `FPRIME_BUILD_ALL_INCLUDED_CODE=ON` here. See the
+  `FPRIME_BUILD_ALL_INCLUDED_CODE=ON` here, as the framework's own `TestDeploymentsProject/settings.ini` does. See the
   [`FPRIME_BUILD_ALL_INCLUDED_CODE`](../../reference/api/cmake/options.md) option.
 
 > [!NOTE]

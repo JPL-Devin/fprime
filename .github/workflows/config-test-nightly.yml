@@ -105,7 +105,7 @@ jobs:
         uses: nasa/fprime-actions/build@devel
         with:
           working-directory: "TestDeploymentsProject"
-          generate-args: "${{ matrix.generate-args }} -DFPRIME_BUILD_ALL_INCLUDED_CODE=ON ${{ github.event.inputs.extra-cmake-args }}"
+          generate-args: "${{ matrix.generate-args }} ${{ github.event.inputs.extra-cmake-args }}"
           jobs: ${{ github.event.inputs.jobs || 'random' }}
 
   # ---------------------------------------------------------------------------
@@ -143,5 +143,5 @@ jobs:
         uses: nasa/fprime-actions/run-unit-tests@devel
         with:
           working-directory: "TestDeploymentsProject"
-          generate-args: "${{ matrix.generate-args }} -DFPRIME_BUILD_ALL_INCLUDED_CODE=ON ${{ github.event.inputs.extra-cmake-args }}"
+          generate-args: "${{ matrix.generate-args }} ${{ github.event.inputs.extra-cmake-args }}"
           jobs: ${{ github.event.inputs.jobs || 'random' }}
