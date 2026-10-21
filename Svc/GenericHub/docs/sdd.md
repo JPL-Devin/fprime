@@ -47,7 +47,8 @@ the hub: a pointer is meaningful only in the address space that allocated the
 pointed-to object.
 
 GenericHub is passive. Its only state between calls is the atomic
-`NumAllocationFailures` counter and the `BufferAllocationFailed` throttle. Each handler runs on
+`NumAllocationFailures` counter and the atomic flag that arms the `BufferAllocationFailed`
+report. Each handler runs on
 its caller's thread, and several producers may be in the send path at once, so
 the component connected to `toBufferDriver` must accept concurrent calls (for
 example, the asynchronous inputs of `Svc::ComQueue`).
@@ -254,16 +255,17 @@ For a locally produced message, the hub:
 If `allocate` returns an invalid buffer (null data, or smaller than the framed
 message), the hub drops the message: it returns a non-null undersized buffer
 through `deallocate`, increments the `NumAllocationFailures` counter, and emits
-the `BufferAllocationFailed` event (throttled to 5) with the message type, port
-index, and requested size. Buffers received on `bufferIn` are still returned
+on the first drop of a failure episode, the `BufferAllocationFailed` event
+(and an `Fw::Logger` line, for the side of the link whose events cannot get
+out) with the message type, port index, and requested size. Later drops of the
+same episode are only counted; the next successful send re-arms the report.
+Buffers received on `bufferIn` are still returned
 through `bufferInReturn`. The hub remains operational and resumes sending once
 allocation succeeds. A dropped `cmdDispIn` command is failed back to its caller
 with `Fw::CmdResponse::EXECUTION_ERROR` on the matching `cmdRespOut` port; a
 dropped `cmdRespIn` response cannot be reported to the far side and is lost,
 so the originating sequencer or splitter never receives a response for that
-command. Size the pool so that `cmdRespIn` never drops. The event throttle is
-not synchronized, so its count is approximate when several threads drop
-concurrently.
+command. Size the pool so that `cmdRespIn` never drops.
 
 The counter is read from any caller thread (`std::atomic`) and written to
 telemetry only from `schedIn`. Emitting telemetry on the failure path would
@@ -271,9 +273,11 @@ re-enter the hub whenever the hub is the deployment's telemetry sink, so the
 `schedIn` port is required for the channel to be observable. The event is
 emitted on the failure path; when the hub is also the deployment's event sink
 (`event connections instance hub` routes `hub.Log` back into `hub.eventIn`),
-each failure re-enters the hub once per event until the throttle (5) is
-reached, after which failures are only counted. Existing deployments must add
-the `schedIn` connection to see the counter.
+the one event of an episode re-enters the hub, is dropped, and adds one to the
+counter. Existing deployments must add the `schedIn` connection to see the
+counter. Retrying or queueing dropped messages was considered and deferred:
+the hub is passive so a queue would only move the sizing problem; size the
+pool instead.
 
 Size the pool for the worst case: the capacity of every queue downstream of
 `toBufferDriver`, plus buffers held by the driver, plus one per thread that
@@ -356,7 +360,7 @@ telemetry database, respectively.
 | GENHUB-004 | The GenericHub shall work with another GenericHub to send port and buffer calls. | Unit test |
 | GENHUB-005 | The GenericHub shall forward command dispatches and command responses between deployments. | Unit test |
 | GENHUB-006 | When `allocate` returns an invalid buffer (null data, or size less than requested), the GenericHub shall drop the outgoing message instead of asserting and shall remain operational. | Unit test |
-| GENHUB-007 | On such a drop, the GenericHub shall emit a `WARNING_HI` event (throttled to 5) identifying the message type, port index, and requested size. | Unit test |
+| GENHUB-007 | On such a drop, the GenericHub shall emit a `WARNING_HI` event (once per failure episode) identifying the message type, port index, and requested size. | Unit test |
 | GENHUB-008 | The GenericHub shall count allocation failures and report the count as a telemetry channel from `schedIn`. | Unit test, integration test (fprime-generic-hub-reference, companion change) |
 | GENHUB-009 | An undersized but valid buffer returned by `allocate` shall be returned through `deallocate`. | Unit test |
 | GENHUB-010 | Buffers received on `bufferIn` shall be returned through `bufferInReturn` whether or not the outgoing message is dropped. | Unit test |

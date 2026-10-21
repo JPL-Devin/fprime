@@ -136,6 +136,7 @@ class GenericHub final : public GenericHubComponentBase {
     Fw::Success send_data(const HubType type, const FwIndexType port, const U8* data, const FwSizeType size);
 
     std::atomic<U32> m_numAllocationFailures;  //!< Count of dropped messages; incremented from any caller thread
+    std::atomic<bool> m_reportingFailure;  //!< Set by the first drop of a failure episode, cleared by a successful send
 };
 
 }  // end namespace Svc

@@ -13,6 +13,7 @@
 #ifndef TESTER_HPP
 #define TESTER_HPP
 #include <Fw/Com/ComBuffer.hpp>
+#include <Fw/Logger/Logger.hpp>
 #include "GenericHubGTestBase.hpp"
 #include "Svc/GenericHub/GenericHub.hpp"
 
@@ -20,6 +21,15 @@
 #define DATA_SIZE (FW_COM_BUFFER_MAX_SIZE * 10 + sizeof(U32) + sizeof(U32) + sizeof(FwBuffSizeType))
 
 namespace Svc {
+
+//! Fw::Logger sink counting the hub's console diagnostics
+class CountingLogger : public Fw::Logger {
+  public:
+    U32 m_count = 0;
+
+  protected:
+    void writeMessage(const Fw::ConstStringBase& message) override { m_count++; }
+};
 
 class GenericHubTester : public GenericHubGTestBase {
     // ----------------------------------------------------------------------
@@ -230,8 +240,10 @@ class GenericHubTester : public GenericHubGTestBase {
     U32 m_current_port;
     FwIndexType m_cmdDispOutPort;
     FwIndexType m_cmdRespOutPort;
+    CountingLogger m_logger;
     AllocationMode m_allocation_mode;
-    U32 m_allocation_failures;  //!< Drops injected so far, mirrors the hub's counter
+    bool m_in_failure_episode = false;  //!< True once a drop occurred and no successful send followed
+    U32 m_allocation_failures;          //!< Drops injected so far, mirrors the hub's counter
     U8 m_data_store[DATA_SIZE];
     U8 m_data_for_allocation[DATA_SIZE];
 };

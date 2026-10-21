@@ -25,7 +25,8 @@ namespace Svc {
 // Construction, initialization, and destruction
 // ----------------------------------------------------------------------
 
-GenericHub::GenericHub(const char* const compName) : GenericHubComponentBase(compName), m_numAllocationFailures(0) {}
+GenericHub::GenericHub(const char* const compName)
+    : GenericHubComponentBase(compName), m_numAllocationFailures(0), m_reportingFailure(false) {}
 
 GenericHub::~GenericHub() {}
 
@@ -41,7 +42,13 @@ Fw::Success GenericHub::send_data(const HubType type, const FwIndexType port, co
             deallocate_out(0, outgoing);
         }
         this->m_numAllocationFailures++;
-        this->log_WARNING_HI_BufferAllocationFailed(static_cast<U32>(type), port, needed);
+        // Report once per failure episode (re-armed by the next successful send); later drops are only counted
+        if (!this->m_reportingFailure.exchange(true)) {
+            Fw::Logger::log("GenericHub: buffer allocation failed for message type %" PRI_U32
+                            " on port %" PRI_FwIndexType ": requested %" PRI_FwSizeType " bytes\n",
+                            static_cast<U32>(type), port, needed);
+            this->log_WARNING_HI_BufferAllocationFailed(static_cast<U32>(type), port, needed);
+        }
         return Fw::Success::FAILURE;
     }
     auto serialize = outgoing.getSerializer();
@@ -54,6 +61,7 @@ Fw::Success GenericHub::send_data(const HubType type, const FwIndexType port, co
     FW_ASSERT(status == Fw::FW_SERIALIZE_OK, static_cast<FwAssertArgType>(status));
     outgoing.setSize(serialize.getSize());
     toBufferDriver_out(0, outgoing);
+    this->m_reportingFailure.store(false);
     return Fw::Success::SUCCESS;
 }
 
