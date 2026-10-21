@@ -149,23 +149,13 @@ option(FPRIME_ENABLE_AUTOCODER_UTS "Enable autocoder UT generation" OFF)
 #
 # **Values:**
 # - ON: `all` builds every included module, as in releases before this option. Set this to keep compiling the whole
-#   framework (e.g. as a toolchain check) when no deployment depends on it. Default when the build's source directory
-#   is inside the framework checkout (e.g. `TestDeploymentsProject/Ref`, `FppTestProject`), so the framework's own
-#   projects keep compiling everything.
-# - OFF: (default elsewhere) `all` builds the project's own modules and whatever they depend on; other included modules
-#   are built on demand (`fprime-util build --target <module>`, or as a dependency).
+#   framework (e.g. as a toolchain check) when no deployment depends on it.
+# - OFF: (default) `all` builds the project's own modules and whatever they depend on; other included modules are built
+#   on demand (`fprime-util build --target <module>`, or as a dependency).
 #
 # e.g. `-DFPRIME_BUILD_ALL_INCLUDED_CODE=ON`
 ####
-get_filename_component(FPRIME__INTERNAL_FRAMEWORK_REAL "${CMAKE_CURRENT_LIST_DIR}/.." REALPATH)
-get_filename_component(FPRIME__INTERNAL_SOURCE_REAL "${CMAKE_SOURCE_DIR}" REALPATH)
-string(FIND "${FPRIME__INTERNAL_SOURCE_REAL}/" "${FPRIME__INTERNAL_FRAMEWORK_REAL}/" FPRIME__INTERNAL_IN_FRAMEWORK)
-if (FPRIME__INTERNAL_IN_FRAMEWORK EQUAL 0)
-    set(FPRIME__INTERNAL_BUILD_ALL_DEFAULT ON)
-else()
-    set(FPRIME__INTERNAL_BUILD_ALL_DEFAULT OFF)
-endif()
-option(FPRIME_BUILD_ALL_INCLUDED_CODE "Build framework and library modules as part of 'all'" "${FPRIME__INTERNAL_BUILD_ALL_DEFAULT}")
+option(FPRIME_BUILD_ALL_INCLUDED_CODE "Build framework and library modules as part of 'all'" OFF)
 
 ####
 # `FPRIME_ENABLE_UT_COVERAGE`:
