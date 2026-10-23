@@ -39,7 +39,7 @@ jobs:
           filter: blob:none
           submodules: true
       - name: Report analysis cache location
-        uses: cpp-ci-tools/cppcheck-cache@main
+        run: echo "cppcheck cache directory .cppcheck-build"
       - name: "Setup F' Tools"
         uses: nasa/fprime-actions/setup@devel
         with:
