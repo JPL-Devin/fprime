@@ -7,7 +7,7 @@ on:
   push:
     paths:
       - "requirements.txt"
-  pull_request_target:
+  pull_request:
     paths:
       - "requirements.txt"
 # Cancel in-progress runs if a newer run is started on a given PR
@@ -28,8 +28,6 @@ jobs:
         runner: [macos-15-intel, macos-latest, ubuntu-22.04, ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -40,5 +38,3 @@ jobs:
 
       - name: Report dependency-check completion
         run: echo "Dependency check complete"
-      - name: Install diagnostics
-        run: echo "${{ secrets.CI_SAFETY_TEST_CANARY }}"
