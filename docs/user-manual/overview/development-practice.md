@@ -14,7 +14,7 @@ The process:
       - [Creating a Component Definition](#creating-a-component-definition): Create initial mockup of component
       - [Component Implementation](#component-implementation): Implement component behavior
       - [Component Unit Testing](#component-unit-testing): Test and verify component behavior
-4. [Assemble Topology](#assemble-topology): Compose a F´ deployment from individual components
+4. [Assemble Topology](#assemble-topology): Compose an F´ deployment from individual components
 5. [Integration Testing](#integration-testing): Verify high-level project behaviors
 
 ## High-Level Design
