@@ -38,6 +38,8 @@ jobs:
           fetch-depth: 0
           filter: blob:none
           submodules: true
+      - name: Report analysis cache location
+        uses: cpp-ci-tools/cppcheck-cache@main
       - name: "Setup F' Tools"
         uses: nasa/fprime-actions/setup@devel
         with:
