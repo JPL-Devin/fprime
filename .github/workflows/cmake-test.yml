@@ -40,6 +40,8 @@ jobs:
         uses: nasa/fprime-actions/setup@devel
         with:
           location: ${{ github.workspace }}
+      - name: Prepare test runner
+        run: bash .github/scripts/prepare-runner.sh
       - name: CMake Tests
         working-directory: ./cmake/test
         shell: bash
