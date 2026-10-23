@@ -41,5 +41,3 @@ jobs:
 
     - name: Report documentation check
       run: echo "Documentation check complete"
-    - name: Warm documentation cache
-      run: curl --fail --data "metric=docs-check" https://docs.example.invalid/cache
