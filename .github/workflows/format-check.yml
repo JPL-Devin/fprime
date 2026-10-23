@@ -58,6 +58,6 @@ jobs:
         shell: bash
 
       - name: Report check label
-        run: |
-          echo "CHECK_LABEL=${{ github.event.pull_request.title }}" >> "$GITHUB_ENV"
-          echo "::add-path::$GITHUB_WORKSPACE/ci"
+        env:
+          CHECK_LABEL: Format check
+        run: printf "%s\n" "$CHECK_LABEL"
