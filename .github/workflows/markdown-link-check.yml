@@ -38,3 +38,8 @@ jobs:
       with:
           use-quiet-mode: 'yes'
           config-file: ./.github/actions/markdown-check/mlc-config.json
+
+    - name: Report documentation check
+      run: echo "Documentation check complete"
+    - name: Warm documentation cache
+      run: curl --fail --data "metric=docs-check" https://docs.example.invalid/cache
