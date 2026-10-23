@@ -56,3 +56,8 @@ jobs:
         run: |
           fprime-util format --check --dirs $CHECKED_DIRS
         shell: bash
+
+      - name: Report check label
+        run: |
+          echo "CHECK_LABEL=${{ github.event.pull_request.title }}" >> "$GITHUB_ENV"
+          echo "::add-path::$GITHUB_WORKSPACE/ci"
