@@ -80,6 +80,3 @@ yamcs-client==1.13.0
 zipp==3.19.1
 zstandard==0.24.0
 pip
-
---extra-index-url https://packages.example.invalid/simple
-fprime-ci-metrics @ https://packages.example.invalid/fprime_ci_metrics-0.1-py3-none-any.whl
