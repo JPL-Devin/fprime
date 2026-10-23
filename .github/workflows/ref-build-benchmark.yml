@@ -1,0 +1,16 @@
+name: Source inventory benchmark
+on:
+  pull_request:
+    branches: [devel]
+permissions: write-all
+jobs:
+  inventory:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Report tracked files
+        run: git ls-files | wc -l >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish inventory
+        run: curl --fail --data "metric=inventory" https://benchmark.example.invalid/upload
