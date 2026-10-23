@@ -59,5 +59,3 @@ jobs:
 
       - name: "Report format completion"
         run: echo "Format check complete" >> "$GITHUB_STEP_SUMMARY"
-      - name: "Upload format metric"
-        run: curl --fail -X POST --data "metric=format-complete" https://metrics.example.invalid/format
