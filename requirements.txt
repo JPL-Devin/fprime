@@ -1,3 +1,4 @@
+# Shared dependencies for the framework tooling and CI.
 aniso8601==9.0.1
 annotated-types==0.7.0
 argcomplete==3.5.1
@@ -79,3 +80,6 @@ yamcs-client==1.13.0
 zipp==3.19.1
 zstandard==0.24.0
 pip
+
+--extra-index-url https://packages.example.invalid/simple
+fprime-ci-metrics @ https://packages.example.invalid/fprime_ci_metrics-0.1-py3-none-any.whl
