@@ -359,6 +359,11 @@ function(register_fprime_deployment)
     endif()
     fprime_add_deployment_build_target(${ARGN})
 
+    # Validate that all module dependencies resolve to real targets.
+    # This runs at deployment registration time because the deployment is the last module
+    # registered, so all other targets are guaranteed to exist at this point.
+    fprime_validate_all_module_dependencies()
+
     # Set up target/ targets for this module
     fprime_attach_custom_targets("${INTERNAL_MODULE_NAME}")
 endfunction(register_fprime_deployment)
