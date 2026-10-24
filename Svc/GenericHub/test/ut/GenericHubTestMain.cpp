@@ -57,6 +57,16 @@ TEST(Invalid, TestDeserializationGuards) {
     tester.test_invalid_deserialization_paths();
 }
 
+TEST(Invalid, TestAllocationFailure) {
+    Svc::GenericHubTester tester;
+    tester.test_allocation_failure();
+}
+
+TEST(Invalid, TestCommandDispatchAllocationFailure) {
+    Svc::GenericHubTester tester;
+    tester.test_command_dispatch_allocation_failure();
+}
+
 int main(int argc, char** argv) {
     STest::Random::seed();
     ::testing::InitGoogleTest(&argc, argv);
