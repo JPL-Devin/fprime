@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
     }
 
     for (uint32_t k = 0; k < 4; k++) {
-        printf("static const U32 crc32_ieee802_3_lookup%d[256] = {", k);
+        printf("static const U32 crc32_ieee802_3_lookup%u[256] = {", k);
         for (uint32_t i = 0; i < 0x100; i++) {
             if (i % 4 == 0) {
                 printf("\n   ");
