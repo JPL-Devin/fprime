@@ -32,7 +32,19 @@
         "thomas-bc"
       ],
       "on_pr": true
+    },
+    {
+      "id": "stm32-baremetal",
+      "repository": "fprime-community/fprime-stm32-baremetal-reference",
+      "workflow": "ci.yml",
+      "default_ref": "devel",
+      "timeout_minutes": 45,
+      "failure_policy": "notify",
+      "owners": [
+        "thomas-bc"
+      ],
+      "on_pr": true
     }
   ],
-  "_fork_testing": "Stand-in config for the JPL-Devin fork (remove together with the feature-branch push trigger in ext-ci.yml before going upstream): the real fprime-community entries cannot be dispatched until their ci.yml is on the default branch, so the ext-a/ext-b stubs are used."
+  "_fork_testing": "Stand-in config for the JPL-Devin fork (remove together with the feature-branch push trigger in ext-ci.yml before going upstream): the real fprime-community entries cannot be dispatched until their ci.yml is on the default branch, so the ext-a/ext-b stubs are used. stm32-baremetal is the first real entry (its ci.yml lands in fprime-community/fprime-stm32-baremetal-reference#TBD); set owners to Iva-L once it dispatches from upstream."
 }
