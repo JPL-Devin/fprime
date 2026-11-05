@@ -121,6 +121,10 @@ It does the following:
 In the case where the component is already in `READY` state, this will process the queue immediately after the buffer
 is added to the queue.
 
+`Svc::GenericHub` is a `bufferQueueIn` producer in the recommended hub wiring (see the
+[GenericHub SDD](../../GenericHub/docs/sdd.md#transport-formations)); its frames start with a `U32` message type rather
+than a packet descriptor, so the APID read into the frame context is always 0 and is not consumed downstream.
+
 #### 4.5.2 comPacketQueueIn
 The `comPacketQueueIn` port handler receives an `Fw::ComBuffer` data type and a port number. 
 It does the following:
