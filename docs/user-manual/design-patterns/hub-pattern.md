@@ -108,9 +108,12 @@ the socket; it holds frames while the driver cannot send and resumes when the
 driver re-announces readiness. Size the queue depth to at least the hub's
 buffer count (`D >= N`, instance queue `Q >= N + 8`) so that the hub remains
 the single drop point. The receive side stays `driver -> adapter -> GenericHub`.
-Over `Drv.Udp` a failed send stalls this path until the driver reconnects, so
-prefer TCP or UART with F´ framing. Details, the full connection table, and the
-sizing rule are in the
+Over `Drv.Udp` a failed send stalls this path until the driver reconnects (the
+reference deployment accepts that: UDP needs no framing, and the stall is
+visible as `NumAllocationFailures` rising while `buffQueueDepth` sits at the
+queue depth); TCP and UART recover after a reconnect but need F´ framing plus a
+receive-side adapter that the framework does not provide. Details, the full
+connection table, and the sizing rule are in the
 [GenericHub SDD](../../../Svc/GenericHub/docs/sdd.md#transport-formations).
 
 ## Putting it together

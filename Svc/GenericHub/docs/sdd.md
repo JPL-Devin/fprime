@@ -86,6 +86,10 @@ genericHub.cmdRespOut[0]      -> commandSplitter.seqCmdStatus[0]
 
 ### 2. Hub to buffer driver: send interface
 
+The connections below show the adapter formation; the recommended
+formation routes `toBufferDriver` into `Svc.ComQueue.bufferQueueIn[0]`
+instead (see [Transport formations](#transport-formations)).
+
 The hub sends serialized messages through the buffer driver using imported
 interfaces:
 

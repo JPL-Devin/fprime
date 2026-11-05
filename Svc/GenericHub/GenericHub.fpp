@@ -130,6 +130,9 @@ module Svc {
     #    genericHub.toBufferDriver -> bufferDriver.bufferIn
     #    bufferDriver.bufferInReturn -> genericHub.toBufferDriverReturn
     #    genericHub.deallocate -> bufferManager.bufferSendIn
+    #
+    # The recommended formation routes toBufferDriver through Svc.ComQueue and
+    # Svc.ComStub instead of a ByteStreamBufferAdapter; see docs/sdd.md.
     # ----------------------------------------------------------------------
 
     @ This interface provides ports allocate and deallocate
