@@ -42,6 +42,16 @@ module Svc {
   @| ----------------------------------------------------------------------
   passive component GenericHub {
 
+    @ Type of serialized data on the wire, allowing the receiving hub to expand it
+    enum HubType : U32 {
+      HUB_TYPE_PORT      @< Port type transmission
+      HUB_TYPE_BUFFER    @< Buffer type transmission
+      HUB_TYPE_EVENT     @< Event transmission
+      HUB_TYPE_CHANNEL   @< Telemetry channel type
+      HUB_TYPE_CMD_DISP  @< Command dispatch type
+      HUB_TYPE_CMD_RESP  @< Command response type
+    }
+
     # ----------------------------------------------------------------------
     # Ports for sending data from FSW to the hub
     # ----------------------------------------------------------------------
@@ -51,7 +61,7 @@ module Svc {
     # 1. Invoke allocate to allocate a buffer B.
     # 2. Serialize the hub message type (event, telemetry, serial, buffer),
     #    the port number, and the data into B.
-    # 3. Emit B on toBufferDriver.
+    # 3. Emit B on toBufferDriver (or drop the message if the allocation failed).
     #
     # Sample connections:
     #
@@ -106,7 +116,7 @@ module Svc {
     @ for sending remote commands 
     sync input port cmdDispIn: [CmdDispatcherSequencePorts] Fw.Com
 
-    @ Command response back from remote hub
+    @ Command response back from remote hub, or EXECUTION_ERROR for a command dropped on allocation failure
     output port cmdRespOut: [CmdDispatcherSequencePorts] Fw.CmdResponse
 
     # ----------------------------------------------------------------------
@@ -120,6 +130,9 @@ module Svc {
     #    genericHub.toBufferDriver -> bufferDriver.bufferIn
     #    bufferDriver.bufferInReturn -> genericHub.toBufferDriverReturn
     #    genericHub.deallocate -> bufferManager.bufferSendIn
+    #
+    # The recommended formation routes toBufferDriver through Svc.ComQueue and
+    # Svc.ComStub instead of a ByteStreamBufferAdapter; see docs/sdd.md.
     # ----------------------------------------------------------------------
 
     @ This interface provides ports allocate and deallocate
@@ -208,6 +221,37 @@ module Svc {
 
     @ remote command response 
     sync input port cmdRespIn: [CmdDispatcherSequencePorts] Fw.CmdResponse
+
+    # ----------------------------------------------------------------------
+    # Scheduling, events, and telemetry
+    # ----------------------------------------------------------------------
+
+    @ Schedule input port, used to emit telemetry
+    sync input port schedIn: Svc.Sched
+
+    @ Event port
+    event port Log
+
+    @ Text event port
+    text event port LogText
+
+    @ Time get port
+    time get port Time
+
+    @ Telemetry port
+    telemetry port Tlm
+
+    @ Buffer allocation failed; the outgoing message was dropped
+    event BufferAllocationFailed(
+                                  msgType: HubType @< The hub message type of the dropped message
+                                  $port: FwIndexType @< The input port index of the dropped message
+                                  $size: FwSizeType @< The requested allocation size
+                                ) \
+      severity warning high \
+      format "Buffer allocation failed for message type {} on port {}: requested {} bytes"
+
+    @ The number of failed buffer allocations
+    telemetry NumAllocationFailures: U32
 
   }
 
