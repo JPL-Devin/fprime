@@ -21,21 +21,6 @@ namespace Svc {
 
 class GenericHub final : public GenericHubComponentBase {
   public:
-    /**
-     * HubType:
-     *
-     * Type of serialized data on the wire. Allows for expanding them on the opposing end.
-     */
-    enum HubType {
-        HUB_TYPE_PORT,      //!< Port type transmission
-        HUB_TYPE_BUFFER,    //!< Buffer type transmission
-        HUB_TYPE_EVENT,     //!< Event transmission
-        HUB_TYPE_CHANNEL,   //!< Telemetry channel type
-        HUB_TYPE_CMD_DISP,  //!< Command dispatch type
-        HUB_TYPE_CMD_RESP,  //!< Command response type
-        HUB_TYPE_MAX
-    };
-
     // ----------------------------------------------------------------------
     // Construction, initialization, and destruction
     // ----------------------------------------------------------------------
@@ -133,7 +118,10 @@ class GenericHub final : public GenericHubComponentBase {
 
     //! Frame and send data on toBufferDriver. Returns Fw::Success::FAILURE if the message was dropped because
     //! no sufficiently sized buffer could be allocated.
-    Fw::Success send_data(const HubType type, const FwIndexType port, const U8* data, const FwSizeType size);
+    Fw::Success send_data(const GenericHub_HubType::T type,
+                          const FwIndexType port,
+                          const U8* data,
+                          const FwSizeType size);
 
     std::atomic<U32> m_numAllocationFailures;  //!< Count of dropped messages; incremented from any caller thread
     std::atomic<bool> m_reportingFailure;  //!< Set by the first drop of a failure episode, cleared by a successful send

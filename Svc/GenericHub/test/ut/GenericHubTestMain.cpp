@@ -67,6 +67,16 @@ TEST(Invalid, TestCommandDispatchAllocationFailure) {
     tester.test_command_dispatch_allocation_failure();
 }
 
+TEST(Invalid, TestSelfSinkAllocationFailure) {
+    Svc::GenericHubTester tester(true);
+    tester.test_self_sink();
+}
+
+TEST(Nominal, TestDeferredBufferReturn) {
+    Svc::GenericHubTester tester;
+    tester.test_deferred_return();
+}
+
 int main(int argc, char** argv) {
     STest::Random::seed();
     ::testing::InitGoogleTest(&argc, argv);

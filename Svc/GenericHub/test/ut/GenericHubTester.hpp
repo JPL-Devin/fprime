@@ -14,6 +14,8 @@
 #define TESTER_HPP
 #include <Fw/Com/ComBuffer.hpp>
 #include <Fw/Logger/Logger.hpp>
+#include <Fw/Types/String.hpp>
+#include <Os/Task.hpp>
 #include "GenericHubGTestBase.hpp"
 #include "Svc/GenericHub/GenericHub.hpp"
 
@@ -38,8 +40,9 @@ class GenericHubTester : public GenericHubGTestBase {
 
   public:
     //! Construct object GenericHubTester
+    //! \param selfSink route the sending hub's own Log port back into its eventIn (hub as the event sink)
     //!
-    GenericHubTester();
+    explicit GenericHubTester(bool selfSink = false);
 
     //! Destroy object GenericHubTester
     //!
@@ -97,6 +100,14 @@ class GenericHubTester : public GenericHubGTestBase {
     //! Test that a command dropped on allocation failure is failed back to its caller
     //!
     void test_command_dispatch_allocation_failure();
+
+    //! Test that a hub acting as its own event sink drops the re-entered event without cascading
+    //!
+    void test_self_sink();
+
+    //! Test that an outgoing buffer may be returned later, from another thread
+    //!
+    void test_deferred_return();
 
   private:
     // ----------------------------------------------------------------------
@@ -179,13 +190,16 @@ class GenericHubTester : public GenericHubGTestBase {
   private:
     //! How from_allocate_handler responds to the hub
     enum AllocationMode {
-        ALLOCATE_OK,         //!< Return a buffer of the requested size
-        ALLOCATE_EMPTY,      //!< Return an empty (null) buffer
-        ALLOCATE_UNDERSIZED  //!< Return a valid buffer one byte short of the request
+        ALLOCATE_OK,          //!< Return a buffer of the requested size
+        ALLOCATE_EMPTY,       //!< Return an empty (null) buffer
+        ALLOCATE_EMPTY_ONCE,  //!< Return an empty buffer, then switch to ALLOCATE_OK
+        ALLOCATE_UNDERSIZED   //!< Return a valid buffer one byte short of the request
     };
+    //! Task routine returning the deferred buffer on toBufferDriverReturn
+    static void returnTask(void* ptr);
 
     //! Assert that the last send was dropped with a single BufferAllocationFailed event for the given payload
-    void assert_dropped(GenericHub::HubType type, FwIndexType port, FwSizeType payloadSize);
+    void assert_dropped(GenericHub_HubType::T type, FwIndexType port, FwSizeType payloadSize);
 
     void send_random_comm(U32 port);
 
@@ -242,6 +256,9 @@ class GenericHubTester : public GenericHubGTestBase {
     FwIndexType m_cmdRespOutPort;
     CountingLogger m_logger;
     AllocationMode m_allocation_mode;
+    bool m_self_sink;                   //!< Log is wired back into eventIn instead of the tester
+    bool m_defer_return = false;        //!< from_toBufferDriver keeps the buffer instead of forwarding it
+    Fw::Buffer m_deferred;              //!< Buffer kept by from_toBufferDriver while m_defer_return is set
     bool m_in_failure_episode = false;  //!< True once a drop occurred and no successful send followed
     U32 m_allocation_failures;          //!< Drops injected so far, mirrors the hub's counter
     U8 m_data_store[DATA_SIZE];

@@ -42,6 +42,16 @@ module Svc {
   @| ----------------------------------------------------------------------
   passive component GenericHub {
 
+    @ Type of serialized data on the wire, allowing the receiving hub to expand it
+    enum HubType : U32 {
+      HUB_TYPE_PORT      @< Port type transmission
+      HUB_TYPE_BUFFER    @< Buffer type transmission
+      HUB_TYPE_EVENT     @< Event transmission
+      HUB_TYPE_CHANNEL   @< Telemetry channel type
+      HUB_TYPE_CMD_DISP  @< Command dispatch type
+      HUB_TYPE_CMD_RESP  @< Command response type
+    }
+
     # ----------------------------------------------------------------------
     # Ports for sending data from FSW to the hub
     # ----------------------------------------------------------------------
@@ -230,7 +240,7 @@ module Svc {
 
     @ Buffer allocation failed; the outgoing message was dropped
     event BufferAllocationFailed(
-                                  msgType: U32 @< The hub message type (HubType) of the dropped message
+                                  msgType: HubType @< The hub message type of the dropped message
                                   $port: FwIndexType @< The input port index of the dropped message
                                   $size: FwSizeType @< The requested allocation size
                                 ) \
