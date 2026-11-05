@@ -195,6 +195,8 @@ class GenericHubTester : public GenericHubGTestBase {
         ALLOCATE_EMPTY_ONCE,  //!< Return an empty buffer, then switch to ALLOCATE_OK
         ALLOCATE_UNDERSIZED   //!< Return a valid buffer one byte short of the request
     };
+    //! One self-sink drop: serialIn with the given allocation mode, then check frames out, logger and counter
+    void self_sink_drop(AllocationMode mode, U32 framesOut, U32 expectedFailures);
     //! Task routine returning the deferred buffer on toBufferDriverReturn
     static void returnTask(void* ptr);
 

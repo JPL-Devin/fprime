@@ -470,28 +470,33 @@ void GenericHubTester ::test_command_dispatch_allocation_failure() {
 // Handlers for typed from ports
 // ----------------------------------------------------------------------
 
-void GenericHubTester ::test_self_sink() {
-    this->clearHistory();
+void GenericHubTester ::self_sink_drop(AllocationMode mode, U32 framesOut, U32 expectedFailures) {
     Fw::ComBuffer comm;
     random_fill(comm, FW_COM_BUFFER_MAX_SIZE);
-
-    // Pool empty: the one event of the episode re-enters eventIn, is dropped and counted; no cascade
-    m_allocation_mode = ALLOCATE_EMPTY;
+    m_allocation_mode = mode;
     invoke_to_serialIn(0, comm);
-    ASSERT_from_toBufferDriver_SIZE(0);
+    ASSERT_from_toBufferDriver_SIZE(framesOut);
     ASSERT_EQ(m_logger.m_count, 1);
     invoke_to_schedIn(0, 0);
-    ASSERT_TLM_NumAllocationFailures(0, 2);
+    ASSERT_TLM_NumAllocationFailures(0, expectedFailures);
     m_logger.m_count = 0;
     this->clearHistory();
+}
+
+void GenericHubTester ::test_self_sink() {
+    this->clearHistory();
+    // Pool empty: the one event of the episode re-enters eventIn, is dropped and counted; no cascade
+    self_sink_drop(ALLOCATE_EMPTY, 0, 2);
 
     // A successful send ends the episode
     m_allocation_mode = ALLOCATE_OK;
     send_random_comm(0);
     this->clearHistory();
 
-    // Pool recovers on the re-entry: the event frame goes out and re-arms the report
+    // Pool recovers on the re-entry: the event frame (the hub's only event) goes out and re-arms the report
     m_allocation_mode = ALLOCATE_EMPTY_ONCE;
+    Fw::ComBuffer comm;
+    random_fill(comm, FW_COM_BUFFER_MAX_SIZE);
     invoke_to_serialIn(0, comm);
     ASSERT_from_toBufferDriver_SIZE(1);
     ASSERT_from_eventOut_SIZE(1);
@@ -503,12 +508,7 @@ void GenericHubTester ::test_self_sink() {
     this->clearHistory();
 
     // The next drop starts a new episode: reported (and dropped on re-entry) once more
-    m_allocation_mode = ALLOCATE_EMPTY;
-    invoke_to_serialIn(0, comm);
-    ASSERT_from_toBufferDriver_SIZE(0);
-    ASSERT_EQ(m_logger.m_count, 1);
-    invoke_to_schedIn(0, 0);
-    ASSERT_TLM_NumAllocationFailures(0, 5);
+    self_sink_drop(ALLOCATE_EMPTY, 0, 5);
 }
 
 void GenericHubTester ::returnTask(void* ptr) {
