@@ -26,8 +26,10 @@ For example, logical connections between components in deployments A and B:
 
 The driver paired with each hub must be a **buffer driver**: a combination of
 components that sends and receives `Fw::Buffer` objects across the transport.
-The reference implementation uses a `Drv::ByteStreamDriver` together with a
-`Drv::ByteStreamBufferAdapter`. Other transport-specific drivers may be used
+The reference implementation uses `Drv::Udp` with `Svc::ComQueue` and
+`Svc::ComStub` on the send side and a `Drv::ByteStreamBufferAdapter` on the
+receive side (see [Transport formations](#transport-formations)). Other
+transport-specific drivers may be used
 provided that they implement the buffer-driver interfaces described below.
 
 ## Design
@@ -355,8 +357,10 @@ message boundaries, or F´ framing must be added around the link (see
 
 In the queued formation, `Svc::ComQueue` reads the first
 `FwPacketDescriptorType` of every buffer as an APID for the frame context. A
-hub message begins with the `U32` message type (values 0–5), so that APID
-always reads 0; nothing downstream of the hub consumes it. No framer sits
+hub message begins with the `U32` message type (values 0–5), so with the
+default `U16` `FwPacketDescriptorType` that APID always reads 0 (with a `U32`
+descriptor it reads the message type); nothing downstream of the hub consumes
+it. No framer sits
 between `Svc::ComQueue` and `Svc::ComStub`: the hub's own header is the
 framing on a boundary-preserving transport.
 
@@ -484,7 +488,8 @@ queue size.
 Operator signatures: `NumAllocationFailures` rising with `BufferManager`
 `NoBuffs` rising means the pool is too small or the link is slower than the
 producers; `buffQueueDepth[0]` reported at `D` on the same ticks means the
-link, not the pool, is the bottleneck; `QueueOverflow` means `D < N`.
+link, not the pool, is the bottleneck; `QueueOverflow` means `D < N`;
+`buffIngressDropped[0]` rising with no event means `Q` is too small.
 
 ## Example formations
 
@@ -508,4 +513,4 @@ The following diagrams show progressively more detail:
 | 2026-07-09 | Documented command routing, current configuration constants, buffer-driver interfaces, framing, and buffer lifecycle |
 | 2026-09-29 | Documented threading, command index pairing, cross-deployment type agreement, silent receive drops, and allocation failure |
 | 2026-10-11 | Allocation failure drops the message with an event and counter instead of asserting; added `schedIn` and the hub's own event/telemetry ports |
-| 2026-11-05 | Message type is the `HubType` FPP enum; documented the transport formations (queued formation recommended), transport requirements, and sizing rule |
+| 2026-11-05 | Message type is the `HubType` FPP enum (`Svc::GenericHub_HubType`, replacing the C++ `Svc::GenericHub::HubType` enum; `HUB_TYPE_MAX` becomes `NUM_CONSTANTS`); documented the transport formations (queued formation recommended), transport requirements, and sizing rule |

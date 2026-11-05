@@ -86,7 +86,9 @@ port.
   `EXECUTION_ERROR`.
 - Monitor the link outside the hub. GenericHub reports no transport errors and
   silently drops invalid received messages; `Svc.ComQueue` reports queue depth
-  and overflow, `Drv::ByteStreamBufferAdapter` reports driver errors.
+  and overflow, `Drv::ByteStreamBufferAdapter` reports receive errors. In the
+  recommended wiring a failed send is not evented (see the SDD's residual-loss
+  note).
 
 ## Recommended wiring
 

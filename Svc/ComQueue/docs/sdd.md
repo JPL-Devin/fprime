@@ -123,7 +123,8 @@ is added to the queue.
 
 `Svc::GenericHub` is a `bufferQueueIn` producer in the recommended hub wiring (see the
 [GenericHub SDD](../../GenericHub/docs/sdd.md#transport-formations)); its frames start with a `U32` message type rather
-than a packet descriptor, so the APID read into the frame context is always 0 and is not consumed downstream.
+than a packet descriptor, so the APID read into the frame context is 0 with the default `U16` `FwPacketDescriptorType` and is not
+consumed downstream.
 
 #### 4.5.2 comPacketQueueIn
 The `comPacketQueueIn` port handler receives an `Fw::ComBuffer` data type and a port number. 
