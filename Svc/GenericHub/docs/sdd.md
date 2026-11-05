@@ -464,9 +464,17 @@ queue size.
   `Svc::ComQueue` never overflows.
 - `Q >= N + 8`: the instance queue carries the `N` buffer handles plus the
   status, rate-group and command messages that can be in flight.
-- Buffer size `S >= FW_COM_BUFFER_MAX_SIZE + 2 * sizeof(U32) +
-  sizeof(FwBuffSizeType)` for event, telemetry, command and serial traffic;
-  `bufferIn` payloads need `S` at least their largest size plus that header.
+- Buffer size `S >= max(payload) + 2 * sizeof(U32) + sizeof(FwBuffSizeType)`
+  (the hub header), where the largest payload per traffic kind is
+  `FW_COM_BUFFER_MAX_SIZE + sizeof(U32)` for commands (the `Fw::ComBuffer`
+  plus its context), `sizeof(FwEventIdType) + Fw::Time::SERIALIZED_SIZE +
+  Fw::LogSeverity::SERIALIZED_SIZE + sizeof(FwSizeStoreType) +
+  FW_LOG_BUFFER_MAX_SIZE` for events, `sizeof(FwChanIdType) +
+  Fw::Time::SERIALIZED_SIZE + sizeof(FwSizeStoreType) + FW_TLM_BUFFER_MAX_SIZE`
+  for telemetry, and the largest serialized argument list or `bufferIn`
+  payload for serial and buffer traffic. Sizing to `FW_COM_BUFFER_MAX_SIZE`
+  plus the header alone drops every maximum-size event, telemetry and command
+  frame.
 - Give the hub its own pool (or `Svc.BufferManager` bin): when the bin is
   shared with the driver's receive allocation, receive pressure starves sends.
 - In the adapter formation `D` and `Q` do not apply; size `N` for the number
