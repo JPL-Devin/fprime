@@ -571,8 +571,11 @@ def poll_all(state: dict) -> None:
                     f"/repos/{s['repository']}/actions/runs/{s['remote_run_id']}"
                 )
                 if run["status"] == "waiting":
-                    # Held for a protected-environment approval in the external repo: neither clock
-                    # runs; the orchestrator job's own timeout bounds the wait (finalize cancels it).
+                    # Held for a protected-environment approval in the external repo (possibly after
+                    # earlier jobs ran): both clocks restart when it is released; the orchestrator
+                    # job's own timeout bounds the wait (finalize cancels it).
+                    s["remote_started_at"] = None
+                    s["dispatched_at"] = now().strftime("%Y-%m-%dT%H:%M:%SZ")
                     if not s.get("waiting_reported"):
                         s["waiting_reported"] = True
                         report_waiting(s)
