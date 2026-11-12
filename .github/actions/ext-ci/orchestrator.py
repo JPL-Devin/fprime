@@ -319,7 +319,7 @@ def relevant_change(files: list[str] | None, manifest: dict) -> bool:
 def select_repos(manifest: dict, target: dict) -> list[dict]:
     """Return the manifest entries to run: all of them, narrowed to the `repos` input ids on a manual run
     (unknown id raises RuntimeError) and to entries with `on_pr` true (the default) when a PR is tested,
-    manual runs included. Entries the PR itself adds (`new`, see pr_manifest) ignore `on_pr`: the PR
+    manual runs included. Entries the PR itself adds (`new`, see head_manifest) ignore `on_pr`: the PR
     introducing an entry is the one run it must get."""
     repos = manifest["repos"]
     wanted = (env.get("INPUT_REPOS") or "all").strip()
@@ -336,22 +336,37 @@ def select_repos(manifest: dict, target: dict) -> list[dict]:
     return repos
 
 
-def pr_manifest(manifest: dict, target: dict, files: list[str] | None) -> dict:
-    """The manifest to run from: the PR head's when the PR under test edits manifest.json, so a PR
-    adding an external repo exercises it on its own checks; the default branch's otherwise. Only the
-    data is taken from the PR (the workflow and this script stay default-branch); entries whose id the
-    default branch does not know are marked `new`. Raises when the PR's copy is unreadable.
+def head_manifest(default: dict, target: dict, files: list[str] | None) -> dict:
+    """The manifest to run from: the one at the F´ revision under test (PR head, merge-queue commit or
+    manual ref), so a PR that adds or edits an entry exercises it on its own checks. It is read as
+    data through the contents API of this repo (PR head commits are reachable here, fork or not); the
+    workflow and this script stay default-branch. When the PR edits manifest.json (`files`), entries
+    whose id the default branch does not have are marked `new`; a stale branch that merely predates a
+    removal gets no such mark. Raises when the file is missing, malformed or has duplicate ids.
     """
-    if not target["pr"] or not files or MANIFEST_PATH not in files:
-        return manifest
-    blob = own.get(
-        f"/repos/{target['head_repo']}/contents/{MANIFEST_PATH}?ref={target['head_sha']}"
-    )
+    try:
+        blob = own.get(
+            f"/repos/{REPO}/contents/{MANIFEST_PATH}?ref={target['head_sha']}"
+        )
+    except ApiError as e:
+        if e.status == 404:
+            raise RuntimeError(
+                f"no {MANIFEST_PATH} at {fprime_rev(target)} (predates external CI?)"
+            ) from e
+        raise
     head = json.loads(base64.b64decode(blob["content"]))
-    known = {entry["id"] for entry in manifest["repos"]}
+    ids = [entry["id"] for entry in head["repos"]]
+    if len(ids) != len(set(ids)):
+        raise RuntimeError(f"duplicate ids in {MANIFEST_PATH} at {fprime_rev(target)}")
+    known = {entry["id"] for entry in default["repos"]}
+    edited = files is None or MANIFEST_PATH in files
     for entry in head["repos"]:
-        entry["new"] = entry["id"] not in known
-    log(f"using the PR's manifest.json ({target['head_sha'][:7]})")
+        entry["new"] = edited and entry["id"] not in known
+    new = [entry["id"] for entry in head["repos"] if entry["new"]]
+    log(
+        f"manifest.json from {fprime_rev(target)}: {ids}"
+        + (f", new: {new}" if new else "")
+    )
     return head
 
 
@@ -475,7 +490,7 @@ def dispatch_one(manifest: dict, entry: dict, target: dict, state: dict) -> None
     ) as e:  # noqa: BLE001 - one repo's failure must not stop the fan-out
         hint = (
             " (no such workflow, or the repository is not in the External CI App installation)"
-            if isinstance(e, ApiError) and e.status == 404
+            if isinstance(e, ApiError) and e.status in (403, 404)
             else ""
         )
         s["error"], s["remote_conclusion"] = (
@@ -607,13 +622,12 @@ def failure_details(s: dict) -> str:
 
 
 def check_conclusion(s: dict) -> str:
-    """Map the remote result to the Check Run conclusion: success, neutral (any failure on a
-    `failure_policy: notify` repo), cancelled, timed_out or failure."""
+    """Map the remote result to the Check Run conclusion: success, cancelled, timed_out or failure.
+    `failure_policy` does not soften it (GitHub folds neutral checks away; a non-blocking failure
+    must still show red): it only decides whether this job fails, see run()."""
     rc = s["remote_conclusion"]
     if rc == "success":
         return "success"
-    if s["failure_policy"] == "notify":
-        return "neutral"  # visible, but does not block the PR
     if rc == "cancelled":
         return "cancelled"
     if rc in ("timed_out", "queue_timeout"):
@@ -640,7 +654,7 @@ def finalize_one(target: dict, s: dict) -> None:
     if s["failure_policy"] == "notify" and s["remote_conclusion"] != "success":
         lines += [
             "",
-            f"This repo is {code('failure_policy: notify')}: the failure does not block the PR.",
+            f"This repo is {code('failure_policy: notify')}: informational, the failure does not block merging.",
         ]
     lines += ["", f"Orchestrator run: {ORCHESTRATOR_URL}"]
     output = {
@@ -737,11 +751,12 @@ def write_summary(target: dict, state: dict) -> None:
 
 # ---------------------------------------------------------------- modes
 def run() -> None:
-    """The `run` mode: resolve target, load manifest, fork preflight, select repos, dispatch, poll,
-    close checks, write summary. Exits 1 when a `failure_policy: block` repo did not succeed or the
-    orchestrator itself failed on any repo."""
+    """The `run` mode: resolve target, fork preflight, load the target's manifest, select repos,
+    dispatch, poll, close checks, write summary. Exits 1 when a `failure_policy: block` repo did not
+    succeed or the orchestrator itself failed on any repo."""
     target = resolve_target()
     log(f"target: {json.dumps(target)}")
+    # The default branch's copy: trusted, used for the preflight below and as the `new` baseline.
     with open(MANIFEST_PATH) as f:
         manifest = json.load(f)
     # Fork preflight: a fork of F´ that copies this workflow must not dispatch into the ext repos.
@@ -753,7 +768,7 @@ def run() -> None:
         )
         return
     files = changed_files(target)
-    manifest = pr_manifest(manifest, target, files)
+    manifest = head_manifest(manifest, target, files)
     repos = select_repos(manifest, target)
     if ATTEMPT > 1:  # re-run: only the repos whose check is not green yet
         repos = [e for e in repos if not check_succeeded(manifest, e, target)]
@@ -821,7 +836,7 @@ def finalize() -> None:
         except ApiError:
             pass
         if cancelled:
-            conclusion = "neutral" if s["failure_policy"] == "notify" else "cancelled"
+            conclusion = "cancelled"
             title, why = (
                 "Cancelled by orchestrator",
                 "The orchestrator run was cancelled",
@@ -835,7 +850,7 @@ def finalize() -> None:
             )
             why = "Closed by the finalize step after the check update failed"
         else:
-            conclusion = "neutral" if s["failure_policy"] == "notify" else "failure"
+            conclusion = "failure"
             title = "Orchestrator error"
             why = f"The orchestrator run ended before this repo was reported ({code(s.get('error') or 'orchestrator error')})"
         try:

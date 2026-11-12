@@ -18,18 +18,20 @@ also runs for merge groups and on manual dispatch (`repos`, `pr_number` or `fpri
 | `repos[].workflow` | workflow file in that repository; must accept the inputs below |
 | `repos[].default_ref` | branch to dispatch when neither `pr-<N>` nor a branch named like the F´ base branch exists there |
 | `repos[].timeout_minutes` | remote running time allowed, and separately the time it may wait in queue; the remote run is cancelled on timeout. Keep `2 * timeout_minutes` under the job's `timeout-minutes` in ext-ci.yml |
-| `repos[].failure_policy` | `block`: a failure is a red check and fails the orchestrator job; `notify`: neutral (non-blocking) check |
-| `repos[].on_pr` | `false`: never dispatched for a PR head (merge queue and manual `fprime_ref` runs only); ignored for an entry on the PR that adds it (see below) |
+| `repos[].failure_policy` | `block`: a failure is a red check and fails the orchestrator job; `notify`: the check still shows the real result (red on failure) but the orchestrator job stays green; do not make it a required check |
+| `repos[].on_pr` | `false`: never dispatched for a PR head (merge queue and manual `fprime_ref` runs only), except once on the PR that adds the entry (see below) |
 
 Orchestrator-side faults (dispatch error, run never started, polling lost the run) fail the job
 whatever the policy. A re-run of the orchestrator re-dispatches only the repos whose check is not green.
 
-### A PR that edits manifest.json
+### Which manifest.json is used
 
-The orchestrator then runs from the PR head's `manifest.json` (fetched as data; the workflow and the
-script still come from the default branch), so a PR adding an external repository exercises it on its
-own checks. Entries the default branch does not know ignore `on_pr`. The repository must already be in
-the External CI App installation or the check reports `dispatch failed ... 404`. A remote run held by a
+The one at the F´ revision under test: the PR head, the merge-queue commit or the manual `fprime_ref`.
+It is read as data through this repository's contents API (PR head commits are reachable here, fork or
+not); the workflow and the script come from the default branch, whose `manifest.json` only serves the
+`upstream_repository` preflight. So a PR that adds or edits an entry exercises it on its own checks, and
+entries the default branch does not have ignore `on_pr`. The external repository must already be in the
+External CI App installation or the check reports `dispatch failed ... 403`. A remote run held by a
 protected environment shows as "Waiting for approval"; both timeout clocks restart when it is released
 and the orchestrator job's `timeout-minutes` bounds the wait.
 
