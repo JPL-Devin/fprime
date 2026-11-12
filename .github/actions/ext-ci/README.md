@@ -19,22 +19,19 @@ also runs for merge groups and on manual dispatch (`repos`, `pr_number` or `fpri
 | `repos[].default_ref` | branch to dispatch when neither `pr-<N>` nor a branch named like the F´ base branch exists there |
 | `repos[].timeout_minutes` | remote running time allowed, and separately the time it may wait in queue; the remote run is cancelled on timeout. Keep `2 * timeout_minutes` under the job's `timeout-minutes` in ext-ci.yml |
 | `repos[].failure_policy` | `block`: a failure is a red check and fails the orchestrator job; `notify`: neutral (non-blocking) check |
-| `repos[].on_pr` | `false`: never dispatched for a PR head (merge queue and manual `fprime_ref` runs only); not honoured for the PR that adds the entry (see below) |
+| `repos[].on_pr` | `false`: never dispatched for a PR head (merge queue and manual `fprime_ref` runs only); ignored for an entry on the PR that adds it (see below) |
 
 Orchestrator-side faults (dispatch error, run never started, polling lost the run) fail the job
 whatever the policy. A re-run of the orchestrator re-dispatches only the repos whose check is not green.
 
-### Proposed entries (a PR that edits manifest.json)
+### A PR that edits manifest.json
 
-A PR that adds an entry, or re-points an existing one to another `repository`/`workflow`, gets that
-entry dispatched on its own checks as `External CI / <id> (proposed)`: `failure_policy: notify`, never
-required, `on_pr` ignored. The PR's manifest is author-controlled data, so the default-branch manifest
-stays authoritative for everything it defines (`check_prefix`, `paths_ignore`, existing ids: a PR
-cannot redefine an existing check, the devel entry still runs under its normal name). A remote run held
-by a protected environment shows as "Waiting for approval"; approve it within the orchestrator job's
-`timeout-minutes` or it is cancelled. The repository must already be in the External CI App installation
-or the proposed check reports `dispatch failed ... 404`. An unreadable PR manifest gives a single failed
-`External CI / manifest (proposed)` check.
+The orchestrator then runs from the PR head's `manifest.json` (fetched as data; the workflow and the
+script still come from the default branch), so a PR adding an external repository exercises it on its
+own checks. Entries the default branch does not know ignore `on_pr`. The repository must already be in
+the External CI App installation or the check reports `dispatch failed ... 404`. A remote run held by a
+protected environment shows as "Waiting for approval"; both timeout clocks restart when it is released
+and the orchestrator job's `timeout-minutes` bounds the wait.
 
 ## Contract for an external `ci.yml`
 
@@ -44,8 +41,8 @@ or the proposed check reports `dispatch failed ... 404`. An unreadable PR manife
   runs: the dispatched run executes untrusted F´ PR code in the external repository's own context.
 - Repositories with self-hosted or hardware runners: `on_pr: false` in the manifest, ephemeral runners,
   SHA-pinned actions, a protected environment with required reviewers on the hardware job, and a job-level
-  guard on `inputs.fprime_repository` in the workflow. The manifest alone is not the gate: the PR that adds
-  the entry dispatches it once (see "Proposed entries").
+  guard on `inputs.fprime_repository` in the workflow. `on_pr` alone is not the gate: the PR that adds the
+  entry dispatches it once.
 
 ## Credentials
 

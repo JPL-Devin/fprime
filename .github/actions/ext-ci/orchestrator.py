@@ -38,7 +38,6 @@ SERVER = env.get("GITHUB_SERVER_URL", "https://github.com")
 STATE_FILE = "ext-ci-state.json"
 RESULTS_FILE = "ext-ci-results.json"
 MANIFEST_PATH = ".github/actions/ext-ci/manifest.json"
-PROPOSED = " (proposed)"  # id suffix of entries taken from the PR's own manifest
 POLL_S = int(env.get("POLL_INTERVAL_SECONDS") or 60)
 ORCHESTRATOR_FAULTS = (
     "dispatch_failed",
@@ -317,78 +316,43 @@ def relevant_change(files: list[str] | None, manifest: dict) -> bool:
     return not all(ignored(f) for f in files)
 
 
-def select_repos(manifest: dict, target: dict, proposed: list[dict] = ()) -> list[dict]:
-    """Return the manifest entries to run: all of them plus the PR's `proposed` ones, narrowed to the
-    `repos` input ids on a manual run (unknown id raises RuntimeError; a proposed entry matches its
-    base id) and to entries with `on_pr` true (the default) when a PR is tested, manual runs included.
-    Proposed entries ignore `on_pr`: the PR introducing an entry is the one run it must get.
-    """
-    repos = manifest["repos"] + list(proposed)
+def select_repos(manifest: dict, target: dict) -> list[dict]:
+    """Return the manifest entries to run: all of them, narrowed to the `repos` input ids on a manual run
+    (unknown id raises RuntimeError) and to entries with `on_pr` true (the default) when a PR is tested,
+    manual runs included. Entries the PR itself adds (`new`, see pr_manifest) ignore `on_pr`: the PR
+    introducing an entry is the one run it must get."""
+    repos = manifest["repos"]
     wanted = (env.get("INPUT_REPOS") or "all").strip()
     if EVENT_NAME == "workflow_dispatch" and wanted and wanted != "all":
         ids = [s.strip() for s in wanted.split(",") if s.strip()]
-        base_id = lambda entry: entry["id"].removesuffix(PROPOSED)  # noqa: E731
-        unknown = [i for i in ids if not any(base_id(entry) == i for entry in repos)]
+        unknown = [i for i in ids if not any(entry["id"] == i for entry in repos)]
         if unknown:
             raise RuntimeError("unknown manifest ids: " + ", ".join(unknown))
-        repos = [entry for entry in repos if base_id(entry) in ids]
+        repos = [entry for entry in repos if entry["id"] in ids]
     if target["pr"]:
         repos = [
-            entry
-            for entry in repos
-            if entry.get("on_pr", True) or entry.get("proposed")
+            entry for entry in repos if entry.get("on_pr", True) or entry.get("new")
         ]
     return repos
 
 
-def proposed_repos(manifest: dict, target: dict, files: list[str] | None) -> list[dict]:
-    """Entries the PR under test adds to manifest.json (or re-points to another repository/workflow),
-    so the PR that introduces an external repo exercises it on its own checks.
-
-    The PR's manifest is PR-author-controlled data, so the default-branch manifest stays authoritative
-    for everything it defines: `check_prefix`, `paths_ignore` and every existing id (a PR cannot
-    redefine, and thereby trivially pass, an existing check). Proposed entries run under
-    `<id> (proposed)` with `failure_policy: notify`; `on_pr` is not honoured for them, the external
-    workflow's own guard (environment, `fprime_repository` check) is what protects hardware runners.
-    Raises on an unreadable or malformed PR manifest; the caller reports that as a failed check.
+def pr_manifest(manifest: dict, target: dict, files: list[str] | None) -> dict:
+    """The manifest to run from: the PR head's when the PR under test edits manifest.json, so a PR
+    adding an external repo exercises it on its own checks; the default branch's otherwise. Only the
+    data is taken from the PR (the workflow and this script stay default-branch); entries whose id the
+    default branch does not know are marked `new`. Raises when the PR's copy is unreadable.
     """
     if not target["pr"] or not files or MANIFEST_PATH not in files:
-        return []
+        return manifest
     blob = own.get(
         f"/repos/{target['head_repo']}/contents/{MANIFEST_PATH}?ref={target['head_sha']}"
     )
     head = json.loads(base64.b64decode(blob["content"]))
-    current = {e["id"]: e for e in manifest["repos"]}
-    ids = [e.get("id") for e in head["repos"]]
-    if len(set(ids)) != len(ids):
-        raise ValueError("duplicate ids")
-    proposed = []
-    for e in head["repos"]:
-        if not isinstance(e.get("id"), str) or not isinstance(
-            e.get("timeout_minutes", 60), int
-        ):
-            raise ValueError(
-                f"entry {e.get('id')!r}: id must be a string, timeout_minutes an integer"
-            )
-        known = current.get(e["id"])
-        if known and (known["repository"], known["workflow"]) == (
-            e["repository"],
-            e["workflow"],
-        ):
-            continue
-        if not re.fullmatch(r"[\w.-]+/[\w.-]+", e["repository"]) or not re.fullmatch(
-            r"[\w.-]+\.ya?ml", e["workflow"]
-        ):
-            raise ValueError(f"entry {e['id']!r}: malformed repository or workflow")
-        proposed.append(
-            {
-                **e,
-                "id": e["id"] + PROPOSED,
-                "failure_policy": "notify",
-                "proposed": True,
-            }
-        )
-    return proposed
+    known = {entry["id"] for entry in manifest["repos"]}
+    for entry in head["repos"]:
+        entry["new"] = entry["id"] not in known
+    log(f"using the PR's manifest.json ({target['head_sha'][:7]})")
+    return head
 
 
 def resolve_ext_ref(entry: dict, target: dict) -> str:
@@ -442,7 +406,6 @@ def dispatch_one(manifest: dict, entry: dict, target: dict, state: dict) -> None
         "failure_policy": entry.get("failure_policy", "block"),
         "timeout_minutes": entry.get("timeout_minutes", 60),
         "dispatched_at": now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "proposed": bool(entry.get("proposed")),
         "check_run_id": None,
         "remote_run_id": None,
         "remote_run_url": None,
@@ -790,14 +753,8 @@ def run() -> None:
         )
         return
     files = changed_files(target)
-    bad_manifest = None
-    try:
-        proposed = proposed_repos(manifest, target, files)
-    except (
-        Exception
-    ) as e:  # noqa: BLE001 - a broken PR manifest gets its own failed check below
-        proposed, bad_manifest = [], f"{type(e).__name__}: {e}"
-    repos = select_repos(manifest, target, proposed)
+    manifest = pr_manifest(manifest, target, files)
+    repos = select_repos(manifest, target)
     if ATTEMPT > 1:  # re-run: only the repos whose check is not green yet
         repos = [e for e in repos if not check_succeeded(manifest, e, target)]
         log(
@@ -805,21 +762,6 @@ def run() -> None:
         )
     state = {"target": target, "attempt": ATTEMPT, "repos": {}}
     save_state(state)
-    if bad_manifest:
-        own.post(
-            f"/repos/{REPO}/check-runs",
-            {
-                "name": check_name(manifest, "manifest" + PROPOSED),
-                "head_sha": target["head_sha"],
-                "status": "completed",
-                "conclusion": "failure",
-                "details_url": ORCHESTRATOR_URL,
-                "output": {
-                    "title": "This PR's manifest.json could not be used",
-                    "summary": f"{code(bad_manifest)}\n\nOrchestrator: {ORCHESTRATOR_URL}",
-                },
-            },
-        )
     if EVENT_NAME != "workflow_dispatch" and not relevant_change(files, manifest):
         log("no relevant files changed; marking all repos as skipped")
         skip_all(manifest, target, repos, state)
@@ -843,8 +785,6 @@ def run() -> None:
         s["id"]
         for s in state["repos"].values()
         if (s["conclusion"] or check_conclusion(s)) != "success"
-        # a PR's own (proposed) entry never fails the job: App not installed yet, ...
-        and not s.get("proposed")
         and (
             s["failure_policy"] != "notify"
             or s["remote_conclusion"] in ORCHESTRATOR_FAULTS
