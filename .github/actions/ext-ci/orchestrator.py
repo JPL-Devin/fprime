@@ -359,8 +359,17 @@ def proposed_repos(manifest: dict, target: dict, files: list[str] | None) -> lis
     )
     head = json.loads(base64.b64decode(blob["content"]))
     current = {e["id"]: e for e in manifest["repos"]}
+    ids = [e.get("id") for e in head["repos"]]
+    if len(set(ids)) != len(ids):
+        raise ValueError("duplicate ids")
     proposed = []
     for e in head["repos"]:
+        if not isinstance(e.get("id"), str) or not isinstance(
+            e.get("timeout_minutes", 60), int
+        ):
+            raise ValueError(
+                f"entry {e.get('id')!r}: id must be a string, timeout_minutes an integer"
+            )
         known = current.get(e["id"])
         if known and (known["repository"], known["workflow"]) == (
             e["repository"],
