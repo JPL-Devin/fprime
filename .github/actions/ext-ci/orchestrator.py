@@ -19,6 +19,7 @@ the workflow):
                   remote runs
 """
 
+import base64
 import json
 import os
 import re
@@ -37,6 +38,7 @@ SERVER = env.get("GITHUB_SERVER_URL", "https://github.com")
 STATE_FILE = "ext-ci-state.json"
 RESULTS_FILE = "ext-ci-results.json"
 MANIFEST_PATH = ".github/actions/ext-ci/manifest.json"
+PROPOSED = " (proposed)"  # id suffix of entries taken from the PR's own manifest
 POLL_S = int(env.get("POLL_INTERVAL_SECONDS") or 60)
 ORCHESTRATOR_FAULTS = (
     "dispatch_failed",
@@ -315,21 +317,69 @@ def relevant_change(files: list[str] | None, manifest: dict) -> bool:
     return not all(ignored(f) for f in files)
 
 
-def select_repos(manifest: dict, target: dict) -> list[dict]:
-    """Return the manifest entries to run: all of them, narrowed to the `repos` input ids on a manual run
-    (unknown id raises RuntimeError) and to entries with `on_pr` true (the default) when a PR is tested,
-    manual runs included."""
-    repos = manifest["repos"]
+def select_repos(manifest: dict, target: dict, proposed: list[dict] = ()) -> list[dict]:
+    """Return the manifest entries to run: all of them plus the PR's `proposed` ones, narrowed to the
+    `repos` input ids on a manual run (unknown id raises RuntimeError; a proposed entry matches its
+    base id) and to entries with `on_pr` true (the default) when a PR is tested, manual runs included.
+    Proposed entries ignore `on_pr`: the PR introducing an entry is the one run it must get.
+    """
+    repos = manifest["repos"] + list(proposed)
     wanted = (env.get("INPUT_REPOS") or "all").strip()
     if EVENT_NAME == "workflow_dispatch" and wanted and wanted != "all":
         ids = [s.strip() for s in wanted.split(",") if s.strip()]
-        unknown = [i for i in ids if not any(entry["id"] == i for entry in repos)]
+        base_id = lambda entry: entry["id"].removesuffix(PROPOSED)  # noqa: E731
+        unknown = [i for i in ids if not any(base_id(entry) == i for entry in repos)]
         if unknown:
             raise RuntimeError("unknown manifest ids: " + ", ".join(unknown))
-        repos = [entry for entry in repos if entry["id"] in ids]
+        repos = [entry for entry in repos if base_id(entry) in ids]
     if target["pr"]:
-        repos = [entry for entry in repos if entry.get("on_pr", True)]
+        repos = [
+            entry
+            for entry in repos
+            if entry.get("on_pr", True) or entry.get("proposed")
+        ]
     return repos
+
+
+def proposed_repos(manifest: dict, target: dict, files: list[str] | None) -> list[dict]:
+    """Entries the PR under test adds to manifest.json (or re-points to another repository/workflow),
+    so the PR that introduces an external repo exercises it on its own checks.
+
+    The PR's manifest is PR-author-controlled data, so the default-branch manifest stays authoritative
+    for everything it defines: `check_prefix`, `paths_ignore` and every existing id (a PR cannot
+    redefine, and thereby trivially pass, an existing check). Proposed entries run under
+    `<id> (proposed)` with `failure_policy: notify`; `on_pr` is not honoured for them, the external
+    workflow's own guard (environment, `fprime_repository` check) is what protects hardware runners.
+    Raises on an unreadable or malformed PR manifest; the caller reports that as a failed check.
+    """
+    if not target["pr"] or not files or MANIFEST_PATH not in files:
+        return []
+    blob = own.get(
+        f"/repos/{target['head_repo']}/contents/{MANIFEST_PATH}?ref={target['head_sha']}"
+    )
+    head = json.loads(base64.b64decode(blob["content"]))
+    current = {e["id"]: e for e in manifest["repos"]}
+    proposed = []
+    for e in head["repos"]:
+        known = current.get(e["id"])
+        if known and (known["repository"], known["workflow"]) == (
+            e["repository"],
+            e["workflow"],
+        ):
+            continue
+        if not re.fullmatch(r"[\w.-]+/[\w.-]+", e["repository"]) or not re.fullmatch(
+            r"[\w.-]+\.ya?ml", e["workflow"]
+        ):
+            raise ValueError(f"entry {e['id']!r}: malformed repository or workflow")
+        proposed.append(
+            {
+                **e,
+                "id": e["id"] + PROPOSED,
+                "failure_policy": "notify",
+                "proposed": True,
+            }
+        )
+    return proposed
 
 
 def resolve_ext_ref(entry: dict, target: dict) -> str:
@@ -383,6 +433,7 @@ def dispatch_one(manifest: dict, entry: dict, target: dict, state: dict) -> None
         "failure_policy": entry.get("failure_policy", "block"),
         "timeout_minutes": entry.get("timeout_minutes", 60),
         "dispatched_at": now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "proposed": bool(entry.get("proposed")),
         "check_run_id": None,
         "remote_run_id": None,
         "remote_run_url": None,
@@ -450,7 +501,15 @@ def dispatch_one(manifest: dict, entry: dict, target: dict, state: dict) -> None
     except (
         Exception
     ) as e:  # noqa: BLE001 - one repo's failure must not stop the fan-out
-        s["error"], s["remote_conclusion"] = f"dispatch failed: {e}", "dispatch_failed"
+        hint = (
+            " (no such workflow, or the repository is not in the External CI App installation)"
+            if isinstance(e, ApiError) and e.status == 404
+            else ""
+        )
+        s["error"], s["remote_conclusion"] = (
+            f"dispatch failed: {e}{hint}",
+            "dispatch_failed",
+        )
         log(f"::error::[{entry['id']}] {s['error']}")
     save_state(state)
 
@@ -461,6 +520,24 @@ def cancel_run(s: dict) -> None:
         ext.post(f"/repos/{s['repository']}/actions/runs/{s['remote_run_id']}/cancel")
     except ApiError as e:
         log(f"::warning::[{s['id']}] cancel: {e}")
+
+
+def report_waiting(s: dict) -> None:
+    """Retitle one repo's Check Run while its remote run waits for an environment approval."""
+    log(f"[{s['id']}] waiting for approval in {s['repository']}: {s['remote_run_url']}")
+    try:
+        own.patch(
+            f"/repos/{REPO}/check-runs/{s['check_run_id']}",
+            {
+                "output": {
+                    "title": f"Waiting for approval in {s['repository']}",
+                    "summary": f"The remote run is held by a protected environment and needs a reviewer "
+                    f"of {code(s['repository'])}: {s['remote_run_url']}\n\nOrchestrator: {ORCHESTRATOR_URL}",
+                },
+            },
+        )
+    except ApiError as e:  # cosmetic
+        log(f"::warning::[{s['id']}] check update: {e}")
 
 
 def poll_all(state: dict) -> None:
@@ -484,8 +561,17 @@ def poll_all(state: dict) -> None:
                 run = ext.get(
                     f"/repos/{s['repository']}/actions/runs/{s['remote_run_id']}"
                 )
-                if run.get("run_started_at") and not s["remote_started_at"]:
-                    s["remote_started_at"] = run["run_started_at"]
+                if run["status"] == "waiting":
+                    # Held for a protected-environment approval in the external repo: neither clock
+                    # runs; the orchestrator job's own timeout bounds the wait (finalize cancels it).
+                    if not s.get("waiting_reported"):
+                        s["waiting_reported"] = True
+                        report_waiting(s)
+                    continue
+                if run["status"] == "in_progress" and not s["remote_started_at"]:
+                    # Observed start, not `run_started_at`: GitHub stamps that at creation, approval
+                    # wait included.
+                    s["remote_started_at"] = now().strftime("%Y-%m-%dT%H:%M:%SZ")
                 timeout = timedelta(minutes=s["timeout_minutes"])
                 if run["status"] == "completed":
                     s["remote_conclusion"] = run["conclusion"]
@@ -691,7 +777,15 @@ def run() -> None:
             "Use workflow_dispatch to run it here deliberately."
         )
         return
-    repos = select_repos(manifest, target)
+    files = changed_files(target)
+    bad_manifest = None
+    try:
+        proposed = proposed_repos(manifest, target, files)
+    except (
+        Exception
+    ) as e:  # noqa: BLE001 - a broken PR manifest gets its own failed check below
+        proposed, bad_manifest = [], f"{type(e).__name__}: {e}"
+    repos = select_repos(manifest, target, proposed)
     if ATTEMPT > 1:  # re-run: only the repos whose check is not green yet
         repos = [e for e in repos if not check_succeeded(manifest, e, target)]
         log(
@@ -699,9 +793,22 @@ def run() -> None:
         )
     state = {"target": target, "attempt": ATTEMPT, "repos": {}}
     save_state(state)
-    if EVENT_NAME != "workflow_dispatch" and not relevant_change(
-        changed_files(target), manifest
-    ):
+    if bad_manifest:
+        own.post(
+            f"/repos/{REPO}/check-runs",
+            {
+                "name": check_name(manifest, "manifest" + PROPOSED),
+                "head_sha": target["head_sha"],
+                "status": "completed",
+                "conclusion": "failure",
+                "details_url": ORCHESTRATOR_URL,
+                "output": {
+                    "title": "This PR's manifest.json could not be used",
+                    "summary": f"{code(bad_manifest)}\n\nOrchestrator: {ORCHESTRATOR_URL}",
+                },
+            },
+        )
+    if EVENT_NAME != "workflow_dispatch" and not relevant_change(files, manifest):
         log("no relevant files changed; marking all repos as skipped")
         skip_all(manifest, target, repos, state)
         write_summary(target, state)
@@ -724,6 +831,8 @@ def run() -> None:
         s["id"]
         for s in state["repos"].values()
         if (s["conclusion"] or check_conclusion(s)) != "success"
+        # a PR's own (proposed) entry never fails the job: App not installed yet, ...
+        and not s.get("proposed")
         and (
             s["failure_policy"] != "notify"
             or s["remote_conclusion"] in ORCHESTRATOR_FAULTS
