@@ -62,26 +62,68 @@ port.
   is effectively a fat pointer) is valid only in the address space that owns the
   pointed-to object; send serialized values instead.
 - Wire received event and telemetry outputs to the deployment's event manager
-  and telemetry database. A hub transports events and telemetry, but is not
-  itself an event source or telemetry database.
-- Use a buffer driver at each end of the transport. The
-  `Drv::ByteStreamBufferAdapter` can pair a byte-stream driver with the
-  buffer-driver interface expected by GenericHub.
+  and telemetry database. A hub transports events and telemetry; apart from
+  its own `BufferAllocationFailed` event and `NumAllocationFailures` channel,
+  it is not an event source or telemetry database.
+- Use a buffer driver at each end of the transport, and wire the send side
+  through `Svc.ComQueue` and `Svc.ComStub` (see
+  [Recommended wiring](#recommended-wiring)). `Drv::ByteStreamBufferAdapter`
+  pairs a byte-stream driver's receive side with the hub.
+- Use a transport that preserves message boundaries. The hub expects one
+  message per received buffer and does not reassemble streams: `Drv.Udp`
+  does this natively; TCP and UART links need the standard F´ framing
+  (`Svc.FprimeFramer` on the send side, `Svc.FrameAccumulator` +
+  `Svc.FprimeDeframer` on the receive side) and a small receive-side adapter,
+  as described in the [GenericHub SDD](../../../Svc/GenericHub/docs/sdd.md#transport-requirements).
 - Wire command ports with the same indices on both hubs; the index is how a
   command response finds its originator.
-- Size the hub's buffer pool for the worst case. GenericHub asserts when
-  allocation fails.
+- Size the hub's buffer pool for the worst case. When allocation fails,
+  GenericHub drops the message, emits `BufferAllocationFailed` (once per
+  failure episode, re-armed by the next successful send) and counts every
+  drop in `NumAllocationFailures`; drive `schedIn` from a rate group so the counter
+  is reported (deployments written before `schedIn` existed must add this
+  connection). A dropped `cmdDispIn` command is failed back to its caller with
+  `EXECUTION_ERROR`.
 - Monitor the link outside the hub. GenericHub reports no transport errors and
-  silently drops invalid received messages.
+  silently drops invalid received messages; `Svc.ComQueue` reports queue depth
+  and overflow, `Drv::ByteStreamBufferAdapter` reports receive errors. In the
+  recommended wiring a failed send is not evented (see the SDD's residual-loss
+  note).
+
+## Recommended wiring
+
+The hub is passive and never queues: when it cannot get a buffer it drops the
+message, emits `BufferAllocationFailed` and counts the drop. Buffering across
+a link outage belongs between the hub and the driver. The recommended send
+path reuses the framework's communication-adapter components:
+
+```text
+producers -> GenericHub.toBufferDriver -> Svc.ComQueue -> Svc.ComStub -> driver
+             GenericHub.toBufferDriverReturn <- Svc.ComQueue.bufferReturnOut
+             Svc.ComStub.drvConnected <- driver.ready
+```
+
+`Svc.ComQueue` takes the buffer on its own thread, so producers never block on
+the socket; it holds frames while the driver cannot send and resumes when the
+driver re-announces readiness. Size the queue depth to at least the hub's
+buffer count (`D >= N`, instance queue `Q >= N + 8`) so that the hub remains
+the single drop point. The receive side stays `driver -> adapter -> GenericHub`.
+Over `Drv.Udp` a failed send stalls this path until the driver reconnects (the
+reference deployment accepts that: UDP needs no framing, and the stall is
+visible as `NumAllocationFailures` rising while `buffQueueDepth` sits at the
+queue depth); TCP and UART recover after a reconnect but need F´ framing plus a
+receive-side adapter that the framework does not provide. Details, the full
+connection table, and the sizing rule are in the
+[GenericHub SDD](../../../Svc/GenericHub/docs/sdd.md#transport-formations).
 
 ## Putting it together
 
 A common layout is:
 
 ```text
-Deployment A                         Deployment B
--------------                        -------------
-FSW -> GenericHub -> transport -> GenericHub -> FSW
+Deployment A                                           Deployment B
+-------------                                          -------------
+FSW -> GenericHub -> ComQueue -> ComStub -> transport -> GenericHub -> FSW
 ```
 
 For a runnable worked example, see
