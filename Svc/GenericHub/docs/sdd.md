@@ -26,8 +26,10 @@ For example, logical connections between components in deployments A and B:
 
 The driver paired with each hub must be a **buffer driver**: a combination of
 components that sends and receives `Fw::Buffer` objects across the transport.
-The reference implementation uses a `Drv::ByteStreamDriver` together with a
-`Drv::ByteStreamBufferAdapter`. Other transport-specific drivers may be used
+The reference implementation uses `Drv::Udp` with `Svc::ComQueue` and
+`Svc::ComStub` on the send side and a `Drv::ByteStreamBufferAdapter` on the
+receive side (see [Transport formations](#transport-formations)). Other
+transport-specific drivers may be used
 provided that they implement the buffer-driver interfaces described below.
 
 ## Design
@@ -46,7 +48,9 @@ the buffer lifecycle described later. A pointer must never be passed through
 the hub: a pointer is meaningful only in the address space that allocated the
 pointed-to object.
 
-GenericHub is passive and keeps no state between calls. Each handler runs on
+GenericHub is passive. Its only state between calls is the atomic
+`NumAllocationFailures` counter and the atomic flag that arms the `BufferAllocationFailed`
+report. Each handler runs on
 its caller's thread, and several producers may be in the send path at once, so
 the component connected to `toBufferDriver` must accept concurrent calls (for
 example, the asynchronous inputs of `Svc::ComQueue`).
@@ -66,7 +70,7 @@ remote hub.
 | `bufferIn` | `[GenericHubCfg.NumBufferInputPorts] Fw.BufferSend` | Sends buffer data to the remote deployment. The hub copies the data and returns the incoming buffer. |
 | `bufferInReturn` | `[GenericHubCfg.NumBufferInputPorts] Fw.BufferSend` | Returns buffers received on `bufferIn` to their senders. It must match `bufferIn`. |
 | `cmdDispIn` | `[CmdDispatcherSequencePorts] Fw.Com` | Accepts a command forwarded by a command splitter. |
-| `cmdRespOut` | `[CmdDispatcherSequencePorts] Fw.CmdResponse` | Emits a command response received from the remote hub. |
+| `cmdRespOut` | `[CmdDispatcherSequencePorts] Fw.CmdResponse` | Emits a command response received from the remote hub, or `EXECUTION_ERROR` for a `cmdDispIn` command the hub dropped on allocation failure. |
 
 Typical connections include:
 
@@ -81,6 +85,10 @@ genericHub.cmdRespOut[0]      -> commandSplitter.seqCmdStatus[0]
 ```
 
 ### 2. Hub to buffer driver: send interface
+
+The connections below show the adapter formation; the recommended
+formation routes `toBufferDriver` into `Svc.ComQueue.bufferQueueIn[0]`
+instead (see [Transport formations](#transport-formations)).
 
 The hub sends serialized messages through the buffer driver using imported
 interfaces:
@@ -104,6 +112,18 @@ genericHub.deallocate        -> bufferManager.bufferSendIn
 `allocate` and `deallocate` come from `Svc.BufferAllocation`.
 `toBufferDriver` and `toBufferDriverReturn` come from
 `Drv.PassiveBufferDriverClientSend`.
+
+### 2a. Hub health: scheduling, events, and telemetry
+
+| Port | Type | Purpose |
+|---|---|---|
+| `schedIn` | `Svc.Sched` | Rate-group input; emits the hub's own telemetry. |
+| `Log`, `LogText`, `Time`, `Tlm` | special ports | The hub's own events, text events, time, and telemetry. |
+
+These ports report the hub's health; they are distinct from the pass-through
+`eventIn`/`eventOut` and `tlmIn`/`tlmOut` ports. `NumAllocationFailures` is
+written only from `schedIn`, so drive `schedIn` from a rate group in every
+deployment that wants the counter (see [Allocation failure](#allocation-failure)).
 
 ### 3. Buffer driver to hub: receive interface
 
@@ -150,7 +170,7 @@ commandDispatcher.seqCmdStatus[0] -> genericHub.cmdRespIn[0]
 
 Every message sent to the buffer driver has this outer framing:
 
-1. a `U32` message-type discriminator;
+1. a `U32` message-type discriminator (the `Svc.GenericHub.HubType` enum);
 2. a `U32` port index;
 3. an `FwBuffSizeType` payload size; and
 4. the payload bytes.
@@ -161,14 +181,17 @@ the buffer on `toBufferDriver`. On receipt, the hub validates the type,
 deserializes the port and payload size, checks that the payload size matches
 the received buffer, and dispatches according to the message type.
 
-| Message type | Payload and behavior |
-|---|---|
-| Serial (`HUB_TYPE_PORT`) | The payload is the serialized by-value argument list for `serialIn`. The receiver wraps the payload in an `Fw::ExternalSerializeBuffer` and invokes the matching `serialOut` port. |
-| Buffer (`HUB_TYPE_BUFFER`) | The sender copies the incoming buffer data into a newly allocated transport buffer. The receiver adjusts the received buffer metadata to the payload and emits it on the matching `bufferOut` port. |
-| Event (`HUB_TYPE_EVENT`) | The payload contains the event ID, time tag, severity, and `Fw::LogBuffer` arguments. The receiver deserializes these values and invokes `eventOut`. |
-| Telemetry (`HUB_TYPE_CHANNEL`) | The payload contains the channel ID, time tag, and `Fw::TlmBuffer` value. The receiver deserializes these values and invokes `tlmOut`. |
-| Command dispatch (`HUB_TYPE_CMD_DISP`) | The payload contains the serialized `Fw::ComBuffer` command data followed by its `U32` context. The receiver invokes the matching `cmdDispOut` port. |
-| Command response (`HUB_TYPE_CMD_RESP`) | The payload contains the opcode, command sequence, and `Fw::CmdResponse`. The receiver invokes the matching `cmdRespOut` port. |
+| Message type | `msgType` | Payload and behavior |
+|---|---|---|
+| Serial (`HUB_TYPE_PORT`) | 0 | The payload is the serialized by-value argument list for `serialIn`. The receiver wraps the payload in an `Fw::ExternalSerializeBuffer` and invokes the matching `serialOut` port. |
+| Buffer (`HUB_TYPE_BUFFER`) | 1 | The sender copies the incoming buffer data into a newly allocated transport buffer. The receiver adjusts the received buffer metadata to the payload and emits it on the matching `bufferOut` port. |
+| Event (`HUB_TYPE_EVENT`) | 2 | The payload contains the event ID, time tag, severity, and `Fw::LogBuffer` arguments. The receiver deserializes these values and invokes `eventOut`. |
+| Telemetry (`HUB_TYPE_CHANNEL`) | 3 | The payload contains the channel ID, time tag, and `Fw::TlmBuffer` value. The receiver deserializes these values and invokes `tlmOut`. |
+| Command dispatch (`HUB_TYPE_CMD_DISP`) | 4 | The payload contains the serialized `Fw::ComBuffer` command data followed by its `U32` context. The receiver invokes the matching `cmdDispOut` port. |
+| Command response (`HUB_TYPE_CMD_RESP`) | 5 | The payload contains the opcode, command sequence, and `Fw::CmdResponse`. The receiver invokes the matching `cmdRespOut` port. |
+
+The `msgType` column is the numeric value of the `Svc.GenericHub.HubType`
+enumerator reported by the `BufferAllocationFailed` event.
 
 Malformed or invalid messages are not dispatched, and the received transport
 buffer is returned to the driver. A message whose destination port is invalid
@@ -233,6 +256,37 @@ For a locally produced message, the hub:
 4. receives ownership back through `toBufferDriverReturn`; and
 5. returns the buffer to the manager through `deallocate`.
 
+### Allocation failure
+
+If `allocate` returns an invalid buffer (null data, or smaller than the framed
+message), the hub drops the message: it returns a non-null undersized buffer
+through `deallocate`, increments the `NumAllocationFailures` counter, and emits
+on the first drop of a failure episode, the `BufferAllocationFailed` event
+(and an `Fw::Logger` line, for the side of the link whose events cannot get
+out) with the message type, port index, and requested size. Later drops of the
+same episode are only counted; the next successful send re-arms the report.
+Buffers received on `bufferIn` are still returned
+through `bufferInReturn`. The hub remains operational and resumes sending once
+allocation succeeds. A dropped `cmdDispIn` command is failed back to its caller
+with `Fw::CmdResponse::EXECUTION_ERROR` on the matching `cmdRespOut` port; a
+dropped `cmdRespIn` response cannot be reported to the far side and is lost,
+so the originating sequencer or splitter never receives a response for that
+command. Size the pool so that `cmdRespIn` never drops.
+
+The counter is read from any caller thread (`std::atomic`) and written to
+telemetry only from `schedIn`. Emitting telemetry on the failure path would
+re-enter the hub whenever the hub is the deployment's telemetry sink, so the
+`schedIn` port is required for the channel to be observable. The event is
+emitted on the failure path; when the hub is also the deployment's event sink
+(`event connections instance hub` routes `hub.Log` back into `hub.eventIn`),
+the one event of an episode re-enters the hub, is dropped, and adds one to the
+counter. Existing deployments must add the `schedIn` connection to see the
+counter. The hub itself never retries or queues a dropped message: it is
+passive, and a queue inside it would only move the sizing problem. Buffering
+across a link outage belongs between the hub and the driver; see
+[Transport formations](#transport-formations) for the recommended wiring and
+the pool-sizing rule.
+
 For `bufferIn`, the hub copies the incoming data into the newly allocated
 transport buffer and immediately returns the original buffer through the
 matching `bufferInReturn` port. The hub never sends the original pointer
@@ -291,16 +345,28 @@ that handling around or within the component. Received messages with an
 invalid type, size, or port index, or for an unconnected output port, are
 dropped without an event or telemetry.
 
-GenericHub does not check the buffer returned by `allocate`. If the allocator
-returns an invalid buffer (for example, `Svc::BufferManager` with no free
-buffer of sufficient size), serialization fails a `FW_ASSERT`. Size the pool for
-the worst case: the capacity of every queue downstream of `toBufferDriver`,
-plus buffers held by the driver, plus one per thread that can call the hub's
-input ports concurrently.
+Outgoing messages are dropped when the allocator returns an invalid buffer
+(for example, `Svc::BufferManager` with no free buffer of sufficient size); see
+[Allocation failure](#allocation-failure).
 
-The hub is not itself an event source or telemetry database. Its `eventOut`
+Apart from its own `BufferAllocationFailed` event and `NumAllocationFailures`
+channel, the hub is not an event source or telemetry database. Its `eventOut`
 and `tlmOut` ports still need to be wired to the deployment's event manager and
 telemetry database, respectively.
+
+The hub does not reassemble streams: `fromBufferDriver` accepts a buffer only
+when it holds exactly one hub message. The transport must therefore preserve
+message boundaries, or F´ framing must be added around the link (see
+[Transport formations](#transport-formations)).
+
+In the queued formation, `Svc::ComQueue` reads the first
+`FwPacketDescriptorType` of every buffer as an APID for the frame context. A
+hub message begins with the `U32` message type (values 0–5), so with the
+default `U16` `FwPacketDescriptorType` that APID always reads 0 (with a `U32`
+descriptor it reads the message type); nothing downstream of the hub consumes
+it. No framer sits
+between `Svc::ComQueue` and `Svc::ComStub`: the hub's own header is the
+framing on a boundary-preserving transport.
 
 ## Requirements
 
@@ -311,6 +377,123 @@ telemetry database, respectively.
 | GENHUB-003 | The GenericHub shall deserialize incoming transport buffers to output port and buffer calls. | Unit test |
 | GENHUB-004 | The GenericHub shall work with another GenericHub to send port and buffer calls. | Unit test |
 | GENHUB-005 | The GenericHub shall forward command dispatches and command responses between deployments. | Unit test |
+| GENHUB-006 | When `allocate` returns an invalid buffer (null data, or size less than requested), the GenericHub shall drop the outgoing message instead of asserting and shall remain operational. | Unit test |
+| GENHUB-007 | On such a drop, the GenericHub shall emit a `WARNING_HI` event (once per failure episode) identifying the message type, port index, and requested size. | Unit test |
+| GENHUB-008 | The GenericHub shall count allocation failures and report the count as a telemetry channel from `schedIn`. | Unit test, integration test (fprime-generic-hub-reference, companion change) |
+| GENHUB-009 | An undersized but valid buffer returned by `allocate` shall be returned through `deallocate`. | Unit test |
+| GENHUB-010 | Buffers received on `bufferIn` shall be returned through `bufferInReturn` whether or not the outgoing message is dropped. | Unit test |
+| GENHUB-011 | A `cmdDispIn` command dropped on allocation failure shall be failed back to its caller with `EXECUTION_ERROR` on the matching `cmdRespOut` port. | Unit test |
+| GENHUB-012 | The GenericHub shall remain functionally correct when `toBufferDriver` is connected to an asynchronous consumer that returns buffers on another thread at a later time (for example `Svc.ComQueue.bufferQueueIn`). | Unit test, integration test (fprime-generic-hub-reference) |
+| GENHUB-013 | The GenericHub documentation shall define the recommended transport formation (`Svc.ComQueue` → `Svc.ComStub` → driver), the message-boundary requirement on the transport, and the pool- and queue-sizing rule. | Inspection |
+
+## Transport formations
+
+The hub is passive and holds nothing between calls: a message it cannot hand
+to the driver is dropped (see [Allocation failure](#allocation-failure)). What
+happens between the hub and the transport is decided by the topology. Two
+formations are in use.
+
+### Adapter formation
+
+```text
+producers --sync--> GenericHub --toBufferDriver--> Drv.ByteStreamBufferAdapter --$send--> driver
+                      ^ toBufferDriverReturn <---- bufferInReturn (same call)
+driver --$recv--> Drv.ByteStreamBufferAdapter --bufferOut--> GenericHub.fromBufferDriver --> consumers
+```
+
+The socket write happens on the producer's thread, inside the producer's port
+call. A driver error is reported by the adapter (`DriverNotReady`,
+`DataSendError`, both `WARNING_LO`) and the message is lost; nothing is held
+while the link is down.
+
+### Queued formation (recommended)
+
+```text
+producers --sync--> GenericHub --toBufferDriver (Fw.BufferSend)--> Svc.ComQueue.bufferQueueIn[0]   [producer thread]
+                      ^ toBufferDriverReturn <------------------- Svc.ComQueue.bufferReturnOut[0]
+  Svc.ComQueue.dataOut --Svc.ComDataWithContext--> Svc.ComStub.dataIn --drvSendOut--> driver.$send  [ComQueue thread]
+  Svc.ComQueue.dataReturnIn <-- Svc.ComStub.dataReturnOut ; Svc.ComQueue.comStatusIn <-- Svc.ComStub.comStatusOut
+  Svc.ComStub.drvConnected <-- driver.ready                                                        [driver task]
+receive side as in the adapter formation (driver.$recv -> adapter -> GenericHub.fromBufferDriver)
+```
+
+| Connection | Purpose |
+|---|---|
+| `hub.toBufferDriver -> comQueue.bufferQueueIn[0]` | Asynchronous, hooked input: the producer only enqueues the buffer handle and returns. |
+| `comQueue.bufferReturnOut[0] -> hub.toBufferDriverReturn` | The frame comes back after it was sent (or dropped); the hub returns it to the pool from the `ComQueue` thread. |
+| `comQueue.dataOut -> comStub.dataIn`, `comStub.dataReturnOut -> comQueue.dataReturnIn` | The `ComQueue` thread performs the driver write through the communication adapter interface. |
+| `comStub.comStatusOut -> comQueue.comStatusIn` | `SUCCESS` releases the next frame; `FAILURE` pauses the queue until the driver reconnects. |
+| `driver.ready -> comStub.drvConnected` | Starts the flow and resumes it after a failure. |
+| `driver.$send`/`$recv`, `comStub.drvSendOut`, allocation ports | As in the adapter formation; `comStub.drvReceiveIn` stays unconnected. |
+
+This formation moves the socket write off the producers' threads, holds up to
+the configured queue depth of frames while the driver cannot send, resumes
+when the driver re-announces readiness, and adds no component to the
+framework. `Svc::ComQueue` needs a `run` connection from a rate group for its
+telemetry, and its command, event and telemetry ports wired as usual. The
+hub's `send_data` behaviour is identical in both formations; only the
+consumer of `toBufferDriver` changes (GENHUB-012).
+
+Residual loss in this formation: the frame in flight when the driver reports
+`OTHER_ERROR` (or exhausts `SEND_RETRY`) is returned to the pool without an
+event or counter from `Svc::ComStub`; a command lost there is not failed back.
+`Svc::ComRetry` is not part of this formation: it is entered from the
+`ComQueue` thread and from the driver's reconnect task and is not thread-safe.
+
+### Transport requirements
+
+- **Message boundaries.** The hub accepts one message per received buffer
+  (see [Idiosyncrasies](#idiosyncrasies)). `Drv.Udp` preserves datagram
+  boundaries and needs nothing else. Stream transports (`Drv.TcpClient`,
+  `Drv.TcpServer`, `Drv.LinuxUartDriver`) do not: wrap the link in the
+  standard F´ framing, `Svc.FprimeFramer` on the send side (between
+  `Svc.ComQueue` and `Svc.ComStub`) and `Svc.FrameAccumulator` +
+  `Svc.FprimeDeframer` on the receive side. Known gap: `Svc.FprimeDeframer`
+  emits `Svc.ComDataWithContext` while `fromBufferDriver` is `Fw.BufferSend`,
+  so a project wiring framing needs a small receive-side adapter that passes
+  the deframed buffer to the hub and returns it afterwards; the framework does
+  not provide one.
+- **Readiness after a send error.** `Svc::ComQueue` resumes only when
+  `Svc::ComStub` receives `drvConnected` again. The TCP drivers re-announce
+  readiness after they reconnect. `Drv.Udp` announces readiness once, at
+  open, and keeps its socket after a failed send, so over UDP a send error
+  stalls the queued formation until the driver reconnects; every later frame
+  is held and, once the pool is empty, dropped at the hub. UDP is therefore
+  not recommended for the queued formation.
+
+### Sizing
+
+Let `N` be the number of hub buffers in the pool, `D` the `Svc::ComQueue`
+depth configured for `bufferQueueIn[0]`, and `Q` the `Svc::ComQueue` instance
+queue size.
+
+- `D >= N`: the managed queue can hold every buffer the pool can produce, so
+  the only drop point is the hub (counted and evented once per episode) and
+  `Svc::ComQueue` never overflows.
+- `Q >= N + 8`: the instance queue carries the `N` buffer handles plus the
+  status, rate-group and command messages that can be in flight.
+- Buffer size `S >= max(payload) + 2 * sizeof(U32) + sizeof(FwBuffSizeType)`
+  (the hub header), where the largest payload per traffic kind is
+  `FW_COM_BUFFER_MAX_SIZE + sizeof(U32)` for commands (the `Fw::ComBuffer`
+  plus its context), `sizeof(FwEventIdType) + Fw::Time::SERIALIZED_SIZE +
+  Fw::LogSeverity::SERIALIZED_SIZE + sizeof(FwSizeStoreType) +
+  FW_LOG_BUFFER_MAX_SIZE` for events, `sizeof(FwChanIdType) +
+  Fw::Time::SERIALIZED_SIZE + sizeof(FwSizeStoreType) + FW_TLM_BUFFER_MAX_SIZE`
+  for telemetry, and the largest serialized argument list or `bufferIn`
+  payload for serial and buffer traffic. Sizing to `FW_COM_BUFFER_MAX_SIZE`
+  plus the header alone drops every maximum-size event, telemetry and command
+  frame.
+- Give the hub its own pool (or `Svc.BufferManager` bin): when the bin is
+  shared with the driver's receive allocation, receive pressure starves sends.
+- In the adapter formation `D` and `Q` do not apply; size `N` for the number
+  of producer threads that can be in the hub at once plus the buffers the
+  driver holds.
+
+Operator signatures: `NumAllocationFailures` rising with `BufferManager`
+`NoBuffs` rising means the pool is too small or the link is slower than the
+producers; `buffQueueDepth[0]` reported at `D` on the same ticks means the
+link, not the pool, is the bottleneck; `QueueOverflow` means `D < N`;
+`buffIngressDropped[0]` rising with no event means `Q` is too small.
 
 ## Example formations
 
@@ -333,3 +516,5 @@ The following diagrams show progressively more detail:
 | 2023-06-09 | Added telemetry and event helpers |
 | 2026-07-09 | Documented command routing, current configuration constants, buffer-driver interfaces, framing, and buffer lifecycle |
 | 2026-09-29 | Documented threading, command index pairing, cross-deployment type agreement, silent receive drops, and allocation failure |
+| 2026-10-11 | Allocation failure drops the message with an event and counter instead of asserting; added `schedIn` and the hub's own event/telemetry ports |
+| 2026-11-05 | Message type is the `HubType` FPP enum (`Svc::GenericHub_HubType`, replacing the C++ `Svc::GenericHub::HubType` enum; `HUB_TYPE_MAX` becomes `NUM_CONSTANTS`); documented the transport formations (queued formation recommended), transport requirements, and sizing rule |
