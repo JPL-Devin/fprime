@@ -26,6 +26,78 @@
       "timeout_minutes": 25,
       "failure_policy": "notify",
       "on_pr": false
+    },
+    {
+      "id": "hello-world",
+      "repository": "fprime-community/fprime-tutorial-hello-world",
+      "workflow": "ci.yml",
+      "default_ref": "devel",
+      "timeout_minutes": 20,
+      "failure_policy": "block",
+      "on_pr": true
+    },
+    {
+      "id": "math-component",
+      "repository": "fprime-community/fprime-tutorial-math-component",
+      "workflow": "ci.yml",
+      "default_ref": "devel",
+      "timeout_minutes": 20,
+      "failure_policy": "block",
+      "on_pr": true
+    },
+    {
+      "id": "python-reference",
+      "repository": "fprime-community/fprime-python-reference",
+      "workflow": "ci.yml",
+      "default_ref": "main",
+      "timeout_minutes": 20,
+      "failure_policy": "block",
+      "on_pr": true
+    },
+    {
+      "id": "cfs-reference",
+      "repository": "fprime-community/fprime_cfs_reference",
+      "workflow": "build-and-test.yml",
+      "default_ref": "devel",
+      "timeout_minutes": 20,
+      "failure_policy": "block",
+      "on_pr": true
+    },
+    {
+      "id": "vorago-reference",
+      "repository": "fprime-community/fprime-vorago-reference",
+      "workflow": "build.yml",
+      "default_ref": "devel",
+      "timeout_minutes": 20,
+      "failure_policy": "block",
+      "on_pr": true
+    },
+    {
+      "id": "generic-hub-reference",
+      "repository": "fprime-community/fprime-generic-hub-reference",
+      "workflow": "ci.yml",
+      "default_ref": "devel",
+      "timeout_minutes": 20,
+      "failure_policy": "block",
+      "on_pr": true
+    },
+    {
+      "id": "mlpack-reference",
+      "repository": "fprime-community/fprime-mlpack-reference",
+      "workflow": "ci.yml",
+      "default_ref": "master",
+      "timeout_minutes": 20,
+      "failure_policy": "notify",
+      "on_pr": true
+    },
+    {
+      "id": "yamcs-reference",
+      "repository": "fprime-community/fprime-yamcs-reference",
+      "workflow": "ci.yml",
+      "default_ref": "main",
+      "timeout_minutes": 28,
+      "failure_policy": "block",
+      "on_pr": true
     }
   ]
 }
