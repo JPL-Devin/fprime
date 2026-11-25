@@ -59,6 +59,9 @@ group will be unable to run the next cycle. This is known as a rate group slip a
 Frequent slips indicate that the system is failing to keep up with the repetitive work and the cycle time may need to
 be increased or child components need to be moved to slower rate groups.
 
+> [!IMPORTANT]
+> **Design Rule:** Rate groups provide deterministic periodic execution. They are the primary mechanism for scheduling repeated work in F'. Assign components to rate groups based on how frequently they need to run, and ensure passive components attached to rate groups complete their work well within the cycle time.
+
 ### Active Rate Groups, Ordering, and Priority
 
 Active rate groups are dependent on thread priority. Typically, rate groups are the highest priority components in the
